@@ -146,8 +146,8 @@ $form->addHtmlEditor(
 
 // Pass the language of the survey in the form
 $form->addElement('hidden', 'survey_language');
-$form->addElement('date_picker', 'start_date', get_lang('StartDate'));
-$form->addElement('date_picker', 'end_date', get_lang('EndDate'));
+$form->addDateTimePicker('start_date', get_lang('StartDate'));
+$form->addDateTimePicker('end_date', get_lang('EndDate'));
 $form->addElement('checkbox', 'anonymous', null, get_lang('Anonymous'));
 
 $visibleResults = array(

@@ -97,7 +97,7 @@ if (isset($action) && $action == 'calendar_add') {
     );
     $form->addElement('select', 'repeat_type', get_lang('RepeatType') , $a_repeat_type);
 
-    $form->addElement('date_picker', 'end_date_time', get_lang('RepeatEnd'), array('form_name'=>'attendance_calendar_add'));
+    $form->addDatePicker('end_date_time', get_lang('RepeatEnd'), array('form_name'=>'attendance_calendar_add'));
     $defaults['end_date_time'] = date('Y-m-d');
     $form->addElement('html', '</div>');
 
