@@ -1,0 +1,13 @@
+{% extends "@ChamiloTheme/Layout/base-layout.html.twig" %}
+{# overrides everything inside body no-footer no-header #}
+{% block chamilo_wrap %}
+    {% autoescape false %}
+        <link rel="stylesheet" href="{{ asset('build/css/scorm.css') }}"/>
+        <section id="content-scorm">
+        {{ content }}
+        </section>
+    {% endautoescape %}
+{% endblock %}
+
+{% block chamilo_footer %}
+{% endblock %}

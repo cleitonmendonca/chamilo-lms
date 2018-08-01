@@ -1,19 +1,22 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+
 /**
  * With this tool you can easily adjust non critical configuration settings.
  * Non critical means that changing them will not result in a broken campus.
  *
  * @author Patrick Cool
  * @author Julio Montoya - Multiple URL site
+ *
  * @package chamilo.admin
  */
 
 // Resetting the course id.
 $cidReset = true;
 
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 require_once 'settings.lib.php';
 
 // Setting the section (for the tabs).
@@ -23,30 +26,36 @@ $_SESSION['this_section'] = $this_section;
 // Access restrictions.
 api_protect_admin_script();
 
+ // Submit stylesheets.
+if (isset($_POST['save']) && isset($_GET['category']) && $_GET['category'] === 'Stylesheets') {
+    storeStylesheets();
+    Display::addFlash(Display::return_message(get_lang('Saved')));
+}
+
 // Settings to avoid
-$settings_to_avoid = array(
+$settings_to_avoid = [
     'use_session_mode' => 'true',
     'gradebook_enable' => 'false',
     // ON by default - now we have this option when  we create a course
-    'example_material_course_creation' => 'true'
-);
+    'example_material_course_creation' => 'true',
+];
 
-$convert_byte_to_mega_list = array(
+$convert_byte_to_mega_list = [
     'dropbox_max_filesize',
     'message_max_upload_filesize',
     'default_document_quotum',
-    'default_group_quotum'
-);
+    'default_group_quotum',
+];
 
 if (isset($_POST['style'])) {
     Display::$preview_style = $_POST['style'];
 }
 
 // Database table definitions.
-$table_settings_current = Database :: get_main_table(TABLE_MAIN_SETTINGS_CURRENT);
+$table_settings_current = Database::get_main_table(TABLE_MAIN_SETTINGS_CURRENT);
 
 // Setting breadcrumbs.
-$interbreadcrumb[] = array('url' => Container::getRouter()->generate('administration'), 'name' => get_lang('PlatformAdmin'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
 
 // Setting the name of the tool.
 $tool_name = get_lang('PlatformConfigSettings');
@@ -59,7 +68,7 @@ if (isset($_GET['delete_watermark'])) {
     Display::addFlash(Display::return_message(get_lang('FileDeleted')));
 }
 
-if (isset($_GET['action']) &&  $_GET['action'] == 'delete_grading') {
+if (isset($_GET['action']) && $_GET['action'] == 'delete_grading') {
     $id = intval($_GET['id']);
     api_delete_setting_option($id);
 }
@@ -69,14 +78,17 @@ $form_search = new FormValidator(
     'get',
     api_get_self(),
     null,
-    array(),
+    [],
     FormValidator::LAYOUT_INLINE
 );
-$form_search->addElement('text', 'search_field');
+$form_search->addElement('text', 'search_field', null, [
+    'id' => 'search_field',
+    'aria-label' => get_lang('Search'),
+]);
 $form_search->addElement('hidden', 'category', 'search_setting');
 $form_search->addButtonSearch(get_lang('Search'), 'submit_button');
 $form_search->setDefaults(
-    array('search_field' => isset($_REQUEST['search_field']) ? $_REQUEST['search_field'] : null)
+    ['search_field' => isset($_REQUEST['search_field']) ? $_REQUEST['search_field'] : null]
 );
 
 $form_search_html = $form_search->returnForm();
@@ -85,64 +97,15 @@ $url_id = api_get_current_access_url_id();
 
 $settings = null;
 
-function get_settings($category = null)
-{
-    $url_id = api_get_current_access_url_id();
-    $settings_by_access_list = array();
-
-    if ($url_id == 1) {
-        $settings = api_get_settings($category, 'group', $url_id);
-
-    } else {
-        $url_info = api_get_access_url($url_id);
-        if ($url_info['active'] == 1) {
-            // The default settings of Chamilo
-            $settings = api_get_settings($category, 'group', 1, 0);
-            // The settings that are changeable from a particular site.
-            $settings_by_access = api_get_settings($category, 'group', $url_id, 1);
-
-            foreach ($settings_by_access as $row) {
-                if (empty($row['variable'])) {
-                    $row['variable'] = 0;
-                }
-                if (empty($row['subkey'])) {
-                    $row['subkey'] = 0;
-                }
-                if (empty($row['category'])) {
-                    $row['category'] = 0;
-                }
-
-                // One more validation if is changeable.
-                if ($row['access_url_changeable'] == 1) {
-                    $settings_by_access_list[$row['variable']][$row['subkey']][$row['category']] = $row;
-                } else {
-                    $settings_by_access_list[$row['variable']][$row['subkey']][$row['category']] = array();
-                }
-            }
-        }
-    }
-
-    if (isset($category) && $category== 'search_setting') {
-        if (!empty($_REQUEST['search_field'])) {
-            $settings = search_setting($_REQUEST['search_field']);
-        }
-    }
-
-    return array(
-        'settings' => $settings,
-        'settings_by_access_list' => $settings_by_access_list
-    );
-}
-
 // Build the form.
 if (!empty($_GET['category']) &&
-    !in_array($_GET['category'], array('Plugins', 'stylesheets', 'Search'))
+    !in_array($_GET['category'], ['Plugins', 'stylesheets', 'Search'])
 ) {
     $my_category = isset($_GET['category']) ? $_GET['category'] : null;
-    $settings_array = get_settings($my_category);
+    $settings_array = getCategorySettings($my_category);
     $settings = $settings_array['settings'];
     $settings_by_access_list = $settings_array['settings_by_access_list'];
-    $form = generate_settings_form($settings, $settings_by_access_list);
+    $form = generateSettingsForm($settings, $settings_by_access_list);
 
     if ($form->validate()) {
         $values = $form->exportValues();
@@ -169,31 +132,30 @@ if (!empty($_GET['category']) &&
                 $locked_settings = api_get_locked_settings();
                 foreach ($values as $key => $value) {
                     if (!in_array($key, $locked_settings)) {
-
                         $changeable = 0;
                         if ($mark_all) {
                             $changeable = 1;
                         }
 
-                        $params = array('variable = ?' => array($key));
+                        $params = ['variable = ?' => [$key]];
                         $data = api_get_settings_params($params);
 
                         if (!empty($data)) {
                             foreach ($data as $item) {
-                                $params = array(
+                                $params = [
                                     'id' => $item['id'],
                                     'access_url_changeable' => $changeable,
-                                );
+                                ];
                                 api_set_setting_simple($params);
                             }
                         }
                     }
                 }
-                //Reload settings
-                $settings_array = get_settings($my_category);
+                // Reload settings
+                $settings_array = getCategorySettings($my_category);
                 $settings = $settings_array['settings'];
                 $settings_by_access_list = $settings_array['settings_by_access_list'];
-                $form = generate_settings_form(
+                $form = generateSettingsForm(
                     $settings,
                     $settings_by_access_list
                 );
@@ -220,7 +182,7 @@ if (!empty($_GET['category']) &&
         // Set true for allow_message_tool variable if social tool is actived
         foreach ($convert_byte_to_mega_list as $item) {
             if (isset($values[$item])) {
-                $values[$item] = round($values[$item]*1024*1024);
+                $values[$item] = round($values[$item] * 1024 * 1024);
             }
         }
 
@@ -230,6 +192,9 @@ if (!empty($_GET['category']) &&
 
         foreach ($settings as $item) {
             $key = $item['variable'];
+            if ($key === 'prevent_multiple_simultaneous_login') {
+                Session::write('first_user_login', 1);
+            }
             if (in_array($key, $settings_to_avoid)) {
                 continue;
             }
@@ -247,7 +212,7 @@ if (!empty($_GET['category']) &&
         }
 
         // Save the settings.
-        $keys = array();
+        $keys = [];
 
         foreach ($values as $key => $value) {
             if (strcmp($key, 'MAX_FILE_SIZE') === 0) {
@@ -267,12 +232,12 @@ if (!empty($_GET['category']) &&
                 $old_value = api_get_setting($key);
                 switch ($key) {
                     case 'header_extra_content':
-                        file_put_contents(api_get_path(SYS_PATH).api_get_home_path().'/header_extra_content.txt', $value);
-                        $value = api_get_home_path().'/header_extra_content.txt';
+                        file_put_contents(api_get_home_path().'header_extra_content.txt', $value);
+                        $value = api_get_home_path().'header_extra_content.txt';
                         break;
                     case 'footer_extra_content':
-                        file_put_contents(api_get_path(SYS_PATH).api_get_home_path().'/footer_extra_content.txt', $value);
-                        $value = api_get_home_path().'/footer_extra_content.txt';
+                        file_put_contents(api_get_home_path().'footer_extra_content.txt', $value);
+                        $value = api_get_home_path().'footer_extra_content.txt';
                         break;
                     case 'InstitutionUrl':
                     case 'course_validation_terms_and_conditions_url':
@@ -358,10 +323,9 @@ if (!empty($_GET['category']) &&
         exit;
     }
 }
-
-$htmlHeadXtra[] = '<script>
-    var hide_icon = "'.api_get_path(WEB_IMG_PATH).'shared_setting_na.png";
-    var show_icon = "'.api_get_path(WEB_IMG_PATH).'shared_setting.png";
+$htmlHeadXtra[] = '<script>    
+    var hide_icon = "'.api_get_path(WEB_IMG_PATH).'/icons/32/shared_setting_na.png";
+    var show_icon = "'.api_get_path(WEB_IMG_PATH).'/icons/32/shared_setting.png";
     var url       = "'.api_get_path(WEB_AJAX_PATH).'admin.ajax.php?a=update_changeable_setting";
 
     $(function() {
@@ -389,9 +353,6 @@ $htmlHeadXtra[] = '<script>
         });
     });
 </script>';
-
-// Including the header (banner).
-Display :: display_header($tool_name);
 
 // The action images.
 $action_images['platform'] = 'platform.png';
@@ -421,39 +382,39 @@ $action_images['facebook'] = 'facebook.png';
 $action_images['crons'] = 'crons.png';
 $action_images['webservices'] = 'webservices.png';
 
-$action_array = array();
-$resultcategories = array();
+$action_array = [];
+$resultcategories = [];
 
-$resultcategories[] = array('category' => 'Platform');
-$resultcategories[] = array('category' => 'Course');
-$resultcategories[] = array('category' => 'Session');
-$resultcategories[] = array('category' => 'Languages');
-$resultcategories[] = array('category' => 'User');
-$resultcategories[] = array('category' => 'Tools');
-$resultcategories[] = array('category' => 'Editor');
-$resultcategories[] = array('category' => 'Security');
-$resultcategories[] = array('category' => 'Tuning');
-$resultcategories[] = array('category' => 'Gradebook');
-$resultcategories[] = array('category' => 'Timezones');
-$resultcategories[] = array('category' => 'Tracking');
-$resultcategories[] = array('category' => 'Search');
-$resultcategories[] = array('category' => 'Stylesheets');
-$resultcategories[] = array('category' => 'Templates');
-$resultcategories[] = array('category' => 'Plugins');
-$resultcategories[] = array('category' => 'LDAP');
-$resultcategories[] = array('category' => 'CAS');
-$resultcategories[] = array('category' => 'Shibboleth');
-$resultcategories[] = array('category' => 'Facebook');
+$resultcategories[] = ['category' => 'Platform'];
+$resultcategories[] = ['category' => 'Course'];
+$resultcategories[] = ['category' => 'Session'];
+$resultcategories[] = ['category' => 'Languages'];
+$resultcategories[] = ['category' => 'User'];
+$resultcategories[] = ['category' => 'Tools'];
+$resultcategories[] = ['category' => 'Editor'];
+$resultcategories[] = ['category' => 'Security'];
+$resultcategories[] = ['category' => 'Tuning'];
+$resultcategories[] = ['category' => 'Gradebook'];
+$resultcategories[] = ['category' => 'Timezones'];
+$resultcategories[] = ['category' => 'Tracking'];
+$resultcategories[] = ['category' => 'Search'];
+$resultcategories[] = ['category' => 'Stylesheets'];
+$resultcategories[] = ['category' => 'Templates'];
+$resultcategories[] = ['category' => 'Plugins'];
+$resultcategories[] = ['category' => 'LDAP'];
+$resultcategories[] = ['category' => 'CAS'];
+$resultcategories[] = ['category' => 'Shibboleth'];
+$resultcategories[] = ['category' => 'Facebook'];
 $resultcategories[] = ['category' => 'Crons'];
 $resultcategories[] = ['category' => 'WebServices'];
 
 foreach ($resultcategories as $row) {
-    $url = array();
+    $url = [];
     $url['url'] = api_get_self()."?category=".$row['category'];
     $url['content'] = Display::return_icon(
         $action_images[strtolower($row['category'])],
         api_ucfirst(get_lang($row['category'])),
-        '',
+        [],
         ICON_SIZE_MEDIUM
     );
     if (strtolower($row['category']) == strtolower($_GET['category'])) {
@@ -462,14 +423,11 @@ foreach ($resultcategories as $row) {
     $action_array[] = $url;
 }
 
-echo Display::actions($action_array);
-echo '<br />';
-echo $form_search_html;
-
+ob_start();
 if (!empty($_GET['category'])) {
     switch ($_GET['category']) {
         case 'Regions':
-            handle_regions();
+            handleRegions();
             break;
         case 'Plugins':
             // Displaying the extensions: Plugins.
@@ -489,7 +447,7 @@ if (!empty($_GET['category'])) {
                         api_get_utc_datetime(),
                         $user_id
                     );
-                    Display :: display_confirmation_message(get_lang('DashboardPluginsUpdatedSuccessfully'));
+                    echo Display::return_message(get_lang('DashboardPluginsUpdatedSuccessfully'), 'confirmation');
                 }
             }
             echo '<script>
@@ -505,7 +463,7 @@ if (!empty($_GET['category'])) {
             echo '</ul>';
 
             echo '<div id="tabs-1">';
-            handle_plugins();
+            handlePlugins();
             echo '</div>';
 
             echo '<div id="tabs-2">';
@@ -513,31 +471,39 @@ if (!empty($_GET['category'])) {
             echo '</div>';
 
             echo '<div id="tabs-3">';
-            handle_extensions();
+            handleExtensions();
             echo '</div>';
             echo '</div>';
             break;
         case 'Stylesheets':
             // Displaying the extensions: Stylesheets.
-            handle_stylesheets();
+            handleStylesheets();
             break;
         case 'Search':
-            handle_search();
+            handleSearch();
             break;
         case 'Templates':
-            handle_templates();
+            handleTemplates();
             break;
         case 'search_setting':
             if (isset($_REQUEST['search_field'])) {
-
-                search_setting($_REQUEST['search_field']);
+                searchSetting($_REQUEST['search_field']);
                 $form->display();
             }
             break;
         default:
-            if (isset($form))
+            if (isset($form)) {
                 $form->display();
+            }
     }
 }
+$content = ob_get_clean();
 
-Display :: display_footer();
+// Including the header (banner).
+Display::display_header($tool_name);
+echo Display::actions($action_array);
+echo '<br />';
+echo $form_search_html;
+echo $content;
+
+Display::display_footer();

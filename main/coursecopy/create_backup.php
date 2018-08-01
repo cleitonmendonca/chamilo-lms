@@ -1,14 +1,18 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CourseBundle\Component\CourseCopy\CourseArchiver;
+use Chamilo\CourseBundle\Component\CourseCopy\CourseBuilder;
+use Chamilo\CourseBundle\Component\CourseCopy\CourseSelectForm;
+
 /**
  * Create a backup.
  *
  * @author Bart Mollet <bart.mollet@hogent.be>
+ *
  * @package chamilo.backup
  */
-
-////require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $current_course_tool = TOOL_COURSE_MAINTENANCE;
 
 api_protect_course_script(true);
@@ -30,25 +34,17 @@ if (function_exists('ini_set')) {
 $this_section = SECTION_COURSES;
 
 // Breadcrumbs
-$interbreadcrumb[] = array(
-    'url' => '../course_info/maintenance.php',
-    'name' => get_lang('Maintenance')
-);
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'course_info/maintenance.php',
+    'name' => get_lang('Maintenance'),
+];
 
 // Displaying the header
 $nameTools = get_lang('CreateBackup');
 Display::display_header($nameTools);
 
-// Include additional libraries
-require_once 'classes/CourseBuilder.class.php';
-require_once 'classes/CourseArchiver.class.php';
-require_once 'classes/CourseRestorer.class.php';
-require_once 'classes/CourseSelectForm.class.php';
-
 // Display the tool title
 echo Display::page_header($nameTools);
-
-/*	MAIN CODE */
 
 if (Security::check_token('post') && (
         (
@@ -70,11 +66,12 @@ if (Security::check_token('post') && (
         $course = $cb->build();
     }
 
-    $zip_file = CourseArchiver::write_course($course);
-    Display::display_confirmation_message(get_lang('BackupCreated'));
-    echo '<br /><a class="btn btn-primary btn-large" href="' . api_get_path(WEB_CODE_PATH) . 'course_info/download.php?archive=' . $zip_file . '&' . api_get_cidreq() . '">
-    ' . get_lang('Download') . '</a>';
-
+    $zip_file = CourseArchiver::createBackup($course);
+    echo Display::return_message(get_lang('BackupCreated'), 'confirm');
+    echo '<br />
+        <a class="btn btn-primary btn-large" 
+        href="'.api_get_path(WEB_CODE_PATH).'course_info/download.php?archive='.$zip_file.'&'.api_get_cidreq().'">
+    '.get_lang('Download').'</a>';
 } elseif (Security::check_token('post') && (
         isset($_POST['backup_option']) &&
         $_POST['backup_option'] == 'select_items'
@@ -88,28 +85,31 @@ if (Security::check_token('post') && (
     // Add token to Course select form
     $hiddenFields['sec_token'] = Security::get_token();
     CourseSelectForm::display_form($course, $hiddenFields);
-
 } else {
     $cb = new CourseBuilder();
     $course = $cb->build();
     if (!$course->has_resources()) {
         echo get_lang('NoResourcesToBackup');
     } else {
-        $form = new FormValidator('create_backup_form', 'post', api_get_self() . '?' . api_get_cidreq());
+        $form = new FormValidator(
+            'create_backup_form',
+            'post',
+            api_get_self().'?'.api_get_cidreq()
+        );
         $form->addElement('header', get_lang('SelectOptionForBackup'));
         $form->addElement('radio', 'backup_option', '', get_lang('CreateFullBackup'), 'full_backup');
         $form->addElement('radio', 'backup_option', '', get_lang('LetMeSelectItems'), 'select_items');
         $form->addButtonSave(get_lang('CreateBackup'));
-        $form->add_progress_bar();
+        $form->addProgress();
         // When progress bar appears we have to hide the title "Please select a backup-option".
         $form->updateAttributes(
-            array(
+            [
                 'onsubmit' => str_replace(
                     'javascript: ',
                     'javascript: page_title = getElementById(\'page_title\'); if (page_title) { setTimeout(\'page_title.style.display = \\\'none\\\';\', 2000); } ',
                     $form->getAttribute('onsubmit')
-                )
-            )
+                ),
+            ]
         );
         $values['backup_option'] = 'full_backup';
         $form->setDefaults($values);
@@ -117,9 +117,14 @@ if (Security::check_token('post') && (
         // Add Security token
         $token = Security::get_token();
         $form->addElement('hidden', 'sec_token');
-        $form->setConstants(array('sec_token' => $token));
-
+        $form->setConstants(['sec_token' => $token]);
+        echo '<div class="row">';
+        echo '<div class="col-md-12">';
+        echo '<div class="tool-backup">';
         $form->display();
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
     }
 }
 

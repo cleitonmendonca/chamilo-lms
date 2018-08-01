@@ -1,10 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use ChamiloSession as Session;
-
-//require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_STUDENTPUBLICATION;
+require_once __DIR__.'/../inc/global.inc.php';
+$current_course_tool = TOOL_STUDENTPUBLICATION;
 
 api_protect_course_script(true);
 
@@ -53,22 +51,22 @@ $student_can_edit_in_session = api_is_allowed_to_session_edit(false, true);
 $homework = get_work_assignment_by_id($workInfo['id']);
 $validationStatus = getWorkDateValidationStatus($homework);
 
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = [
     'url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(),
     'name' => get_lang('StudentPublications'),
-);
-$interbreadcrumb[] = array(
+];
+$interbreadcrumb[] = [
     'url' => api_get_path(WEB_CODE_PATH).'work/work_list.php?'.api_get_cidreq().'&id='.$work_id,
     'name' => $workInfo['title'],
-);
-$interbreadcrumb[] = array('url' => '#', 'name'  => get_lang('UploadFromTemplate'));
+];
+$interbreadcrumb[] = ['url' => '#', 'name' => get_lang('UploadFromTemplate')];
 
 $form = new FormValidator(
     'form',
     'POST',
     api_get_self()."?".api_get_cidreq()."&id=".$work_id,
     '',
-    array('enctype' => "multipart/form-data")
+    ['enctype' => "multipart/form-data"]
 );
 setWorkUploadForm($form, $workInfo['allow_text_assignment']);
 $form->addElement('hidden', 'document_id', $documentId);
@@ -96,7 +94,9 @@ if ($form->validate()) {
             $course_info,
             $id_session,
             $group_id,
-            $user_id
+            $user_id,
+            [],
+            api_get_configuration_value('assignment_prevent_duplicate_upload')
         );
         $script = 'work_list.php';
         if ($is_allowed_to_edit) {
@@ -108,7 +108,7 @@ if ($form->validate()) {
         exit;
     } else {
         // Bad token or can't add works
-        Display::addFlash(Display::return_message(get_lang('IsNotPosibleSaveTheDocument'), 'error'));
+        Display::addFlash(Display::return_message(get_lang('ImpossibleToSaveTheDocument'), 'error'));
     }
 }
 
@@ -119,7 +119,7 @@ if (!empty($work_id)) {
     echo $validationStatus['message'];
     if ($is_allowed_to_edit) {
         if (api_resource_is_locked_by_gradebook($work_id, LINK_STUDENTPUBLICATION)) {
-            echo Display::display_warning_message(get_lang('ResourceLockedByGradebook'));
+            echo Display::return_message(get_lang('ResourceLockedByGradebook'), 'warning');
         } else {
             $form->display();
         }

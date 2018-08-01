@@ -1,16 +1,10 @@
 <?php
 /* See license terms in /license.txt */
 
-use Ddeboer\DataImport\Writer\ExcelWriter;
-use Ddeboer\DataImport\Writer\CsvWriter;
-use Ddeboer\DataImport\Workflow;
-
-use Ddeboer\DataImport\Reader\CsvReader;
-use Ddeboer\DataImport\Reader\ArrayReader;
-use Ddeboer\DataImport\Writer\ArrayWriter;
 use Chamilo\CoreBundle\Component\Editor\Connector;
 use Chamilo\CoreBundle\Component\Filesystem\Data;
-use ChamiloSession as Session;
+use Ddeboer\DataImport\Writer\CsvWriter;
+use Ddeboer\DataImport\Writer\ExcelWriter;
 use MediaAlchemyst\Alchemyst;
 use MediaAlchemyst\DriversContainer;
 use Neutron\TemporaryFilesystem\Manager;
@@ -20,48 +14,60 @@ use Symfony\Component\Filesystem\Filesystem;
 /**
  *  This is the export library for Chamilo.
  *	Include/require it in your code to use its functionality.
- *	Several functions below are adaptations from functions distributed by www.nexen.net
+ *	Several functions below are adaptations from functions distributed by www.nexen.net.
  *
  *  @package chamilo.library
  */
 class Export
 {
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
     }
 
     /**
-     * Export tabular data to CSV-file
-     * @param array $data
+     * Export tabular data to CSV-file.
+     *
+     * @param array  $data
      * @param string $filename
+     * @param bool   $writeOnly Whether to only write on disk or also send for download
+     *
+     * @return mixed csv raw data | false if no data to export | string file path if success in $writeOnly mode
      */
-    public static function arrayToCsv($data, $filename = 'export')
+    public static function arrayToCsv($data, $filename = 'export', $writeOnly = false)
     {
         if (empty($data)) {
             return false;
         }
 
         $filePath = api_get_path(SYS_ARCHIVE_PATH).uniqid('').'.csv';
-
-        $writer = new CsvWriter();
-        $writer->setStream(fopen($filePath, 'w'));
-
+        $stream = fopen($filePath, 'w');
+        $writer = new CsvWriter(';', '"', $stream, true);
+        $writer->prepare();
         foreach ($data as $item) {
-            $item = is_array($item) ? $item : (array)$item;
+            if (empty($item)) {
+                $writer->writeItem([]);
+                continue;
+            }
+            $item = array_map('trim', $item);
             $writer->writeItem($item);
         }
         $writer->finish();
 
-        DocumentManager::file_send_for_download($filePath, true, $filename.'.csv');
-        exit;
-	}
+        if (!$writeOnly) {
+            DocumentManager::file_send_for_download($filePath, true, $filename.'.csv');
+            exit;
+        }
+
+        return $filePath;
+    }
 
     /**
-     * Export tabular data to XLS-file
-     * @param array $data
+     * Export tabular data to XLS-file.
+     *
+     * @param array  $data
      * @param string $filename
      */
     public static function arrayToXls($data, $filename = 'export', $encoding = 'utf-8')
@@ -71,8 +77,7 @@ class Export
         $file = new \SplFileObject($filePath, 'w');
         $writer = new ExcelWriter($file);
         $writer->prepare();
-
-        foreach ($data as $index => $row) {
+        foreach ($data as $row) {
             $writer->writeItem($row);
         }
 
@@ -80,11 +85,12 @@ class Export
 
         DocumentManager::file_send_for_download($filePath, true, $filename.'.xlsx');
         exit;
-	}
+    }
 
     /**
-     * Export tabular data to XLS-file (as html table)
-     * @param array $data
+     * Export tabular data to XLS-file (as html table).
+     *
+     * @param array  $data
      * @param string $filename
      */
     public static function export_table_xls_html($data, $filename = 'export', $encoding = 'utf-8')
@@ -92,7 +98,7 @@ class Export
         $file = api_get_path(SYS_ARCHIVE_PATH).uniqid('').'.xls';
         $handle = fopen($file, 'a+');
         $systemEncoding = api_get_system_encoding();
-        fwrite($handle, '<!DOCTYPE html><html><meta http-equiv="Content-Type" content="text/html" charset="utf-8" /><body><table>');
+        fwrite($handle, '<!DOCTYPE html><html><meta http-equiv="Content-Type" content="text/html" charset="'.$encoding.'" /><body><table>');
         foreach ($data as $id => $row) {
             foreach ($row as $id2 => $row2) {
                 $data[$id][$id2] = api_htmlentities($row2);
@@ -100,7 +106,7 @@ class Export
         }
         foreach ($data as $row) {
             $string = implode("</td><td>", $row);
-            $string = '<tr><td>' . $string . '</td></tr>';
+            $string = '<tr><td>'.$string.'</td></tr>';
             if ($encoding != 'utf-8') {
                 $string = api_convert_encoding($string, $encoding, $systemEncoding);
             }
@@ -113,13 +119,14 @@ class Export
     }
 
     /**
-    * Export tabular data to XML-file
-    * @param array  Simple array of data to put in XML
-    * @param string Name of file to be given to the user
-    * @param string Name of common tag to place each line in
-    * @param string Name of the root element. A root element should always be given.
-    * @param string Encoding in which the data is provided
-    */
+     * Export tabular data to XML-file.
+     *
+     * @param array  Simple array of data to put in XML
+     * @param string Name of file to be given to the user
+     * @param string Name of common tag to place each line in
+     * @param string Name of the root element. A root element should always be given.
+     * @param string Encoding in which the data is provided
+     */
     public static function arrayToXml(
         $data,
         $filename = 'export',
@@ -147,18 +154,18 @@ class Export
             fwrite($handle, '</'.$wrapper_tagname.'>'."\n");
         }
         fclose($handle);
-        DocumentManager :: file_send_for_download($file, true, $filename.'.xml');
+        DocumentManager::file_send_for_download($file, true, $filename.'.xml');
         exit;
-	}
+    }
 
     /**
-     * Export hierarchical tabular data to XML-file
+     * Export hierarchical tabular data to XML-file.
+     *
      * @param array  Hierarchical array of data to put in XML, each element presenting a 'name' and a 'value' property
      * @param string Name of file to be given to the user
      * @param string Name of common tag to place each line in
      * @param string Name of the root element. A root element should always be given.
      * @param string Encoding in which the data is provided
-     * @return void  Prompts the user for a file download
      */
     public static function export_complex_table_xml(
         $data,
@@ -174,20 +181,23 @@ class Export
             fwrite($handle, '<'.$wrapper_tagname.'>');
         }
         $s = self::_export_complex_table_xml_helper($data);
-        fwrite($handle,$s);
+        fwrite($handle, $s);
         if (!is_null($wrapper_tagname)) {
             fwrite($handle, '</'.$wrapper_tagname.'>'."\n");
         }
         fclose($handle);
-        DocumentManager :: file_send_for_download($file, true, $filename.'.xml');
+        DocumentManager::file_send_for_download($file, true, $filename.'.xml');
+
         return false;
     }
 
     /**
-     * Helper for the hierarchical XML exporter
+     * Helper for the hierarchical XML exporter.
+     *
      * @param   array   Hierarhical array composed of elements of type ('name'=>'xyz','value'=>'...')
      * @param   int     Level of recursivity. Allows the XML to be finely presented
-     * @return string   The XML string to be inserted into the root element
+     *
+     * @return string The XML string to be inserted into the root element
      */
     public static function _export_complex_table_xml_helper($data, $level = 1)
     {
@@ -196,10 +206,10 @@ class Export
         }
         $string = '';
         foreach ($data as $row) {
-            $string .= "\n".str_repeat("\t",$level).'<'.$row['name'].'>';
+            $string .= "\n".str_repeat("\t", $level).'<'.$row['name'].'>';
             if (is_array($row['value'])) {
-            	$string .= self::_export_complex_table_xml_helper($row['value'],$level+1)."\n";
-                $string .= str_repeat("\t",$level).'</'.$row['name'].'>';
+                $string .= self::_export_complex_table_xml_helper($row['value'], $level + 1)."\n";
+                $string .= str_repeat("\t", $level).'</'.$row['name'].'>';
             } else {
                 $string .= $row['value'];
                 $string .= '</'.$row['name'].'>';
@@ -212,7 +222,7 @@ class Export
     /**
      * @param array $data table to be read with the HTML_table class
      */
-    public static function export_table_pdf($data, $params = array())
+    public static function export_table_pdf($data, $params = [])
     {
         $table_html = self::convert_array_to_html($data, $params);
         $params['format'] = isset($params['format']) ? $params['format'] : 'A4';
@@ -224,9 +234,9 @@ class Export
 
     /**
      * @param string $html
-     * @param array $params
+     * @param array  $params
      */
-    public static function export_html_to_pdf($html, $params = array())
+    public static function export_html_to_pdf($html, $params = [])
     {
         $params['format'] = isset($params['format']) ? $params['format'] : 'A4';
         $params['orientation'] = isset($params['orientation']) ? $params['orientation'] : 'P';
@@ -241,18 +251,18 @@ class Export
      *
      * @return string
      */
-    public static function convert_array_to_html($data, $params = array())
+    public static function convert_array_to_html($data, $params = [])
     {
         $headers = $data[0];
         unset($data[0]);
 
-        $header_attributes = isset($params['header_attributes']) ? $params['header_attributes'] : array();
-        $table = new HTML_Table(array('class' => 'data_table', 'repeat_header' => '1'));
+        $header_attributes = isset($params['header_attributes']) ? $params['header_attributes'] : [];
+        $table = new HTML_Table(['class' => 'data_table', 'repeat_header' => '1']);
         $row = 0;
         $column = 0;
         foreach ($headers as $header) {
             $table->setHeaderContents($row, $column, $header);
-            $attributes = array();
+            $attributes = [];
             if (isset($header_attributes) && isset($header_attributes[$column])) {
                 $attributes = $header_attributes[$column];
             }
@@ -265,7 +275,6 @@ class Export
         foreach ($data as &$printable_data_row) {
             $column = 0;
             foreach ($printable_data_row as &$printable_data_cell) {
-
                 $table->setCellContents($row, $column, $printable_data_cell);
                 //$table->updateCellAttributes($row, $column, $atributes);
                 $column++;
@@ -279,7 +288,8 @@ class Export
     }
 
     /**
-     * Export HTML content in a ODF document
+     * Export HTML content in a ODF document.
+     *
      * @param string $html
      * @param string $name
      * @param string $format
@@ -303,10 +313,10 @@ class Export
             $connector = new Connector();
 
             $drivers = new DriversContainer();
-            $drivers['configuration'] = array(
+            $drivers['configuration'] = [
                 'unoconv.binaries' => $unoconv,
                 'unoconv.timeout' => 60,
-            );
+            ];
 
             $tempFilesystem = TemporaryFilesystem::create();
             $manager = new Manager($tempFilesystem, $fs);
@@ -341,5 +351,4 @@ class Export
             }
         }
     }
-
 }

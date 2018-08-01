@@ -1,6 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+
 /**
  *    This file allows creating new svg and png documents with an online editor.
  *
@@ -51,7 +53,8 @@ if (!empty($documentData)) {
 
     if (isset($_REQUEST['lp_item_id']) && !empty($_REQUEST['lp_item_id'])) {
         $lpItemId = $_REQUEST['lp_item_id'];
-        $lp = learnpath::getCurrentLpFromSession();
+        /** @var learnpath $lp */
+        $lp = Session::read('oLP');
 
         if (!empty($lp)) {
             $lp->set_modified_on();

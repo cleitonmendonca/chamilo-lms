@@ -1,23 +1,31 @@
 <?php
+/* For license terms, see /license.txt */
+
 /**
- * List of courses
+ * List of courses.
+ *
  * @package chamilo.plugin.buycourses
- */
-/**
- * Initialization
  */
 $cidReset = true;
 
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
 $plugin = BuyCoursesPlugin::create();
 $includeSessions = $plugin->get('include_sessions') === 'true';
+$includeServices = $plugin->get('include_services') === 'true';
 
 $nameFilter = null;
 $minFilter = 0;
 $maxFilter = 0;
 
-$form = new FormValidator('search_filter_form', 'get', null, null, [], FormValidator::LAYOUT_INLINE);
+$form = new FormValidator(
+    'search_filter_form',
+    'get',
+    null,
+    null,
+    [],
+    FormValidator::LAYOUT_INLINE
+);
 
 if ($form->validate()) {
     $formValues = $form->getSubmitValues();
@@ -27,7 +35,7 @@ if ($form->validate()) {
 }
 
 $form->addHeader($plugin->get_lang('SearchFilter'));
-$form->addText('name', get_lang('SessionName'), false);
+$form->addText('name', get_lang('CourseName'), false);
 $form->addElement(
     'number',
     'min',
@@ -49,16 +57,16 @@ $courseList = $plugin->getCatalogCourseList($nameFilter, $minFilter, $maxFilter)
 if (api_is_platform_admin()) {
     $interbreadcrumb[] = [
         'url' => 'configuration.php',
-        'name' => $plugin->get_lang('AvailableCoursesConfiguration')
+        'name' => $plugin->get_lang('AvailableCoursesConfiguration'),
     ];
     $interbreadcrumb[] = [
         'url' => 'paymentsetup.php',
-        'name' => $plugin->get_lang('PaymentsConfiguration')
+        'name' => $plugin->get_lang('PaymentsConfiguration'),
     ];
 } else {
     $interbreadcrumb[] = [
         'url' => 'course_panel.php',
-        'name' => get_lang('TabsDashboard')
+        'name' => get_lang('TabsDashboard'),
     ];
 }
 
@@ -68,6 +76,7 @@ $tpl->assign('search_filter_form', $form->returnForm());
 $tpl->assign('showing_courses', true);
 $tpl->assign('courses', $courseList);
 $tpl->assign('sessions_are_included', $includeSessions);
+$tpl->assign('services_are_included', $includeServices);
 
 $content = $tpl->fetch('buycourses/view/catalog.tpl');
 

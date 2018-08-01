@@ -34,7 +34,6 @@
 class HTML_QuickForm_text extends HTML_QuickForm_input
 {
     private $inputSize;
-    private $columnsSize;
 
     /**
      * Class constructor
@@ -50,8 +49,11 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
     public function __construct(
         $elementName = null,
         $elementLabel = null,
-        $attributes = array()
+        $attributes = []
     ) {
+        if (is_string($attributes) && empty($attributes)) {
+            $attributes = [];
+        }
         if (is_array($attributes) || empty($attributes)) {
             $attributes['class'] = 'form-control';
         }
@@ -72,7 +74,6 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
 
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
-
         $this->setType('text');
     }
 
@@ -88,8 +89,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
             return '';
         }
 
-        return '
-                <div class="input-group-addon">
+        return '<div class="input-group-addon">
                 <em class="fa fa-'.$icon.'"></em>
                 </div>';
     }
@@ -124,7 +124,6 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
             }
         }
 
-
         switch ($layout) {
             case FormValidator::LAYOUT_INLINE:
                 return '
@@ -152,7 +151,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">
@@ -189,21 +188,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
     {
         $this->inputSize = $inputSize;
     }
-    /**
-     * @return null
-     */
-    public function getColumnsSize()
-    {
-        return $this->columnsSize;
-    }
 
-    /**
-     * @param null $columnsSize
-     */
-    public function setColumnsSize($columnsSize)
-    {
-        $this->columnsSize = $columnsSize;
-    }
     /**
      * Sets size of text field
      *
@@ -235,7 +220,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
      */
     public function toHtml()
     {
-        if ($this->_flagFrozen) {
+        if ($this->isFrozen()) {
             return $this->getFrozenHtml();
         } else {
             return '<input ' . $this->_getAttrString($this->_attributes) . ' />';

@@ -1,35 +1,38 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use Chamilo\CoreBundle\Framework\Container;
-
 /**
  * This tool allows platform admins to create courses by uploading a CSV file
- * Copyright (c) 2005 Bart Mollet <bart.mollet@hogent.be>
+ * Copyright (c) 2005 Bart Mollet <bart.mollet@hogent.be>.
+ *
  * @package chamilo.admin
  */
 
 /**
  * Validates imported data.
+ *
+ * @param array $courses
+ *
+ * @return array $errors
  */
-function validate_data($courses)
+function validate_courses_data($courses)
 {
-    $errors = array ();
-    $coursecodes = array ();
+    $errors = [];
+    $coursecodes = [];
     foreach ($courses as $index => $course) {
-        $course['line'] = $index +1;
+        $course['line'] = $index + 1;
 
         // 1. Check whether mandatory fields are set.
-        $mandatory_fields = array ('Code', 'Title', 'CourseCategory');
+        $mandatory_fields = ['Code', 'Title', 'CourseCategory'];
         foreach ($mandatory_fields as $field) {
-            if (!isset($course[$field]) || strlen($course[$field]) == 0) {
+            if (empty($course[$field])) {
                 $course['error'] = get_lang($field.'Mandatory');
                 $errors[] = $course;
             }
         }
 
         // 2. Check current course code.
-        if (isset ($course['Code']) && strlen($course['Code']) != 0) {
+        if (!empty($course['Code'])) {
             // 2.1 Check whether code has been already used by this CVS-file.
             if (isset($coursecodes[$course['Code']])) {
                 $course['error'] = get_lang('CodeTwiceInFile');
@@ -54,23 +57,23 @@ function validate_data($courses)
                 if (empty($teacherInfo)) {
                     $course['error'] = get_lang('UnknownTeacher').' ('.$teacher.')';
                     $errors[] = $course;
-                } else {
-                    /*if ($teacherInfo['status'] != COURSEMANAGER) {
-                        $course['error'] = get_lang('UserIsNotATeacher').' ('.$teacher.')';
-                        $errors[] = $course;
-                    }*/
                 }
             }
         }
 
-        // 4. Check whether course category exists.
-        if (isset($course['CourseCategory']) && strlen($course['CourseCategory']) != 0) {
+        if (!empty($course['CourseCategory'])) {
             $categoryInfo = CourseCategory::getCategory($course['CourseCategory']);
             if (empty($categoryInfo)) {
-                //@todo this is so bad even all lang variables are wrong ...
-                $course['error'] = get_lang('UnkownCategoryCourseCode').' ('.$course['CourseCategory'].')';
-                $errors[] = $course;
+                CourseCategory::addNode(
+                    $course['CourseCategory'],
+                    $course['CourseCategoryName'] ? $course['CourseCategoryName'] : $course['CourseCategory'],
+                    'TRUE',
+                    null
+                );
             }
+        } else {
+            $course['error'] = get_lang('NoCourseCategorySupplied');
+            $errors[] = $course;
         }
     }
 
@@ -78,6 +81,8 @@ function validate_data($courses)
 }
 
 /**
+ * Get the teacher list.
+ *
  * @param array $teachers
  *
  * @return array
@@ -88,20 +93,21 @@ function getTeacherListInArray($teachers)
         return explode('|', $teachers);
     }
 
-    return array();
+    return [];
 }
 
 /**
  * Saves imported data.
+ *
  * @param array $courses List of courses
  */
-function save_data($courses)
+function save_courses_data($courses)
 {
     $msg = '';
     foreach ($courses as $course) {
         $course_language = $course['Language'];
         $teachers = getTeacherListInArray($course['Teacher']);
-        $teacherList = array();
+        $teacherList = [];
         $creatorId = api_get_user_id();
 
         if (!empty($teachers)) {
@@ -113,17 +119,15 @@ function save_data($courses)
             }
         }
 
-        $params = array();
+        $params = [];
         $params['title'] = $course['Title'];
         $params['wanted_code'] = $course['Code'];
         $params['tutor_name'] = null;
         $params['course_category'] = $course['CourseCategory'];
         $params['course_language'] = $course_language;
         $params['user_id'] = $creatorId;
-
         $addMeAsTeacher = isset($_POST['add_me_as_teacher']) ? $_POST['add_me_as_teacher'] : false;
         $params['add_user_as_teacher'] = $addMeAsTeacher;
-
         $courseInfo = CourseManager::create_course($params);
 
         if (!empty($courseInfo)) {
@@ -142,22 +146,28 @@ function save_data($courses)
     }
 
     if (!empty($msg)) {
-        Display::display_normal_message($msg, false);
+        echo Display::return_message($msg, 'normal', false);
     }
 }
 
 /**
- * Read the CSV-file
+ * Read the CSV-file.
+ *
  * @param string $file Path to the CSV-file
+ *
  * @return array All course-information read from the file
  */
-function parse_csv_data($file)
+function parse_csv_courses_data($file)
 {
-    $courses = Import::csvToArray($file);
+    $courses = Import::csv_reader($file);
+
     return $courses;
 }
 
 $cidReset = true;
+
+require_once __DIR__.'/../inc/global.inc.php';
+
 $this_section = SECTION_PLATFORM_ADMIN;
 api_protect_admin_script();
 
@@ -169,27 +179,28 @@ if (isset($extAuthSource) && is_array($extAuthSource)) {
 
 $tool_name = get_lang('ImportCourses').' CSV';
 
-$interbreadcrumb[] = array('url' => Container::getRouter()->generate('administration'), 'name' => get_lang('PlatformAdmin'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
 
 set_time_limit(0);
-Display :: display_header($tool_name);
+Display::display_header($tool_name);
 
 if (isset($_POST['formSent']) && $_POST['formSent']) {
     if (empty($_FILES['import_file']['tmp_name'])) {
         $error_message = get_lang('UplUploadFailed');
-        Display :: display_error_message($error_message, false);
+        echo Display::return_message($error_message, 'error', false);
     } else {
-        $allowed_file_mimetype = array('csv');
+        $allowed_file_mimetype = ['csv'];
 
         $ext_import_file = substr($_FILES['import_file']['name'], (strrpos($_FILES['import_file']['name'], '.') + 1));
 
         if (!in_array($ext_import_file, $allowed_file_mimetype)) {
-            Display :: display_error_message(get_lang('YouMustImportAFileAccordingToSelectedOption'));
+            echo Display::return_message(get_lang('YouMustImportAFileAccordingToSelectedOption'), 'error');
         } else {
-            $courses = parse_csv_data($_FILES['import_file']['tmp_name']);
-            $errors = validate_data($courses);
+            $courses = parse_csv_courses_data($_FILES['import_file']['tmp_name']);
+
+            $errors = validate_courses_data($courses);
             if (count($errors) == 0) {
-                save_data($courses);
+                save_courses_data($courses);
             }
         }
     }
@@ -203,10 +214,16 @@ if (isset($errors) && count($errors) != 0) {
         $error_message .= '</li>';
     }
     $error_message .= '</ul>';
-    Display :: display_error_message($error_message, false);
+    echo Display::return_message($error_message, 'error', false);
 }
 
-$form = new FormValidator('import', 'post', api_get_self(), null, array('enctype' => 'multipart/form-data'));
+$form = new FormValidator(
+    'import',
+    'post',
+    api_get_self(),
+    null,
+    ['enctype' => 'multipart/form-data']
+);
 $form->addHeader($tool_name);
 $form->addElement('file', 'import_file', get_lang('ImportCSVFileLocation'));
 $form->addElement('checkbox', 'add_me_as_teacher', null, get_lang('AddMeAsTeacherInCourses'));
@@ -220,12 +237,12 @@ $form->display();
 
 <blockquote>
 <pre>
-<strong>Code</strong>;<strong>Title</strong>;<strong>CourseCategory</strong>;Teacher;Language
-BIO0015;Biology;BIO;teacher1;english
-BIO0016;Maths;MATH;teacher2|teacher3;english
-BIO0017;Language;LANG;;english
+<strong>Code</strong>;<strong>Title</strong>;<strong>CourseCategory</strong>;<strong>CourseCategoryName</strong>;Teacher;Language
+BIO0015;Biology;BIO;Science;teacher1;english
+BIO0016;Maths;MATH;Engineerng;teacher2|teacher3;english
+BIO0017;Language;LANG;;;english
 </pre>
 </blockquote>
 
 <?php
-Display :: display_footer();
+Display::display_footer();

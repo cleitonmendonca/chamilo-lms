@@ -19,10 +19,6 @@
  * @since      File available since Release 0.1
  */
 
-// Added by Chamilo team, 16-MAR-2010
-if (class_exists('pear')) { return; }
-//
-
 /**#@+
  * ERROR constants
  */
@@ -156,7 +152,7 @@ class PEAR
      * @access public
      * @return void
      */
-    public function __construc($error_class = null)
+    public function __construct($error_class = null)
     {
         $classname = strtolower(get_class($this));
         if ($this->_debug) {
@@ -512,7 +508,7 @@ class PEAR
      * @see PEAR::setErrorHandling
      * @since PHP 4.0.5
      */
-    function &raiseError($message = null,
+    public static function &raiseError($message = null,
                          $code = null,
                          $mode = null,
                          $options = null,
@@ -556,12 +552,6 @@ class PEAR
             $ec = $this->_error_class;
         } else {
             $ec = 'PEAR_Error';
-        }
-
-        if (intval(PHP_VERSION) < 5) {
-            // little non-eval hack to fix bug #12147
-            include 'PEAR/FixPHP5PEARWarnings.php';
-            return $a;
         }
 
         if ($skipmsg) {
@@ -766,10 +756,6 @@ class PEAR
     // }}}
 }
 
-if (PEAR_ZE2) {
-    include_once 'PEAR5.php';
-}
-
 // {{{ _PEAR_call_destructors()
 
 // Added by Chamilo team, 16-MAR-2010
@@ -873,9 +859,13 @@ class PEAR_Error
      * @access public
      *
      */
-    public function __construct($message = 'unknown error', $code = null,
-                        $mode = null, $options = null, $userinfo = null)
-    {
+    public function __construct(
+        $message = 'unknown error',
+        $code = null,
+        $mode = null,
+        $options = null,
+        $userinfo = null
+    ) {
         if ($mode === null) {
             $mode = PEAR_ERROR_RETURN;
         }

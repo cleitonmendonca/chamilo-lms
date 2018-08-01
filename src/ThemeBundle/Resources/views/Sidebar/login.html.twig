@@ -1,0 +1,54 @@
+<div class="btn-group">
+    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        <span class="flag-icon flag-icon-{{ current_locale_iso }}"></span>
+        {{ current_locale_iso }}
+        <span class="caret">
+        </span>
+    </button>
+    <ul class="dropdown-menu" role="menu">
+        {% autoescape false %}
+            {% for index, locale in available_locales %}
+                <li>
+                    <a href="{{ app.request.attributes.get('_route') }}?_locale={{ index }}">
+                    <span class="flag-icon flag-icon-{{ index }}"></span>
+                    {{ locale }}
+                    </a>
+                </li>
+            {% endfor %}
+        {% endautoescape %}
+    </ul>
+</div>
+<form class="form-horizontal" action="{{ path("fos_user_security_check") }}" method="post" name="formLogin" id="formLogin">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}"/>
+    <fieldset>
+        <div class="input-group">
+            <div class="input-group-addon">
+                <em class="fa fa-user fa-fw"></em>
+            </div>
+            <input id="login" autofocus="autofocus" placeholder="{{ 'UserName' | trans }}"
+                   autocapitalize="none" class="form-control" name="_username"
+                   type="text">
+        </div>
+
+        <div class="input-group">
+            <div class="input-group-addon">
+                <em class="fa fa-lock fa-fw"></em>
+            </div>
+            <input id="password" placeholder="{{ 'Pass' | trans }}" autocapitalize="none"
+                   class="form-control" name="_password" type="password">
+        </div>
+
+        <div class="input-group">
+            <div class="checkbox">
+                <label for="remember_me">
+                    <input type="checkbox" id="remember_me" name="_remember_me" value="on"/>{{ 'security.login.remember_me'|trans({}, 'FOSUserBundle') }}
+                </label>
+            </div>
+        </div>
+        <button class="btn-block btn btn-primary " name="submitAuth" type="submit">
+            {{ 'LoginEnter' | trans }}
+        </button>
+    </fieldset>
+    <input name="_qf__formLogin" type="hidden" value="">
+</form>
+{{ mopa_bootstrap_menu('ChamiloCoreBundle:LeftMenuBuilder:loginMenu', {'automenu': 'pills', 'stacked':true}) }}

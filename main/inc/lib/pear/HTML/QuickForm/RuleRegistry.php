@@ -43,7 +43,6 @@ class HTML_QuickForm_RuleRegistry
      */
     var $_rules = array();
 
-
     /**
      * Returns a singleton of HTML_QuickForm_RuleRegistry
      *
@@ -84,7 +83,7 @@ class HTML_QuickForm_RuleRegistry
      * @access    public
      * @return    void
      */
-    function registerRule($ruleName, $type, $data1, $data2 = null)
+    public function registerRule($ruleName, $type, $data1, $data2 = null)
     {
         $type = strtolower($type);
         if ($type == 'regex') {
@@ -109,7 +108,7 @@ class HTML_QuickForm_RuleRegistry
      * @access    public
      * @return    HTML_QuickForm_Rule
      */
-    function getRule($ruleName)
+    public function getRule($ruleName)
     {
         if (empty($ruleName)) {
             return false;
@@ -119,6 +118,8 @@ class HTML_QuickForm_RuleRegistry
             'required' => 'HTML_QuickForm_Rule_Required',
             'maxlength' => 'HTML_QuickForm_Rule_Range',
             'minlength' => 'HTML_QuickForm_Rule_Range',
+            'max_numeric_length' => 'HTML_QuickForm_Rule_Range',
+            'min_numeric_length' => 'HTML_QuickForm_Rule_Range',
             'rangelength' => 'HTML_QuickForm_Rule_Range',
             'email' => 'HTML_QuickForm_Rule_Email',
             'regex' => 'HTML_QuickForm_Rule_Regex',
@@ -150,7 +151,7 @@ class HTML_QuickForm_RuleRegistry
             'mimetype', 'HTML_QuickForm_Rule_MimeType',
             'filename', 'HTML_QuickForm_Rule_FileName',
             'validquestiontype' => 'HTML_QuickForm_Rule_QuestionType',
-
+            'mintext' => 'Html_Quickform_Rule_MinText'
         );
 
         $class = $rules[$ruleName];
@@ -191,7 +192,6 @@ class HTML_QuickForm_RuleRegistry
 
             return ($result == 0) ? false : $result;
         } else {
-
             return $rule->validate($values, $options);
         }
     } // end func validate
@@ -382,5 +382,4 @@ class HTML_QuickForm_RuleRegistry
         }
         return array($value, $tmp_reset);
     }
-} // end class HTML_QuickForm_RuleRegistry
-?>
+}

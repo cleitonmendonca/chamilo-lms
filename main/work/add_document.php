@@ -1,18 +1,14 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use ChamiloSession as Session;
-
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 require_once 'work.lib.php';
 
-$current_course_tool  = TOOL_STUDENTPUBLICATION;
+$current_course_tool = TOOL_STUDENTPUBLICATION;
 
 $workId = isset($_GET['id']) ? intval($_GET['id']) : null;
 $docId = isset($_GET['document_id']) ? intval($_GET['document_id']) : null;
 $action = isset($_GET['action']) ? $_GET['action'] : null;
-$message = Session::read('show_message');
-Session::erase('show_message');
 
 if (empty($workId)) {
     api_not_allowed(true);
@@ -31,21 +27,22 @@ if (!api_is_allowed_to_edit()) {
 
 $courseInfo = api_get_course_info();
 
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = [
     'url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(),
     'name' => get_lang('StudentPublications'),
-);
-$interbreadcrumb[] = array(
+];
+$interbreadcrumb[] = [
     'url' => api_get_path(WEB_CODE_PATH).'work/work_list_all.php?'.api_get_cidreq().'&id='.$workId,
     'name' => $my_folder_data['title'],
-);
-$interbreadcrumb[] = array('url' => '#', 'name' => get_lang('AddDocument'));
+];
+$interbreadcrumb[] = ['url' => '#', 'name' => get_lang('AddDocument')];
 
 switch ($action) {
     case 'delete':
         if (!empty($workId) && !empty($docId)) {
             deleteDocumentToWork($docId, $workId, api_get_course_int_id());
             $url = api_get_path(WEB_CODE_PATH).'work/add_document.php?id='.$workId.'&'.api_get_cidreq();
+            Display::addFlash(Display::return_message(get_lang('Deleted'), 'success'));
             header('Location: '.$url);
             exit;
         }
@@ -53,9 +50,8 @@ switch ($action) {
 }
 
 if (empty($docId)) {
+    Display::display_header(null);
 
-    Display :: display_header(null);
-    echo $message;
     $documents = getAllDocumentToWork($workId, api_get_course_int_id());
     if (!empty($documents)) {
         echo Display::page_subheader(get_lang('DocumentsAdded'));
@@ -65,7 +61,7 @@ if (empty($docId)) {
             $docData = DocumentManager::get_document_data_by_id($documentId, $courseInfo['code']);
             if ($docData) {
                 $url = api_get_path(WEB_CODE_PATH).'work/add_document.php?action=delete&id='.$workId.'&document_id='.$documentId.'&'.api_get_cidreq();
-                $link = Display::url(get_lang('Delete'), $url);
+                $link = Display::url(get_lang('Remove'), $url, ['class' => 'btn btn-danger']);
                 echo $docData['title'].' '.$link.'<br />';
             }
         }
@@ -76,7 +72,7 @@ if (empty($docId)) {
         $courseInfo,
         null,
         null,
-        0,
+        api_get_session_id(),
         false,
         '/',
         api_get_path(WEB_CODE_PATH).'work/add_document.php?id='.$workId.'&'.api_get_cidreq()
@@ -85,7 +81,6 @@ if (empty($docId)) {
     echo $documentTree;
     echo '<hr /><div class="clear"></div>';
 } else {
-
     $documentInfo = DocumentManager::get_document_data_by_id($docId, $courseInfo['code']);
     $url = api_get_path(WEB_CODE_PATH).'work/add_document.php?id='.$workId.'&document_id='.$docId.'&'.api_get_cidreq();
     $form = new FormValidator('add_doc', 'post', $url);
@@ -103,12 +98,10 @@ if (empty($docId)) {
 
         if (empty($data)) {
             addDocumentToWork($docId, $workId, api_get_course_int_id());
-            $message = Display::return_message(get_lang('Added'), 'success');
+            Display::addFlash(Display::return_message(get_lang('Added'), 'success'));
         } else {
-            $message = Display::return_message(get_lang('DocumentAlreadyAdded'), 'warning');
+            Display::addFlash(Display::return_message(get_lang('DocumentAlreadyAdded'), 'warning'));
         }
-
-        Session::write('show_message', $message);
 
         $url = api_get_path(WEB_CODE_PATH).'work/add_document.php?id='.$workId.'&'.api_get_cidreq();
         header('Location: '.$url);
@@ -116,7 +109,5 @@ if (empty($docId)) {
     }
 
     Display::display_header(null);
-    echo $message;
     $form->display();
 }
-

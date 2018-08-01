@@ -2,17 +2,13 @@
 /* For licensing terms, see /license.txt */
 
 /**
- *	This is the database constants definition for Chamilo
- *  This file is called by database.lib.php
+ *	Database constants definition for Chamilo
+ *  This file is called by database.lib.php.
  *
  *  @todo the table constants have all to start with TABLE_
- *        This is because of the analogy with the tool constants TOOL_
+ *  This is because of the analogy with the tool constants TOOL_
  *
  *	@package chamilo.library
- */
-
-/**
- * CONSTANTS
  */
 
 //See #3910 defines the default prefix for the single course database
@@ -26,6 +22,7 @@ define('TABLE_MAIN_CLASS', 'class_item');
 define('TABLE_MAIN_ADMIN', 'admin');
 define('TABLE_MAIN_COURSE_CLASS', 'course_rel_class');
 define('TABLE_MAIN_COURSE_USER', 'course_rel_user');
+define('TABLE_MAIN_COURSE_CATALOGUE_USER', 'course_rel_user_catalogue');
 define('TABLE_MAIN_CLASS_USER', 'class_user');
 define('TABLE_MAIN_CATEGORY', 'course_category');
 define('TABLE_MAIN_COURSE_MODULE', 'course_module');
@@ -60,7 +57,6 @@ define('TABLE_MAIN_GRADEBOOK_CERTIFICATE', 'gradebook_certificate');
 define('TABLE_MAIN_GRADEBOOK_SCORE_LOG', 'gradebook_score_log');
 
 // Profiling
-
 define('TABLE_EXTRA_FIELD', 'extra_field');
 define('TABLE_EXTRA_FIELD_OPTIONS', 'extra_field_options');
 define('TABLE_EXTRA_FIELD_VALUES', 'extra_field_values');
@@ -81,14 +77,6 @@ define('TABLE_MAIN_CALENDAR_EVENT_VALUES', 'calendar_event_values');*/
 define('TABLE_MAIN_TAG', 'tag');
 define('TABLE_MAIN_USER_REL_TAG', 'user_rel_tag');
 define('TABLE_MAIN_EXTRA_FIELD_REL_TAG', 'extra_field_rel_tag');
-
-define('TABLE_MAIN_GROUP', 'groups');
-
-//User groups
-/*
-define('TABLE_MAIN_USER_REL_GROUP', 'group_rel_user');
-define('TABLE_MAIN_GROUP_REL_TAG', 'group_rel_tag');
-define('TABLE_MAIN_GROUP_REL_GROUP', 'group_rel_group');*/
 
 // Search engine
 define('TABLE_MAIN_SPECIFIC_FIELD', 'specific_field');
@@ -207,10 +195,6 @@ define('TABLE_QUIZ_QUESTION_OPTION', 'quiz_question_option');
 define('TABLE_QUIZ_QUESTION_CATEGORY', 'quiz_question_category');
 define('TABLE_QUIZ_QUESTION_REL_CATEGORY', 'quiz_question_rel_category');
 define('TABLE_QUIZ_REL_CATEGORY', 'quiz_rel_category');
-
-// Linked resource table
-//@todo table exists?
-define('TABLE_LINKED_RESOURCES', 'resource');
 
 // New SCORM tables
 define('TABLE_LP_MAIN', 'lp');
@@ -340,3 +324,23 @@ define('TABLE_GRADE_MODEL_COMPONENTS', 'grade_components');
 define('TABLE_HOOK_OBSERVER', 'hook_observer');
 define('TABLE_HOOK_CALL', 'hook_call');
 define('TABLE_HOOK_EVENT', 'hook_event');
+
+define('TABLE_TICKET_ASSIGNED_LOG', 'ticket_assigned_log');
+define('TABLE_TICKET_CATEGORY', 'ticket_category');
+define('TABLE_TICKET_MESSAGE', 'ticket_message');
+define('TABLE_TICKET_PRIORITY', 'ticket_priority');
+define('TABLE_TICKET_PROJECT', 'ticket_project');
+define('TABLE_TICKET_STATUS', 'ticket_status');
+define('TABLE_TICKET_TICKET', 'ticket_ticket');
+define('TABLE_TICKET_CATEGORY_REL_USER', 'ticket_category_rel_user');
+define('TABLE_TICKET_MESSAGE_ATTACHMENTS', 'ticket_message_attachments');
+
+define('TABLE_BRANCH', 'branch_sync');
+define('TABLE_BRANCH_TRANSACTION', 'branch_transaction');
+define('TABLE_BRANCH_TRANSACTION_STATUS', 'branch_transaction_status');
+
+// main/extra @todo after code is finished remove constants not used
+define('TABLE_CAL_DATE', 'cal_dates');
+define('TABLE_CAL_HORAIRE', 'cal_horaire');
+define('TABLE_CAL_TEMP', 'cal_temp');
+define('TABLE_STATISTIC_TRACK_E_EXERCICES_TEMP', 'track_e_exercices_temp');

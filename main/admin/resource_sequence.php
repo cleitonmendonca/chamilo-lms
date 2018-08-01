@@ -2,14 +2,15 @@
 /* For licensing terms, see /license.txt */
 
 use Chamilo\CoreBundle\Entity\Sequence;
-use Chamilo\CoreBundle\Framework\Container;
 
 $cidReset = true;
+
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_global_admin_script();
 
 // setting breadcrumbs
-$interbreadcrumb[] = array('url' => Container::getRouter()->generate('administration'), 'name' => get_lang('PlatformAdmin'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
 
 $tpl = new Template(get_lang('ResourcesSequencing'));
 
@@ -21,7 +22,7 @@ if (!empty($sessionListFromDatabase)) {
     }
 }
 
-$formSequence = new FormValidator('sequence_form', 'post', api_get_self(),null,null,'inline');
+$formSequence = new FormValidator('sequence_form', 'post', api_get_self(), null, null, 'inline');
 $formSequence->addText('name', get_lang('Sequence'), true, ['cols-size' => [3, 8, 1]]);
 $formSequence->addButtonCreate(get_lang('AddSequence'), 'submit_sequence', false, ['cols-size' => [3, 8, 1]]);
 
@@ -39,7 +40,7 @@ if ($formSequence->validate()) {
 }
 
 $selectSequence = new FormValidator('');
-$selectSequence ->addHidden('sequence_type', 'session');
+$selectSequence->addHidden('sequence_type', 'session');
 $em = Database::getManager();
 
 $sequenceList = $em->getRepository('ChamiloCoreBundle:Sequence')->findAll();
@@ -75,8 +76,15 @@ $form->addHtml("</div>");
 
 $formSave = new FormValidator('');
 $formSave->addHidden('sequence_type', 'session');
-$formSave->addButton('save_resource', get_lang('SaveSettings'), 'floppy-o', 'success', null, null, ['cols-size' => [1, 10, 1]]);
-
+$formSave->addButton(
+    'save_resource',
+    get_lang('SaveSettings'),
+    'floppy-o',
+    'success',
+    null,
+    null,
+    ['cols-size' => [1, 10, 1]]
+);
 
 $tpl->assign('create_sequence', $formSequence->returnForm());
 $tpl->assign('select_sequence', $selectSequence->returnForm());
@@ -84,4 +92,3 @@ $tpl->assign('configure_sequence', $form->returnForm());
 $tpl->assign('save_sequence', $formSave->returnForm());
 $layout = $tpl->get_template('admin/resource_sequence.tpl');
 $tpl->display($layout);
-

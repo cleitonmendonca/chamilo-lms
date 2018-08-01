@@ -2,21 +2,22 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Script
+ * Script.
+ *
  * @package chamilo.gradebook
  */
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $current_course_tool = TOOL_GRADEBOOK;
 
 api_protect_course_script(true);
 api_block_anonymous_users();
 GradebookUtils::block_students();
 
-$select_cat = isset($_GET['selectcat']) ? Security::remove_XSS($_GET['selectcat']) : '';
+$select_cat = isset($_GET['selectcat']) ? (int) $_GET['selectcat'] : 0;
 $is_allowedToEdit = $is_courseAdmin;
 $evaladd = new Evaluation();
 $evaladd->set_user_id($_user['user_id']);
-if (isset($_GET['selectcat']) && (!empty($_GET['selectcat']))) {
+if (!empty($select_cat)) {
     $evaladd->set_category_id($_GET['selectcat']);
     $cat = Category :: load($_GET['selectcat']);
     $evaladd->set_course_code($cat[0]->get_course_code());
@@ -25,12 +26,12 @@ if (isset($_GET['selectcat']) && (!empty($_GET['selectcat']))) {
 }
 
 $form = new EvalForm(
-    EvalForm :: TYPE_ADD,
+    EvalForm::TYPE_ADD,
     $evaladd,
     null,
     'add_eval_form',
     null,
-    api_get_self() . '?selectcat=' . $select_cat.'&'.api_get_cidreq()
+    api_get_self().'?selectcat='.$select_cat.'&'.api_get_cidreq()
 );
 
 if ($form->validate()) {
@@ -69,34 +70,34 @@ if ($form->validate()) {
             //header('Location: gradebook_add_user.php?selecteval=' . $eval->get_id());
             exit;
         } else {
-            header('Location: ' . Security::remove_XSS($_SESSION['gradebook_dest']) . '?selectcat=' . $eval->get_category_id().'&'.api_get_cidreq());
+            header('Location: '.Category::getUrl().'selectcat='.$eval->get_category_id());
             exit;
         }
     } else {
         $val_addresult = isset($values['addresult']) ? $values['addresult'] : null;
         if ($val_addresult == 1) {
-            header('Location: gradebook_add_result.php?selecteval=' . $eval->get_id().'&'.api_get_cidreq());
+            header('Location: gradebook_add_result.php?selecteval='.$eval->get_id().'&'.api_get_cidreq());
             exit;
         } else {
-            header('Location: ' . Security::remove_XSS($_SESSION['gradebook_dest']) . '?selectcat=' . $eval->get_category_id().'&'.api_get_cidreq());
+            header('Location: '.Category::getUrl().'selectcat='.$eval->get_category_id());
             exit;
         }
     }
 }
 
-$interbreadcrumb[] = array(
-    'url' => Security::remove_XSS($_SESSION['gradebook_dest']) . '?selectcat=' . $select_cat.'&'.api_get_cidreq(),
-    'name' => get_lang('Gradebook'))
+$interbreadcrumb[] = [
+    'url' => Category::getUrl().'selectcat='.$select_cat,
+    'name' => get_lang('Gradebook'), ]
 ;
 $this_section = SECTION_COURSES;
 
-$htmlHeadXtra[] = '<script type="text/javascript">
+$htmlHeadXtra[] = '<script>
 $(document).ready( function() {
     $("#hid_category_id").change(function() {
        $("#hid_category_id option:selected").each(function () {
            var cat_id = $(this).val();
             $.ajax({
-                url: "' . api_get_path(WEB_AJAX_PATH) . 'gradebook.ajax.php?a=get_gradebook_weight",
+                url: "'.api_get_path(WEB_AJAX_PATH).'gradebook.ajax.php?a=get_gradebook_weight",
                 data: "cat_id="+cat_id,
                 success: function(return_value) {
                     if (return_value != 0 ) {
@@ -109,9 +110,11 @@ $(document).ready( function() {
 });
 </script>';
 
-Display :: display_header(get_lang('NewEvaluation'));
 if ($evaladd->get_course_code() == null) {
-    Display :: display_normal_message(get_lang('CourseIndependentEvaluation'), false);
+    Display::addFlash(Display::return_message(get_lang('CourseIndependentEvaluation'), 'normal', false));
 }
+
+Display::display_header(get_lang('NewEvaluation'));
+
 $form->display();
 Display :: display_footer();

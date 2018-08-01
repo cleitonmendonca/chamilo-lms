@@ -2,28 +2,28 @@
 /* For licensing terms, see /license.txt */
 
 /**
-* A drop down list with all languages to use with QuickForm
-*/
+ * A drop down list with all languages to use with QuickForm.
+ */
 class SelectAjax extends HTML_QuickForm_select
 {
     /**
-     * Class constructor
+     * {@inheritdoc}
      */
-    public function __construct($elementName = null, $elementLabel = null, $options = null, $attributes = null)
+    public function __construct($elementName, $elementLabel = '', $options = null, $attributes = null)
     {
         parent::__construct($elementName, $elementLabel, $options, $attributes);
     }
 
     /**
-     * The ajax call must contain an array of id and text
+     * The ajax call must contain an array of id and text.
+     *
      * @return string
      */
     public function toHtml()
     {
-
+        $iso = api_get_language_isocode(api_get_interface_language());
         $formatResult = $this->getAttribute('formatResult');
-
-        $formatCondition = null;
+        $formatCondition = '';
 
         if (!empty($formatResult)) {
             $formatCondition = ',
@@ -39,8 +39,7 @@ class SelectAjax extends HTML_QuickForm_select
 
         //Get the minimumInputLength for select2
         $minimumInputLength = $this->getAttribute('minimumInputLength') > 3 ?
-            $this->getAttribute('minimumInputLength') :
-            3
+            $this->getAttribute('minimumInputLength') : 3
         ;
 
         $plHolder = $this->getAttribute('placeholder');
@@ -54,25 +53,37 @@ class SelectAjax extends HTML_QuickForm_select
             $id = $this->getAttribute('name');
             $this->setAttribute('id', $id);
         }
-        //$iso = Container
+        // URL must return ajax json_encode arrady [items => [['id'=>1, 'text'='content']]
         $url = $this->getAttribute('url');
-        $iso = api_get_language_isocode();
-        $languageCondition = "language: '$iso',";
+
         if (!$url) {
             $url = $this->getAttribute('url_function');
         } else {
             $url = "'$url'";
         }
 
+        $tagsAttr = $this->getAttribute('tags');
+        $multipleAttr = $this->getAttribute('multiple');
+
+        $tags = !empty($tagsAttr) ? (bool) $tagsAttr : false;
+        $tags = $tags ? 'true' : 'false';
+
+        $multiple = !empty($multipleAttr) ? (bool) $multipleAttr : false;
+        $multiple = $multiple ? 'true' : 'false';
+
+        $max = $this->getAttribute('maximumSelectionLength');
+        $max = !empty($max) ? "maximumSelectionLength: $max, " : '';
+
         $html = <<<JS
             <script>
                 $(function(){
                     $('#{$this->getAttribute('id')}').select2({
-                        $languageCondition
+                        language: '$iso',
                         placeholder: '$plHolder',
                         allowClear: true,
                         width: '$width',
                         minimumInputLength: '$minimumInputLength',
+                        tags: $tags,
                         ajax: {
                             url: $url,
                             dataType: 'json',
@@ -83,9 +94,14 @@ class SelectAjax extends HTML_QuickForm_select
                                 };
                             },
                             processResults: function (data, page) {
-                                //parse the results into the format expected by Select2
+                                // Parse the results into the format expected by Select2                                
+                                if (data.items) {                                    
+                                    return {
+                                        results: data.items
+                                    };
+                                }                                
                                 return {
-                                    results: data.items
+                                    results: ''
                                 };
                             }
                             $formatCondition
@@ -97,18 +113,20 @@ JS;
 
         $this->removeAttribute('formatResult');
         $this->removeAttribute('minimumInputLength');
+        $this->removeAttribute('maximumSelectionLength');
+        $this->removeAttribute('tags');
         $this->removeAttribute('placeholder');
         $this->removeAttribute('class');
         $this->removeAttribute('url');
         $this->removeAttribute('url_function');
         $this->setAttribute('style', 'width: 100%;');
 
-        return parent::toHtml() . $html;
+        return parent::toHtml().$html;
     }
 
     /**
      * We check the options and return only the values that _could_ have been
-     * selected. We also return a scalar value if select is not "multiple"
+     * selected. We also return a scalar value if select is not "multiple".
      */
     public function exportValue(&$submitValues, $assoc = false)
     {

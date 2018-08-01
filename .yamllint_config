@@ -1,0 +1,11 @@
+ignore: |
+    app/*
+    .travis.yml
+    .codeclimate.yml
+    public/libs/*
+    plugin/test2pdf/*
+
+extends: default
+rules:
+  line-length:
+    max: 500

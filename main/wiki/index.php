@@ -2,13 +2,12 @@
 /* For licensing terms, see /license.txt */
 
 /**
- *	@author Patrick Cool <patrick.cool@UGent.be>, Ghent University, Belgium
- * 	@author Juan Carlos Raña <herodoto@telefonica.net>
+ * @author Patrick Cool <patrick.cool@UGent.be>, Ghent University, Belgium
+ * @author Juan Carlos Raña <herodoto@telefonica.net>
  *
- * 	@package chamilo.wiki
+ * @package chamilo.wiki
  */
-
-////require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 require_once 'wiki.inc.php';
 
 global $charset;
@@ -18,7 +17,7 @@ $wiki->charset = $charset;
 
 // section (for the tabs)
 $this_section = SECTION_COURSES;
-$current_course_tool  = TOOL_WIKI;
+$current_course_tool = TOOL_WIKI;
 
 $course_id = api_get_course_int_id();
 $session_id = api_get_session_id();
@@ -27,7 +26,7 @@ $course_id = api_get_course_int_id();
 $groupId = api_get_group_id();
 
 // additional style information
-$htmlHeadXtra[] ='<link rel="stylesheet" type="text/css" href="'.api_get_path(WEB_CODE_PATH).'wiki/css/default.css"/>';
+$htmlHeadXtra[] = '<link rel="stylesheet" type="text/css" href="'.api_get_path(WEB_CODE_PATH).'wiki/css/default.css"/>';
 
 // javascript for advanced parameters menu
 $htmlHeadXtra[] = '<script>
@@ -61,20 +60,20 @@ Event::event_access_tool(TOOL_WIKI);
 
 if ($groupId) {
     $group_properties = GroupManager::get_group_properties($groupId);
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         "url" => api_get_path(WEB_CODE_PATH)."group/group.php?".api_get_cidreq(),
-        "name" => get_lang('Groups')
-    );
-    $interbreadcrumb[] = array(
+        "name" => get_lang('Groups'),
+    ];
+    $interbreadcrumb[] = [
         "url" => api_get_path(WEB_CODE_PATH)."group/group_space.php?".api_get_cidreq(),
-        "name" => get_lang('GroupSpace').' '.Security::remove_XSS($group_properties['name'])
-    );
+        "name" => get_lang('GroupSpace').' '.Security::remove_XSS($group_properties['name']),
+    ];
     //ensure this tool in groups whe it's private or deactivated
     if ($group_properties['wiki_state'] == 0) {
         api_not_allowed();
-    } elseif ($group_properties['wiki_state']==2) {
+    } elseif ($group_properties['wiki_state'] == 2) {
         if (!api_is_allowed_to_edit(false, true) and
-            !GroupManager :: is_user_in_group(api_get_user_id(), api_get_group_id())
+            !GroupManager :: is_user_in_group(api_get_user_id(), $group_properties)
         ) {
             api_not_allowed();
         }
@@ -84,7 +83,7 @@ if ($groupId) {
 $is_allowed_to_edit = api_is_allowed_to_edit(false, true);
 
 // The page we are dealing with
-$page = isset($_GET['title']) ? $_GET['title']: 'index';
+$page = isset($_GET['title']) ? $_GET['title'] : 'index';
 $action = isset($_GET['action']) ? Security::remove_XSS($_GET['action']) : 'showpage';
 $view = isset($_GET['view']) ? Security::remove_XSS($_GET['view']) : null;
 
@@ -119,6 +118,6 @@ if (!empty($view)) {
 Display::display_introduction_section(TOOL_WIKI);
 
 $wiki->showActionBar();
-echo $wiki->getMessages();
 echo $content;
 
+Display::display_footer();

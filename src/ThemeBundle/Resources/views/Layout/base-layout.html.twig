@@ -1,0 +1,141 @@
+{% import "ChamiloThemeBundle:Macros:box.html.twig" as macro_box %}
+{% import "ChamiloThemeBundle:Macros:actions.html.twig" as macro_actions %}
+{% import "ChamiloThemeBundle:Macros:buttons.html.twig" as macro_buttons %}
+{% import "ChamiloThemeBundle:Macros:image.html.twig" as macro_image %}
+{% import 'ChamiloThemeBundle:Macros:headers.html.twig' as macro_headers %}
+<!doctype html>
+<!--[if lt IE 7 ]>
+<html lang="{{ app.request.locale }}" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>
+<html lang="{{ app.request.locale }}" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>
+<html lang="{{ app.request.locale }}" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>
+<html lang="{{ app.request.locale }}" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!-->
+<html lang="{{ app.request.locale }}" class="no-js"> <!--<![endif]-->
+{# Chamilo theme #}
+{% set theme = 'chamilo' %}
+{% block chamilo_head %}
+<head>
+{% include "@ChamiloTheme/Layout/head.html.twig" %}
+</head>
+{% endblock %}
+<body class="{{ section_name }}" {{ sonata_seo_html_attributes() }} >
+<noscript>{{ "NoJavascript" | trans }}</noscript>
+
+{% block chamilo_wrap %}
+    {% autoescape false %}
+    <div id="wrap">
+        <div id="navigation" class="notification-panel">
+            {{ help_content }}
+            {{ bug_notification }}
+        </div>
+        {# topbar #}
+        {% block chamilo_topbar %}
+            {# creatable variable is set by the sonata page #}
+            {% if not creatable %}
+            {% include "@ChamiloTheme/Layout/topbar.html.twig" %}
+            {% endif %}
+        {% endblock %}
+
+        <div class="extra-header">{{ header_extra_content }}</div>
+
+        {% block chamilo_header %}
+        <header>
+            <div class="extra-header">
+                {{ header_extra_content }}
+            </div>
+
+            <section id="main" class="container">
+                {% if plugin_header_main %}
+                    <div class="row">
+                        <div class="col-lg-12">
+                            {{ plugin_header_main }}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="logo">
+                            <a href="{{ url('legacy_index') }}">
+                            <img src="{{ asset('build/css/themes/'~ theme ~'/images/header-logo.png') }}"/>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-9">
+                        <div class="col-sm-4">
+                            {% if plugin_header_left is not null %}
+                                <div id="plugin_header_left">
+                                    {{ plugin_header_left }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-4">
+                            {% if plugin_header_center is not null %}
+                                <div id="plugin_header_center">
+                                    {{ plugin_header_center }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-4">
+                            {% if plugin_header_right is not null %}
+                                <div id="plugin_header_right">
+                                    {{ plugin_header_right }}
+                                </div>
+                            {% endif %}
+                            <div class="section-notifications">
+                                <ul id="notifications" class="nav nav-pills pull-right">
+                                    {{ notification_menu }}
+                                </ul>
+                            </div>
+                            {{ accessibility }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="menu-bar">
+            {# menu #}
+            {% block chamilo_menu %}
+                {# creatable variable is set by the sonata page #}
+                {% if not creatable %}
+                    {# course navigation links/shortcuts need to be activated by the admin #}
+                    {% include "@ChamiloTheme/Layout/menu.html.twig" %}
+                {% endif %}
+            {% endblock %}
+            </section>
+        </header>
+        {% endblock %}
+
+        <div id="top_main_content" class="container">
+        {# course navigation links/shortcuts need to be activated by the admin #}
+        {% include "@ChamiloTheme/Layout/course_navigation.html.twig" %}
+
+            {#<header class="header">#}
+                {#{% block chamilo_logo %}#}
+                {#<a href="#" class="logo">#}
+                    {#Chamilo#}
+                    {#&#123;&#35;{{- chamilo_settings_get('platform.institution') -}}&#35;&#125;#}
+                {#</a>#}
+                {#{% endblock %}#}
+                {#{% block chamilo_main_navbar %}#}
+                {#<!-- Header Navbar: style can be found in header.less -->#}
+                {#{% endblock %}#}
+            {#</header>#}
+
+
+        {% block page_content %}
+        {% endblock %}
+
+        </div> {# end top_main_content #}
+    </div> {# End page-wrap div #}
+    {% block chamilo_footer %}
+        {% include '@ChamiloTheme/Layout/footer.html.twig' %}
+        {% include '@ChamiloTheme/Layout/footer.js.twig' %}
+    {% endblock %}
+{% endautoescape %}
+{% endblock %} {# End chamilo_wrap block #}
+
+</body>
+</html>

@@ -281,6 +281,8 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
         $name = $element->getName();
         $label = $element->getLabel();
         $labelForId = $element->getAttribute('id');
+        $extraLabelClass = $element->getAttribute('extra_label_class');
+
         $icon = $element->getIconToHtml();
 
         if (is_array($label)) {
@@ -296,11 +298,18 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
             $html = str_replace('{label}', $nameLabel, $this->_templates[$name]);
         } else {
             $customElementTemplate = $this->getCustomElementTemplate();
+
             if (empty($customElementTemplate)) {
                 if (method_exists($element, 'getTemplate')) {
                     $template = $element->getTemplate(
                         $this->getForm()->getLayout()
                     );
+                    if ($element->isFrozen()) {
+                        $customFrozentemplate = $element->getCustomFrozenTemplate();
+                        if (!empty($customFrozentemplate)) {
+                            $template = $customFrozentemplate;
+                        }
+                    }
                 } else {
                     $template = $this->getForm()->getDefaultElementTemplate();
                 }
@@ -311,6 +320,7 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
         }
         $html = str_replace('{label-for}', $labelFor, $html);
         $html = str_replace('{icon}', $icon, $html);
+        $html = str_replace('{extra_label_class}', $extraLabelClass, $html);
 
         if ($required) {
             $html = str_replace('<!-- BEGIN required -->', '', $html);
@@ -319,7 +329,6 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
             $html = preg_replace("/([ \t\n\r]*)?<!-- BEGIN required -->.*<!-- END required -->([ \t\n\r]*)?/isU", '', $html);
         }
         if (isset($error)) {
-
             $html = str_replace('{error}', $error, $html);
             $html = str_replace('{error_class}', 'error has-error', $html);
             $html = str_replace('<!-- BEGIN error -->', '', $html);
@@ -341,7 +350,7 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
         }
 
         return $html;
-    } // end func _prepareTemplate
+    }
 
    /**
     * Renders an element Html
@@ -361,7 +370,6 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
                 $required,
                 $error
             );
-
             $this->_html .= str_replace('{element}', $element->toHtml(), $html);
         } elseif (!empty($this->_groupElementTemplate)) {
             $html = str_replace('{label}', $element->getLabel(), $this->_groupElementTemplate);
@@ -373,7 +381,6 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
                 $html = preg_replace("/([ \t\n\r]*)?<!-- BEGIN required -->.*<!-- END required -->([ \t\n\r]*)?/isU", '', $html);
             }
             $this->_groupElements[] = str_replace('{element}', $element->toHtml(), $html);
-
         } else {
             $this->_groupElements[] = $element->toHtml();
         }

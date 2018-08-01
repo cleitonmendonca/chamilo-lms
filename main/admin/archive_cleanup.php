@@ -1,13 +1,16 @@
 <?php
 /* For licensing terms, see /license.txt */
-
-use Chamilo\CoreBundle\Framework\Container;
-
 /**
  *   @package chamilo.admin
  */
 // resetting the course id
 $cidReset = true;
+
+// including some necessary files
+require_once __DIR__.'/../inc/global.inc.php';
+
+ini_set('memory_limit', -1);
+ini_set('max_execution_time', 0);
 
 // setting the section (for the tabs)
 $this_section = SECTION_PLATFORM_ADMIN;
@@ -16,51 +19,43 @@ $this_section = SECTION_PLATFORM_ADMIN;
 api_protect_admin_script(true);
 
 // setting breadcrumbs
-$interbreadcrumb[] = array('url' => Container::getRouter()->generate('administration'),'name' => get_lang('PlatformAdmin'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
 
-$form = new FormValidator('archive_cleanup_form', 'post', '', '', array(), FormValidator::LAYOUT_BOX);
+$form = new FormValidator(
+    'archive_cleanup_form',
+    'post',
+    '',
+    '',
+    [],
+    FormValidator::LAYOUT_BOX
+);
 $form->addButtonSend(get_lang('ArchiveDirCleanupProceedButton'));
 
-$message = null;
-
 if ($form->validate()) {
-	$archive_path = api_get_path(SYS_ARCHIVE_PATH);
-	$htaccess = @file_get_contents($archive_path.'.htaccess');
-	$result = rmdirr($archive_path, true, true);
+    if (function_exists('opcache_reset')) {
+        opcache_reset();
+    }
 
-	\Chamilo\CoreBundle\Composer\ScriptHandler::dumpCssFiles();
+    $archive_path = api_get_path(SYS_ARCHIVE_PATH);
+    $htaccess = @file_get_contents($archive_path.'.htaccess');
+    $result = rmdirr($archive_path, true, true);
+    try {
+        \Chamilo\CoreBundle\Composer\ScriptHandler::dumpCssFiles();
+        Display::addFlash(Display::return_message(get_lang('ArchiveDirCleanupSucceeded')));
+    } catch (Exception $e) {
+        Display::addFlash(Display::return_message(get_lang('ArchiveDirCleanupFailed'), 'error'));
+        error_log($e->getMessage());
+    }
 
-	if (!empty($htaccess)) {
-		@file_put_contents($archive_path.'/.htaccess', $htaccess);
-	}
-	if ($result) {
-		$message = 'ArchiveDirCleanupSucceeded';
-		$type = 'confirmation';
-	} else {
-		$message = 'ArchiveDirCleanupFailed';
-		$type = 'error';
-	}
+    if (!empty($htaccess)) {
+        @file_put_contents($archive_path.'/.htaccess', $htaccess);
+    }
 
-	header('Location: '.api_get_self().'?msg='.$message.'&type='.$type);
-	exit;
+    header('Location: '.api_get_self());
+    exit;
 }
 
 Display::display_header(get_lang('ArchiveDirCleanup'));
-Display::display_warning_message(get_lang('ArchiveDirCleanupDescr'));
-
-if (isset($_GET['msg']) && isset($_GET['type'])) {
-	if (in_array($_GET['msg'], array('ArchiveDirCleanupSucceeded', 'ArchiveDirCleanupFailed')))
-	switch($_GET['type']) {
-		case 'error':
-			$message = Display::return_message(get_lang($_GET['msg']), 'error');
-			break;
-		case 'confirmation':
-			$message = Display::return_message(get_lang($_GET['msg']), 'confirm');
-	}
-}
-
-if (!empty($message)) {
-    echo $message;
-}
+echo Display::return_message(get_lang('ArchiveDirCleanupDescr'), 'warning');
 $form->display();
 Display::display_footer();

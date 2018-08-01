@@ -82,7 +82,8 @@ $GLOBALS['_transient']['static']['nusoap_base']['globalDebugLevel'] = 9;
 * @version  $Id: class.nusoap_base.php,v 1.56 2010/04/26 20:15:08 snichol Exp $
 * @access   public
 */
-class nusoap_base {
+class nusoap_base
+{
 	/**
 	 * Identification for HTTP headers.
 	 *
@@ -222,7 +223,8 @@ class nusoap_base {
 	*
 	* @access	public
 	*/
-	function nusoap_base() {
+	public function __construct()
+    {
 		$this->debugLevel = $GLOBALS['_transient']['static']['nusoap_base']['globalDebugLevel'];
 	}
 
@@ -557,7 +559,6 @@ class nusoap_base {
 					$xml .= "<$name$xmlns$type_str$atts>$pXml</$name>";
 				}
 				break;
-			break;
 			case (is_array($val) || $type):
 				// detect if struct or array
 				$valueType = $this->isArraySimpleOrStruct($val);
@@ -991,6 +992,3 @@ function usleepWindows($usec)
 	}
 	while ($timePassed < $usec);
 }
-
-
-?>

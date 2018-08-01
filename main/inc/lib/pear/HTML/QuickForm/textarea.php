@@ -34,8 +34,6 @@
  */
 class HTML_QuickForm_textarea extends HTML_QuickForm_element
 {
-    // {{{ properties
-
     /**
      * Field value
      * @var       string
@@ -43,10 +41,6 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
      * @access    private
      */
     public $_value = null;
-    
-    private $columnsSize;
-    // }}}
-    // {{{ constructor
 
     /**
      * Class constructor
@@ -56,23 +50,19 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
      * @param     mixed     Either a typical HTML attribute string or an associative array
      * @since     1.0
      * @access    public
-     * @return    void
      */
-    public function __construct($elementName = null, $elementLabel = null, $attributes = [])
-    {
-        if (empty($attributes) || (isset($attributes) && !is_array($attributes))) {
-            $attributes = [];
-        }
+    public function __construct(
+        $elementName = null,
+        $elementLabel = null,
+        $attributes = null
+    ) {
         $attributes['class'] = isset($attributes['class']) ? $attributes['class'] : 'form-control';
         $columnsSize = isset($attributes['cols-size']) ? $attributes['cols-size'] : null;
         $this->setColumnsSize($columnsSize);
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
         $this->_type = 'textarea';
-    } //end constructor
-
-    // }}}
-    // {{{ setName()
+    }
 
     /**
      * Sets the input field name
@@ -135,7 +125,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
 
     // }}}
     // {{{ setWrap()
-    
+
     /**
      * Sets wrap type for textarea element
      *
@@ -227,23 +217,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
         }
         return $html . $this->_getPersistantData();
     }
-    
-    /**
-     * @return null
-     */
-    public function getColumnsSize()
-    {
-        return $this->columnsSize;
-    }
 
-    /**
-     * @param null $columnsSize
-     */
-    public function setColumnsSize($columnsSize)
-    {
-        $this->columnsSize = $columnsSize;
-    }
-    
     /**
      * @param string $layout
      *
@@ -253,7 +227,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
     {
         $size = $this->getColumnsSize();
         $this->removeAttribute('cols-size');
-        
+
         if (empty($size)) {
             $size = [2, 8, 2];
         }
@@ -285,7 +259,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">
@@ -294,7 +268,7 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
                         <!-- END label_3 -->
                     </div>
                 </div>';
-                
+
                 break;
             case FormValidator::LAYOUT_BOX_NO_LABEL:
                 return '
@@ -307,6 +281,6 @@ class HTML_QuickForm_textarea extends HTML_QuickForm_element
                 break;
         }
     }
-    
- 
+
+
 }

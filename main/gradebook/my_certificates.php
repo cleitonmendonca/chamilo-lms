@@ -2,11 +2,15 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * List of achieved certificates by the current user
+ * List of achieved certificates by the current user.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.gradebook
  */
 $cidReset = true;
+
+require_once __DIR__.'/../inc/global.inc.php';
 
 if (api_is_anonymous()) {
     api_not_allowed(true);
@@ -23,22 +27,24 @@ if (empty($courseList) && empty($sessionList)) {
     );
 }
 
-$template = \Chamilo\CoreBundle\Framework\Container::getTwig();
+$template = new Template(get_lang('MyCertificates'));
 
-$template->addGlobal('course_list', $courseList);
-$template->addGlobal('session_list', $sessionList);
+$template->assign('course_list', $courseList);
+$template->assign('session_list', $sessionList);
+$templateName = $template->get_template('gradebook/my_certificates.tpl');
+$content = $template->fetch($templateName);
 
-if (api_get_setting('course.allow_public_certificates') == 'true') {
-    $template->addGlobal(
+if (api_get_setting('allow_public_certificates') === 'true') {
+    $template->assign(
         'actions',
         Display::toolbarButton(
             get_lang('SearchCertificates'),
-            api_get_path(WEB_CODE_PATH) . "gradebook/search.php",
+            api_get_path(WEB_CODE_PATH)."gradebook/search.php",
             'search',
             'info'
         )
     );
 }
 
-echo $template->render('@template_style/gradebook/my_certificates.html.twig');
-
+$template->assign('content', $content);
+$template->display_one_col_template();

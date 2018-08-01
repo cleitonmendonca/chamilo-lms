@@ -1,20 +1,22 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use Chamilo\CoreBundle\Framework\Container;
+use ChamiloSession as Session;
 
 /**
- * This is the profile social main page
+ * This is the profile social main page.
+ *
  * @author Julio Montoya <gugli100@gmail.com>
  * @author Isaac Flores Paz <florespaz_isaac@hotmail.com>
+ *
  * @todo use Display::panel()
+ *
  * @package chamilo.social
  */
-
 $cidReset = true;
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
-if (api_get_setting('social.allow_social_tool') != 'true') {
+if (api_get_setting('allow_social_tool') != 'true') {
     $url = api_get_path(WEB_PATH).'whoisonline.php?id='.intval($_GET['u']);
     header('Location: '.$url);
     exit;
@@ -29,7 +31,7 @@ $show_full_profile = true;
 //social tab
 $this_section = SECTION_SOCIAL;
 
-//Initialize blocks
+// Initialize blocks
 $social_extra_info_block = null;
 $social_course_block = null;
 $social_group_info_block = null;
@@ -40,7 +42,7 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
     $messageId = 0;
     $messageContent = $_POST['social_wall_new_msg_main'];
     if (!empty($_POST['url_content'])) {
-        $messageContent = $_POST['social_wall_new_msg_main'].'<br><br>'.$_POST['url_content'];
+        $messageContent = $_POST['social_wall_new_msg_main'].'<br /><br />'.$_POST['url_content'];
     }
     $idMessage = SocialManager::sendWallMessage(
         api_get_user_id(),
@@ -58,15 +60,13 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
         );
     }
 
-
     Display::addFlash(Display::return_message(get_lang('MessageSent')));
 
-    $url = api_get_path(WEB_CODE_PATH) . 'social/profile.php';
+    $url = api_get_path(WEB_CODE_PATH).'social/profile.php';
     $url .= empty($_SERVER['QUERY_STRING']) ? '' : '?'.Security::remove_XSS($_SERVER['QUERY_STRING']);
-    header('Location: ' . $url);
+    header('Location: '.$url);
     exit;
-
-} else if (!empty($_POST['social_wall_new_msg']) && !empty($_POST['messageId'])) {
+} elseif (!empty($_POST['social_wall_new_msg']) && !empty($_POST['messageId'])) {
     $messageId = intval($_POST['messageId']);
     $messageContent = $_POST['social_wall_new_msg'];
 
@@ -78,12 +78,11 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
         MESSAGE_STATUS_WALL
     );
     Display::addFlash(Display::return_message(get_lang('MessageSent')));
-    $url = api_get_path(WEB_CODE_PATH) . 'social/profile.php';
+    $url = api_get_path(WEB_CODE_PATH).'social/profile.php';
     $url .= empty($_SERVER['QUERY_STRING']) ? '' : '?'.Security::remove_XSS($_SERVER['QUERY_STRING']);
-    header('Location: ' . $url);
+    header('Location: '.$url);
     exit;
-
-} else if (isset($_GET['messageId'])) {
+} elseif (isset($_GET['messageId'])) {
     $messageId = intval($_GET['messageId']);
     $messageInfo = MessageManager::get_message_by_id($messageId);
     if (!empty($messageInfo)) {
@@ -92,12 +91,13 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
             $status = SocialManager::deleteMessage($messageId);
 
             Display::addFlash(Display::return_message(get_lang('MessageDeleted')));
-            header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/profile.php');
+            header('Location: '.api_get_path(WEB_CODE_PATH).'social/profile.php');
             exit;
         }
     }
     api_not_allowed(true);
-} else if (isset($_GET['u'])) { //I'm your friend? I can see your profile?
+} elseif (isset($_GET['u'])) {
+    //I'm your friend? I can see your profile?
     $user_id = intval($_GET['u']);
     if (api_is_anonymous($user_id, true)) {
         api_not_allowed(true);
@@ -115,11 +115,12 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
                 api_get_user_id(),
                 $user_id
             );
-            if (in_array($my_status, array(
+            if (in_array($my_status, [
                     USER_RELATION_TYPE_PARENT,
                     USER_RELATION_TYPE_FRIEND,
-                    USER_RELATION_TYPE_GOODFRIEND
-                ))) {
+                    USER_RELATION_TYPE_GOODFRIEND,
+                ])
+            ) {
                 $show_full_profile = true;
             }
             //checking the relationship between my friend and me
@@ -127,11 +128,12 @@ if (!empty($_POST['social_wall_new_msg_main']) || !empty($_FILES['picture']['tmp
                 $user_id,
                 api_get_user_id()
             );
-            if (in_array($my_friend_status, array(
+            if (in_array($my_friend_status, [
                     USER_RELATION_TYPE_PARENT,
                     USER_RELATION_TYPE_FRIEND,
-                    USER_RELATION_TYPE_GOODFRIEND
-                ))) {
+                    USER_RELATION_TYPE_GOODFRIEND,
+                ])
+            ) {
                 $show_full_profile = true;
             } else {
                 // im probably not a good friend
@@ -150,61 +152,35 @@ if ($user_info['user_id'] == api_get_user_id()) {
 } else {
     $isSelfUser = false;
 }
-$libpath = api_get_path(LIBRARY_PATH);
-
+$userIsOnline = user_is_online($user_id);
 $ajax_url = api_get_path(WEB_AJAX_PATH).'message.ajax.php';
 $socialAjaxUrl = api_get_path(WEB_AJAX_PATH).'social.ajax.php';
-$javascriptDir = api_get_path(LIBRARY_PATH) . 'javascript/';
+$javascriptDir = api_get_path(LIBRARY_PATH).'javascript/';
 api_block_anonymous_users();
 $locale = api_get_language_isocode();
 // Add Jquery scroll pagination plugin
-$htmlHeadXtra[] = api_get_js('components/jscroll/jquery.jscroll.js');
+$htmlHeadXtra[] = api_get_js('jscroll/jquery.jscroll.js');
 // Add Jquery Time ago plugin
-$htmlHeadXtra[] = api_get_js('components/jquery-timeago/jquery.timeago.js');
-$timeAgoLocaleDir = $javascriptDir . 'jquery-timeago/locales/jquery.timeago.' . $locale . '.js';
+$htmlHeadXtra[] = api_get_asset('jquery-timeago/jquery.timeago.js');
+$timeAgoLocaleDir = $javascriptDir.'jquery-timeago/locales/jquery.timeago.'.$locale.'.js';
 if (file_exists($timeAgoLocaleDir)) {
-    $htmlHeadXtra[] = api_get_js(
-        'js/jquery-timeago/locales/jquery.timeago.'.$locale.'.js'
-    );
+    $htmlHeadXtra[] = api_get_js('jquery-timeago/locales/jquery.timeago.'.$locale.'.js');
 }
 
 $htmlHeadXtra[] = '<script>
-
-$(document).ready(function (){
+$(document).ready(function(){
     var container = $("#wallMessages");
     container.jscroll({
-        loadingHtml: "<div class=\"well_border\">' . get_lang('Loading') . ' </div>",
+        loadingHtml: "<div class=\"well_border\">'.get_lang('Loading').' </div>",
         nextSelector: "a.nextPage:last",
         contentSelector: "",
         callback: timeAgo
     });
-    timeAgo()
-
+    timeAgo();
 });
 
 function timeAgo() {
     $(".timeago").timeago();
-}
-
-function register_friend(element_input) {
-    if (confirm("'.get_lang('AddToFriends').'")) {
-        name_button=$(element_input).attr("id");
-        name_div_id="id_"+name_button.substring(13);
-        user_id=name_div_id.split("_");
-        user_friend_id=user_id[1];
-        $.ajax({
-            contentType: "application/x-www-form-urlencoded",
-            beforeSend: function(objeto) {
-                $("div#dpending_"+user_friend_id).html("<img src=\'../inc/lib/javascript/indicator.gif\' />");
-            },
-            type: "POST",
-            url: "'.api_get_path(WEB_AJAX_PATH).'social.ajax.php?a=add_friend",
-            data: "friend_id="+user_friend_id+"&is_my_friend="+"friend",
-            success: function(datos) {
-                $("#dpending_" + user_friend_id).html(datos);
-            }
-        });
-    }
 }
 </script>';
 
@@ -218,17 +194,17 @@ if (isset($_GET['shared'])) {
     $my_link = '../social/profile.php';
     $link_shared = '';
 }
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = [
     'url' => 'home.php',
     'name' => get_lang('SocialNetwork'),
-);
+];
 
 if (isset($_GET['u']) && is_numeric($_GET['u']) && $_GET['u'] != api_get_user_id()) {
-    $info_user =   api_get_user_info($_GET['u']);
-    $interbreadcrumb[]= array(
+    $info_user = api_get_user_info($_GET['u']);
+    $interbreadcrumb[] = [
         'url' => '#',
-        'name' => $info_user['complete_name']
-    );
+        'name' => $info_user['complete_name'],
+    ];
     $nametool = '';
 }
 if (isset($_GET['u'])) {
@@ -238,27 +214,29 @@ if (isset($_GET['u'])) {
     $param_user = '';
 }
 
-$_SESSION['social_user_id'] = intval($user_id);
+Session::write('social_user_id', (int) $user_id);
 
 // Setting some course info
 $my_user_id = isset($_GET['u']) ? intval($_GET['u']) : api_get_user_id();
-$personal_course_list = UserManager::get_personal_session_course_list($my_user_id);
-
-$course_list_code = array();
+$personal_course_list = UserManager::get_personal_session_course_list(
+    $my_user_id,
+    50
+);
+$course_list_code = [];
 $i = 1;
 $list = [];
 if (is_array($personal_course_list)) {
     foreach ($personal_course_list as $my_course) {
-        if ($i<=10) {
+        if ($i <= 10) {
             $list[] = SocialManager::get_logged_user_course_html($my_course, $i);
-            $course_list_code[] = array('code' => $my_course['code']);
+            $course_list_code[] = ['code' => $my_course['code']];
         } else {
             break;
         }
         $i++;
     }
     //to avoid repeted courses
-    $course_list_code = ArrayClass::array_unique_dimensional($course_list_code);
+    $course_list_code = array_unique_dimensional($course_list_code);
 }
 
 //Social Block Menu
@@ -287,24 +265,24 @@ $wallSocialAddPost = SocialManager::getWallForm($show_full_profile);
 $social_wall_block = $wallSocialAddPost;
 
 // Social Post Wall
-$posts = SocialManager::getWallMessagesByUser($my_user_id, $friendId) ;
-
-$posts = empty($posts) ? '<p>'.get_lang("NoPosts").'</p>' : $posts;
-$social_post_wall_block = Display::panel($posts, get_lang('Posts'));
+$posts = SocialManager::getWallMessagesByUser($my_user_id, $friendId);
+$social_post_wall_block = empty($posts) ? '<p>'.get_lang("NoPosts").'</p>' : $posts;
 
 $socialAutoExtendLink = Display::url(
     get_lang('SeeMore'),
-    $socialAjaxUrl . '?u='. $my_user_id . '&a=listWallMessage&start=10&length=5',
-    array(
+    $socialAjaxUrl.'?u='.$my_user_id.'&a=list_wall_message&start=10&length=5',
+    [
         'class' => 'nextPage next',
-    )
+    ]
 );
 
 // Added a Jquery Function to return the Preview of OpenGraph URL Content
 $htmlHeadXtra[] = '<script>
 $(document).ready(function() {
+    var getUrl = $("[name=\'social_wall_new_msg_main\']");
+    var matchUrl = /https?:\/\/w{0,3}\w*?\.(\w*?\.)?\w{2,3}\S*|www\.(\w*?\.)?\w*?\.\w{2,3}\S*|(\w*?\.)?\w*?\.\w{2,3}[\/\?]\S*/ ;
 
-    $("[name=\'social_wall_new_msg_main\']").on("paste", function(e) {
+    getUrl.on("paste", function(e) {
         $.ajax({
             contentType: "application/x-www-form-urlencoded",
             beforeSend: function() {
@@ -313,12 +291,12 @@ $(document).ready(function() {
                 $(".spinner").html("'.
                     '<div class=\'text-center\'>'.
                         '<em class=\'fa fa-spinner fa-pulse fa-1x\'></em>'.
-                        '<p>'. get_lang('Loading') . ' ' . get_lang('Preview') .'</p>'.
+                        '<p>'.get_lang('Loading').' '.get_lang('Preview').'</p>'.
                     '</div>'.
                 '");
             },
             type: "POST",
-            url: "'. api_get_path(WEB_AJAX_PATH) .'social.ajax.php?a=readUrlWithOpenGraph",
+            url: "'.api_get_path(WEB_AJAX_PATH).'social.ajax.php?a=read_url_with_open_graph",
             data: "social_wall_new_msg_main=" + e.originalEvent.clipboardData.getData("text"),
             success: function(response) {
                 $("[name=\'wall_post_button\']").prop( "disabled", false );
@@ -337,16 +315,17 @@ $(document).ready(function() {
 });
 </script>';
 
-$socialRightInformation = null;
-$social_right_content = null;
-if ($show_full_profile) {
+$socialRightInformation = '';
+$social_right_content = '';
+$listInvitations = '';
 
-    $t_ufo = Database :: get_main_table(TABLE_EXTRA_FIELD_OPTIONS);
+if ($show_full_profile) {
+    $t_ufo = Database::get_main_table(TABLE_EXTRA_FIELD_OPTIONS);
     $extra_user_data = UserManager::get_extra_user_data($user_id, false, true);
 
     $extra_information = '';
-    if (is_array($extra_user_data) && count($extra_user_data)>0 ) {
-        $extra_information_value = '<ul class="list-group">';
+    if (is_array($extra_user_data) && count($extra_user_data) > 0) {
+        $extra_information_value = '';
         $extraField = new ExtraField('user');
         foreach ($extra_user_data as $key => $data) {
             if (empty($data)) {
@@ -355,11 +334,11 @@ if ($show_full_profile) {
             // Avoiding parameters
             if (in_array(
                 $key,
-                array(
+                [
                     'mail_notify_invitation',
                     'mail_notify_message',
                     'mail_notify_group_message',
-                )
+                ]
             )) {
                 continue;
             }
@@ -371,10 +350,16 @@ if ($show_full_profile) {
             );
 
             if (in_array($extraFieldInfo['variable'], ['skype', 'linkedin_url'])) {
-                break;
+                continue;
             }
 
-            if ($extraFieldInfo['visible'] != 1) {
+            // if is not visible skip
+            if ($extraFieldInfo['visible_to_self'] != 1) {
+                continue;
+            }
+
+            // if is not visible to others skip also
+            if ($extraFieldInfo['visible_to_others'] != 1) {
                 continue;
             }
 
@@ -384,11 +369,13 @@ if ($show_full_profile) {
             } else {
                 switch ($extraFieldInfo['field_type']) {
                     case ExtraField::FIELD_TYPE_DOUBLE_SELECT:
-                        $id_options = explode(';', $data);
-                        $value_options = array();
+                        $id_options = explode('::', $data);
+                        $value_options = [];
                         // get option display text from user_field_options table
                         foreach ($id_options as $id_option) {
-                            $sql = "SELECT display_text FROM $t_ufo WHERE id = '$id_option'";
+                            $sql = "SELECT display_text 
+                                    FROM $t_ufo 
+                                    WHERE id = '$id_option'";
                             $res_options = Database::query($sql);
                             $row_options = Database::fetch_row($res_options);
                             $value_options[] = $row_options[0];
@@ -399,14 +386,14 @@ if ($show_full_profile) {
                     case ExtraField::FIELD_TYPE_TAG:
                         $user_tags = UserManager::get_user_tags($user_id, $extraFieldInfo['id']);
 
-                        $tag_tmp = array();
+                        $tag_tmp = [];
                         foreach ($user_tags as $tags) {
                             $tag_tmp[] = '<a class="label label_tag"'
                                 .' href="'.api_get_path(WEB_PATH).'main/social/search.php?q='.$tags['tag'].'">'
                                 .$tags['tag']
                                 .'</a>';
                         }
-                        if (is_array($user_tags) && count($user_tags)>0) {
+                        if (is_array($user_tags) && count($user_tags) > 0) {
                             $extra_information_value .= '<li class="list-group-item">'.ucfirst($extraFieldInfo['display_text']).': '
                                 .' '.implode('', $tag_tmp).'</li>';
                         }
@@ -429,35 +416,63 @@ if ($show_full_profile) {
                             .'</a>';
                         $extra_information_value .= '<li class="list-group-item">'.$data.'</li>';
                         break;
+                    case ExtraField::FIELD_TYPE_SELECT_WITH_TEXT_FIELD:
+                        $parsedData = explode('::', $data);
+
+                        if (!$parsedData) {
+                            break;
+                        }
+
+                        $objEfOption = new ExtraFieldOption('user');
+                        $optionInfo = $objEfOption->get($parsedData[0]);
+
+                        $extra_information_value .= '<li class="list-group-item">'
+                            .$optionInfo['display_text'].': '
+                            .$parsedData[1].'</li>';
+                        break;
+                    case ExtraField::FIELD_TYPE_TRIPLE_SELECT:
+                        $optionIds = explode(';', $data);
+                        $optionValues = [];
+
+                        foreach ($optionIds as $optionId) {
+                            $objEfOption = new ExtraFieldOption('user');
+                            $optionInfo = $objEfOption->get($optionId);
+
+                            $optionValues[] = $optionInfo['display_text'];
+                        }
+                        $extra_information_value .= '<li class="list-group-item">'
+                            .ucfirst($extraFieldInfo['display_text']).': '
+                            .implode(' ', $optionValues).'</li>';
+                        break;
                     default:
-                        $extra_information_value .= '<li class="list-group-item">'.ucfirst($extraFieldInfo['display_text']) . ': ' . $data . '</li>';
-                    break;
+                        $extra_information_value .= '<li class="list-group-item">'.ucfirst($extraFieldInfo['display_text']).': '.$data.'</li>';
+                        break;
                 }
             }
         }
-        $extra_information_value .= '</ul>';
 
         // if there are information to show
         if (!empty($extra_information_value)) {
+            $extra_information_value = '<ul class="list-group">'.$extra_information_value.'</ul>';
             $extra_information .= Display::panelCollapse(
-                    get_lang('ExtraInformation'),
-                    $extra_information_value,
-                    'sn-extra-information',
-                    null, 'sn-extra-accordion',
-                    'sn-extra-collapse'
-                    );
+                get_lang('ExtraInformation'),
+                $extra_information_value,
+                'sn-extra-information',
+                null,
+                'sn-extra-accordion',
+                'sn-extra-collapse'
+            );
         }
     }
 
     // If there are information to show Block Extra Information
-
     if (!empty($extra_information_value)) {
         $social_extra_info_block = $extra_information;
     }
 
     // MY GROUPS
     $results = $userGroup->get_groups_by_user($my_user_id, 0);
-    $grid_my_groups = array();
+    $grid_my_groups = [];
     $max_numbers_of_group = 4;
 
     if (is_array($results) && count($results) > 0) {
@@ -467,7 +482,7 @@ if ($show_full_profile) {
                 break;
             }
             $id = $result['id'];
-            $url_open  = '<a href="group_view.php?id='.$id.'">';
+            $url_open = '<a href="group_view.php?id='.$id.'">';
             $url_close = '</a>';
             $icon = '';
             $name = cut($result['name'], CUT_GROUP_NAME, true);
@@ -475,28 +490,28 @@ if ($show_full_profile) {
                 $icon = Display::return_icon(
                     'social_group_admin.png',
                     get_lang('Admin'),
-                    array('style'=>'vertical-align:middle;width:16px;height:16px;')
+                    ['style' => 'vertical-align:middle;width:16px;height:16px;']
                 );
             } elseif ($result['relation_type'] == GROUP_USER_PERMISSION_MODERATOR) {
                 $icon = Display::return_icon(
                     'social_group_moderator.png',
                     get_lang('Moderator'),
-                    array('style'=>'vertical-align:middle;width:16px;height:16px;')
+                    ['style' => 'vertical-align:middle;width:16px;height:16px;']
                 );
             }
             $count_users_group = count($userGroup->get_all_users_by_group($id));
-            if ($count_users_group == 1 ) {
+            if ($count_users_group == 1) {
                 $count_users_group = $count_users_group.' '.get_lang('Member');
             } else {
                 $count_users_group = $count_users_group.' '.get_lang('Members');
             }
             $item_name = $url_open.$name.$icon.$url_close;
             $item_actions = '';
-            $grid_my_groups[] = array(
+            $grid_my_groups[] = [
                 $item_name,
                 $url_open.$result['picture'].$url_close,
                 $item_actions,
-            );
+            ];
             $i++;
         }
     }
@@ -505,7 +520,7 @@ if ($show_full_profile) {
     if (count($grid_my_groups) > 0) {
         $my_groups = '';
         $count_groups = 0;
-        if (count($results) == 1 ) {
+        if (count($results) == 1) {
             $count_groups = count($results);
         } else {
             $count_groups = count($results);
@@ -516,10 +531,10 @@ if ($show_full_profile) {
 
         if ($i > $max_numbers_of_group) {
             if (api_get_user_id() == $user_id) {
-                $my_groups .=  '<div class="box_shared_profile_group_actions">'
+                $my_groups .= '<div class="box_shared_profile_group_actions">'
                     .'<a href="groups.php?#tab_browse-1">'.get_lang('SeeAllMyGroups').'</a></div>';
             } else {
-                $my_groups .=  '<div class="box_shared_profile_group_actions">'
+                $my_groups .= '<div class="box_shared_profile_group_actions">'
                     .'<a href="'.api_get_path(WEB_CODE_PATH).'social/profile_friends_and_groups.inc.php'
                     .'?view=mygroups&height=390&width=610&user_id='.$user_id.'"'
                     .' class="ajax" title="'.get_lang('SeeAll').'" >'
@@ -532,7 +547,7 @@ if ($show_full_profile) {
         $i = 1;
         foreach ($grid_my_groups as $group) {
             $my_groups .= '<div class="panel-body">';
-            $my_groups .=  $group[0];
+            $my_groups .= $group[0];
             $my_groups .= '</div>';
             $i++;
         }
@@ -541,8 +556,8 @@ if ($show_full_profile) {
     }
 
     // Block Social Course
-
     $my_courses = null;
+
     // COURSES LIST
     if (is_array($list)) {
         // Courses without sessions
@@ -550,13 +565,12 @@ if ($show_full_profile) {
         $i = 1;
 
         foreach ($list as $key => $value) {
-            if ( empty($value[2]) ) { //if out of any session
-                $my_courses .=  $value[1];
+            if (empty($value[2])) { //if out of any session
+                $my_courses .= $value[1];
                 $i++;
             }
         }
-        $social_course_block .=  $my_courses;
-        //$social_course_block = Display::panel($my_courses, get_lang('MyCourses'));
+        $social_course_block .= $my_courses;
     }
 
     // Block Social Sessions
@@ -566,26 +580,30 @@ if ($show_full_profile) {
     }
 
     // Block Social User Feeds
-    $user_feeds = SocialManager::get_user_feeds($user_id);
+    $user_feeds = SocialManager::getUserRssFeed($user_id);
 
     if (!empty($user_feeds)) {
         $social_rss_block = Display::panel($user_feeds, get_lang('RSSFeeds'));
     }
 
     // Productions
-    $production_list =  UserManager::build_production_list($user_id);
+    $production_list = UserManager::build_production_list($user_id);
 
     // Images uploaded by course
     $file_list = '';
-    if (is_array($course_list_code) && count($course_list_code)>0) {
+    if (is_array($course_list_code) && count($course_list_code) > 0) {
         foreach ($course_list_code as $course) {
-            $file_list.= UserManager::get_user_upload_files_by_course($user_id,$course['code'],$resourcetype='images');
+            $file_list .= UserManager::get_user_upload_files_by_course(
+                $user_id,
+                $course['code'],
+                $resourcetype = 'images'
+            );
         }
     }
 
     $count_pending_invitations = 0;
     if (!isset($_GET['u']) ||
-        (isset($_GET['u']) && $_GET['u']==api_get_user_id())
+        (isset($_GET['u']) && $_GET['u'] == api_get_user_id())
     ) {
         $pending_invitations = SocialManager::get_list_invitation_of_friends_by_user_id(api_get_user_id());
         $list_get_path_web = SocialManager::get_list_web_path_user_invitation_by_user_id(api_get_user_id());
@@ -593,121 +611,126 @@ if ($show_full_profile) {
     }
 
     if (!empty($production_list) || !empty($file_list) || $count_pending_invitations > 0) {
-
-        //Pending invitations
-        if (!isset($_GET['u']) || (isset($_GET['u']) && $_GET['u']==api_get_user_id())) {
+        // Pending invitations
+        if (!isset($_GET['u']) || (isset($_GET['u']) && $_GET['u'] == api_get_user_id())) {
             if ($count_pending_invitations > 0) {
-                $invitations =  '<div><h3>'.get_lang('PendingInvitations').'</h3></div>';
-                for ($i=0;$i<$count_pending_invitations;$i++) {
+                $invitations = '<ul class="list-group">';
+                for ($i = 0; $i < $count_pending_invitations; $i++) {
                     $user_invitation_id = $pending_invitations[$i]['user_sender_id'];
-                    $invitations .=  '<div id="dpending_'.$user_invitation_id.'" class="friend_invitations">';
-                        $invitations .=  '<div style="float:left;width:60px;" >';
-                            $invitations .=  '<img style="margin-bottom:5px;"'
+                    $invitations .= '<li id="dpending_'.$user_invitation_id.'" class="list-group-item">';
+                    $invitations .= '<img class="img-rounded" '
                                 .' src="'.$list_get_path_web[$i]['dir'].'/'.$list_get_path_web[$i]['file'].'"'
-                                .' width="60px">';
-                        $invitations .=  '</div>';
+                                .' width="40px">';
+                    $userInfo = api_get_user_info($user_invitation_id);
+                    $invitations .= '<a href="'.api_get_path(WEB_PATH).'main/social/profile.php?u='.$user_invitation_id.'">'
+                                 .api_get_person_name($userInfo['firstname'], $userInfo['lastname']).'</a>';
 
-                        $invitations .=  '<div style="padding-left:70px;">';
-                            $user_invitation_info = api_get_user_info($user_invitation_id);
-                            $invitations .=  '<a href="'.api_get_path(WEB_PATH).'main/social/profile.php'
-                                .'?u='.$user_invitation_id.'">'
-                                .api_get_person_name(
-                                    $user_invitation_info['firstname'],
-                                    $user_invitation_info['lastname'])
-                                .'</a>';
-                            $invitations .=  '<br />';
-                            $invitations .=  Security::remove_XSS(
-                                cut($pending_invitations[$i]['content'], 50),
-                                STUDENT,
-                                true
-                            );
-                            $invitations .=  '<br />';
-                            $invitations .=  '<a id="btn_accepted_'.$user_invitation_id.'"'
-                                .' class="btn btn-default" onclick="register_friend(this)" href="javascript:void(0)">'
-                                .get_lang('SocialAddToFriends')
-                                .'</a>';
-                            $invitations .=  '<div id="id_response"></div>';
-                        $invitations .=  '</div>';
-                    $invitations .=  '</div>';
+                    $invitations .= '<div class="pull-right">';
+                    $invitations .= Display::toolbarButton(
+                        get_lang('SocialAddToFriends'),
+                        api_get_path(WEB_AJAX_PATH).'social.ajax.php?'.http_build_query([
+                            'a' => 'add_friend',
+                            'friend_id' => $user_invitation_id,
+                            'is_my_friend' => 'friend',
+                        ]),
+                        'plus',
+                        'default',
+                        ['class' => 'btn-sm'],
+                        false
+                    );
+                    $invitations .= '</div>';
+                    $invitations .= '<div id="id_response"></div>';
+                    $invitations .= '</li>';
                 }
-                $socialRightInformation .=  SocialManager::social_wrapper_div($invitations, 4);
+                $invitations .= '</ul>';
+                $listInvitations = Display::panelCollapse(
+                    get_lang('PendingInvitations'),
+                    $invitations,
+                    'invitations',
+                    null,
+                    'invitations-acordion',
+                    'invitations-collapse'
+                );
             }
         }
 
         // Productions
-        $production_list =  UserManager::build_production_list($user_id);
-
-        $product_content  = '';
+        $production_list = UserManager::build_production_list($user_id);
+        $product_content = '';
         if (!empty($production_list)) {
             $product_content .= '<div><h3>'.get_lang('MyProductions').'</h3></div>';
-            $product_content .=  $production_list;
-            $socialRightInformation .=  SocialManager::social_wrapper_div($product_content, 4);
+            $product_content .= $production_list;
+            $socialRightInformation .= SocialManager::social_wrapper_div($product_content, 4);
         }
 
         $images_uploaded = null;
         // Images uploaded by course
         if (!empty($file_list)) {
-            $images_uploaded .=  '<div><h3>'.get_lang('ImagesUploaded').'</h3></div>';
-            $images_uploaded .=  '<div class="social-content-information">';
-            $images_uploaded .=  $file_list;
-            $images_uploaded .=  '</div>';
-            $socialRightInformation .=  SocialManager::social_wrapper_div($images_uploaded, 4);
+            $images_uploaded .= '<div><h3>'.get_lang('ImagesUploaded').'</h3></div>';
+            $images_uploaded .= '<div class="social-content-information">';
+            $images_uploaded .= $file_list;
+            $images_uploaded .= '</div>';
+            $socialRightInformation .= SocialManager::social_wrapper_div($images_uploaded, 4);
         }
     }
 
     if (!empty($user_info['competences']) || !empty($user_info['diplomas'])
-        || !empty($user_info['openarea']) || !empty($user_info['teach']) ) {
-
-        $more_info .=  '<div><h3>'.get_lang('MoreInformation').'</h3></div>';
+        || !empty($user_info['openarea']) || !empty($user_info['teach'])) {
+        $more_info .= '<div><h3>'.get_lang('MoreInformation').'</h3></div>';
         if (!empty($user_info['competences'])) {
-            $more_info .=  '<br />';
-                $more_info .=  '<div class="social-actions-message"><strong>'.get_lang('MyCompetences').'</strong></div>';
-                $more_info .=  '<div class="social-profile-extended">'.$user_info['competences'].'</div>';
-            $more_info .=  '<br />';
+            $more_info .= '<br />';
+            $more_info .= '<div class="social-actions-message"><strong>'.get_lang('MyCompetences').'</strong></div>';
+            $more_info .= '<div class="social-profile-extended">'.$user_info['competences'].'</div>';
+            $more_info .= '<br />';
         }
         if (!empty($user_info['diplomas'])) {
-            $more_info .=  '<div class="social-actions-message"><strong>'.get_lang('MyDiplomas').'</strong></div>';
-            $more_info .=  '<div class="social-profile-extended">'.$user_info['diplomas'].'</div>';
-            $more_info .=  '<br />';
+            $more_info .= '<div class="social-actions-message"><strong>'.get_lang('MyDiplomas').'</strong></div>';
+            $more_info .= '<div class="social-profile-extended">'.$user_info['diplomas'].'</div>';
+            $more_info .= '<br />';
         }
         if (!empty($user_info['openarea'])) {
-            $more_info .=  '<div class="social-actions-message"><strong>'.get_lang('MyPersonalOpenArea').'</strong></div>';
-            $more_info .=  '<div class="social-profile-extended">'.$user_info['openarea'].'</div>';
-            $more_info .=  '<br />';
+            $more_info .= '<div class="social-actions-message"><strong>'.get_lang('MyPersonalOpenArea').'</strong></div>';
+            $more_info .= '<div class="social-profile-extended">'.$user_info['openarea'].'</div>';
+            $more_info .= '<br />';
         }
         if (!empty($user_info['teach'])) {
-            $more_info .=  '<div class="social-actions-message"><strong>'.get_lang('MyTeach').'</strong></div>';
-            $more_info .=  '<div class="social-profile-extended">'.$user_info['teach'].'</div>';
-            $more_info .=  '<br />';
+            $more_info .= '<div class="social-actions-message"><strong>'.get_lang('MyTeach').'</strong></div>';
+            $more_info .= '<div class="social-profile-extended">'.$user_info['teach'].'</div>';
+            $more_info .= '<br />';
         }
-        $socialRightInformation .=  SocialManager::social_wrapper_div($more_info, 4);
+        $socialRightInformation .= SocialManager::social_wrapper_div($more_info, 4);
     }
 }
 
-//$tpl = new Template(get_lang('Social'));
-$tpl = Container::getTwig();
+$tpl = new Template(get_lang('Social'));
 // Block Avatar Social
-SocialManager::setSocialUserBlock($tpl, $user_id, 'shared_profile', 0, $show_full_profile);
-
-$tpl->addGlobal('social_friend_block', $friend_html);
-$tpl->addGlobal('social_menu_block', $social_menu_block);
-$tpl->addGlobal('social_wall_block', $social_wall_block);
-$tpl->addGlobal('social_post_wall_block', $social_post_wall_block);
-$tpl->addGlobal('social_extra_info_block', $social_extra_info_block);
-$tpl->addGlobal('social_course_block', $social_course_block);
-$tpl->addGlobal('social_group_info_block', $social_group_info_block);
-$tpl->addGlobal('social_rss_block', $social_rss_block);
-$tpl->addGlobal('social_skill_block', SocialManager::getSkillBlock($my_user_id));
-$tpl->addGlobal('sessionList', $social_session_block);
-$tpl->addGlobal('social_right_information', $socialRightInformation);
-$tpl->addGlobal('social_auto_extend_link', $socialAutoExtendLink);
-
-$formModals = Container::getTemplating()->render(
-    '@template_style/social/form_modals.html.twig',
-    [
-        'invitation_form' => MessageManager::generate_invitation_form('send_invitation')
-    ]
+SocialManager::setSocialUserBlock(
+    $tpl,
+    $friendId,
+    'shared_profile',
+    0,
+    $show_full_profile
 );
 
-$tpl->addGlobal('form_modals', $formModals);
-echo $tpl->render('@template_style/social/profile.html.twig');
+$tpl->assign('social_friend_block', $friend_html);
+$tpl->assign('social_menu_block', $social_menu_block);
+$tpl->assign('social_wall_block', $social_wall_block);
+$tpl->assign('social_post_wall_block', $social_post_wall_block);
+$tpl->assign('social_extra_info_block', $social_extra_info_block);
+$tpl->assign('social_course_block', $social_course_block);
+$tpl->assign('social_group_info_block', $social_group_info_block);
+$tpl->assign('social_rss_block', $social_rss_block);
+$tpl->assign('social_skill_block', SocialManager::getSkillBlock($my_user_id));
+$tpl->assign('session_list', $social_session_block);
+$tpl->assign('invitations', $listInvitations);
+$tpl->assign('social_right_information', $socialRightInformation);
+$tpl->assign('social_auto_extend_link', $socialAutoExtendLink);
+
+$formModalTpl = new Template();
+$formModalTpl->assign('invitation_form', MessageManager::generate_invitation_form('send_invitation'));
+$template = $formModalTpl->get_template('social/form_modals.tpl');
+$formModals = $formModalTpl->fetch($template);
+
+$tpl->assign('form_modals', $formModals);
+$social_layout = $tpl->get_template('social/profile.tpl');
+$tpl->display($social_layout);

@@ -1,20 +1,21 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CoreBundle\Entity\Course;
+use Chamilo\CoreBundle\Entity\Promotion;
 use Chamilo\CoreBundle\Entity\Repository\SequenceRepository;
+use Chamilo\CoreBundle\Entity\Repository\SessionRepository;
 use Chamilo\CoreBundle\Entity\SequenceResource;
-use Chamilo\CoreBundle\Framework\Container;
+use Chamilo\CoreBundle\Entity\Session;
+use Chamilo\CoreBundle\Entity\SessionRelCourseRelUser;
 
 /**
-*	@author Bart Mollet, Julio Montoya lot of fixes
-*	@package chamilo.admin
-*/
-
+ * @author Bart Mollet, Julio Montoya lot of fixes
+ *
+ * @package chamilo.admin
+ */
 $cidReset = true;
-//require_once '../inc/global.inc.php';
-
-// setting breadcrumbs
-$interbreadcrumb[] = array('url' => 'session_list.php', 'name' => get_lang('Sessions'));
+require_once __DIR__.'/../inc/global.inc.php';
 
 // setting the section (for the tabs)
 $this_section = SECTION_PLATFORM_ADMIN;
@@ -28,9 +29,10 @@ if (empty($sessionId)) {
 SessionManager::protectSession($sessionId);
 
 $tool_name = get_lang('SessionOverview');
-
-//$interbreadcrumb[] = array('url' => 'index.php','name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => 'session_list.php','name' => get_lang('SessionList'));
+$interbreadcrumb[] = [
+    'url' => 'session_list.php',
+    'name' => get_lang('SessionList'),
+];
 
 $orig_param = '&origin=resume_session';
 
@@ -45,12 +47,15 @@ $tbl_session_rel_course_rel_user = Database::get_main_table(TABLE_MAIN_SESSION_C
 $tbl_session_category = Database::get_main_table(TABLE_MAIN_SESSION_CATEGORY);
 $table_access_url_user = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
 
+$em = Database::getManager();
 $sessionInfo = api_get_session_info($sessionId);
-$session = Database::getManager()->find('ChamiloCoreBundle:Session', $sessionId);
+/** @var SessionRepository $sessionRepository */
+$sessionRepository = $em->getRepository('ChamiloCoreBundle:Session');
+/** @var Session $session */
+$session = $sessionRepository->find($sessionId);
 $sessionCategory = $session->getCategory();
 
 $action = isset($_GET['action']) ? $_GET['action'] : null;
-
 $url_id = api_get_current_access_url_id();
 
 switch ($action) {
@@ -81,7 +86,7 @@ switch ($action) {
         // Delete course from session.
         $idChecked = isset($_GET['idChecked']) ? $_GET['idChecked'] : null;
         if (is_array($idChecked)) {
-            $usersToDelete = array();
+            $usersToDelete = [];
             foreach ($idChecked as $courseCode) {
                 // forcing the escape_string
                 $courseInfo = api_get_course_info($courseCode);
@@ -115,7 +120,7 @@ $sessionHeader = Display::page_header(
 );
 
 $url = Display::url(
-    Display::return_icon('edit.png', get_lang('Edit'), array(), ICON_SIZE_SMALL),
+    Display::return_icon('edit.png', get_lang('Edit'), [], ICON_SIZE_SMALL),
     "session_edit.php?page=resume_session.php&id=$sessionId"
 );
 
@@ -132,7 +137,7 @@ if ($multiple_url_is_on) {
 }
 
 $url = Display::url(
-    Display::return_icon('edit.png', get_lang('Edit'), array(), ICON_SIZE_SMALL),
+    Display::return_icon('edit.png', get_lang('Edit'), [], ICON_SIZE_SMALL),
     "add_courses_to_session.php?page=resume_session.php&id_session=$sessionId"
 );
 $courseListToShow = Display::page_subheader(get_lang('CourseList').$url);
@@ -152,139 +157,116 @@ if ($sessionInfo['nbr_courses'] == 0) {
 } else {
     $count = 0;
     $courseItem = '';
-    /** @var \Chamilo\CoreBundle\Entity\Repository\SessionRepository $sessionRepository */
-    $sessionRepository = Database::getManager()->getRepository('ChamiloCoreBundle:Session');
     $courses = $sessionRepository->getCoursesOrderedByPosition($session);
 
-	foreach ($courses as $course) {
-        //select the number of users
-        $sql = "SELECT count(*)
-                FROM $tbl_session_rel_user sru,
-                $tbl_session_rel_course_rel_user srcru
-                WHERE
-                    srcru.user_id = sru.user_id AND
-                    srcru.session_id = sru.session_id AND
-                    srcru.c_id = '".intval($course->getId())."' AND
-                    sru.relation_type <> ".SESSION_RELATION_TYPE_RRHH." AND
-                    srcru.session_id = '".intval($sessionId)."'";
+    $allowSkills = api_get_configuration_value('allow_skill_rel_items');
 
-		$rs = Database::query($sql);
-        $numberOfUsers = Database::result($rs, 0, 0);
-
-		// Get coachs of the courses in session
-
-		$sql = "SELECT user.lastname, user.firstname, user.username
-                FROM $tbl_session_rel_course_rel_user session_rcru, $tbl_user user
-				WHERE
-				    session_rcru.user_id = user.user_id AND
-				    session_rcru.session_id = '".intval($sessionId)."' AND
-				    session_rcru.c_id ='".intval($course->getId())."' AND
-				    session_rcru.status=2";
-		$rs = Database::query($sql);
-
-		$coachs = array();
-		if (Database::num_rows($rs) > 0) {
-			while($info_coach = Database::fetch_array($rs)) {
-                $coachs[] = api_get_person_name(
-                        $info_coach['firstname'],
-                        $info_coach['lastname']
-                    ).' ('.$info_coach['username'].')';
-			}
-		} else {
-			$coach = get_lang('None');
-		}
-
-		if (count($coachs) > 0) {
-			$coach = implode('<br />',$coachs);
-		} else {
-			$coach = get_lang('None');
-		}
-
-        $orderButtons = null;
-
-        $upIcon = 'up.png';
-        $urlUp = api_get_self().'?id_session='.$sessionId.'&course_id='.$course->getId().'&action=move_up';
-
-        if ($count == 0) {
-            $upIcon = 'up_na.png';
-            $urlUp = '#';
-        }
-
-        $orderButtons = Display::url(
-            Display::return_icon($upIcon, get_lang('MoveUp')),
-            $urlUp
+    /** @var Course $course */
+    foreach ($courses as $course) {
+        // Select the number of users
+        $numberOfUsers = SessionManager::getCountUsersInCourseSession(
+            $course,
+            $session
         );
+        // Get coachs of the courses in session
+        $namesOfCoaches = [];
+        $coachSubscriptions = $session->getUserCourseSubscriptionsByStatus($course, Session::COACH)
+            ->forAll(function ($index, SessionRelCourseRelUser $subscription) use (&$namesOfCoaches) {
+                $namesOfCoaches[] = $subscription->getUser()->getCompleteNameWithUserName();
 
-        $downIcon = 'down.png';
-        $downUrl = api_get_self().'?id_session='.$sessionId.'&course_id='.$course->getId().'&action=move_down';
+                return true;
+            });
 
-        if ($count +1 == count($courses)) {
-            $downIcon = 'down_na.png';
-            $downUrl = '#';
-        }
+        $orderButtons = '';
+        if (SessionManager::orderCourseIsEnabled()) {
+            $orderButtons = Display::url(
+                Display::return_icon(
+                    !$count ? 'up_na.png' : 'up.png',
+                    get_lang('MoveUp')
+                ),
+                !$count
+                    ? '#'
+                    : api_get_self().'?id_session='.$sessionId.'&course_id='.$course->getId().'&action=move_up'
+            );
 
-        $orderButtons .= Display::url(
-            Display::return_icon($downIcon, get_lang('MoveDown')),
-            $downUrl
-        );
-
-        if (!SessionManager::orderCourseIsEnabled()) {
-            $orderButtons = '';
+            $orderButtons .= Display::url(
+                Display::return_icon(
+                    $count + 1 == count($courses) ? 'down_na.png' : 'down.png',
+                    get_lang('MoveDown')
+                ),
+                $count + 1 == count($courses)
+                    ? '#'
+                    : api_get_self().'?id_session='.$sessionId.'&course_id='.$course->getId().'&action=move_down'
+            );
         }
 
         $courseUrl = api_get_course_url($course->getCode(), $sessionId);
 
-		// hide_course_breadcrumb the parameter has been added to hide the name
-		// of the course, that appeared in the default $interbreadcrumb
-        $courseItem .= '
-		<tr>
-			<td class="title">'.Display::url(
+        // hide_course_breadcrumb the parameter has been added to hide the name
+        // of the course, that appeared in the default $interbreadcrumb
+        $courseItem .= '<tr>
+			<td class="title">'.
+            Display::url(
                 $course->getTitle().' ('.$course->getVisualCode().')',
                 $courseUrl
-            ).'</td>
-			<td>'.$coach.'</td>
-			<td>'.$numberOfUsers.'</td>
-			<td>
-                <a href="'. $courseUrl . '">'.
-                Display::return_icon('course_home.gif', get_lang('Course')).'</a>
-                '.$orderButtons.'
-                <a href="session_course_user_list.php?id_session='.$sessionId.'&course_code='.$course->getCode().'">'.
-                Display::return_icon('user.png', get_lang('Edit'), '', ICON_SIZE_SMALL).'</a>
-                <a href="'.api_get_path(WEB_CODE_PATH).'/user/user_import.php?action=import&cidReq='.$course->getCode().'&id_session='.$sessionId.'">'.
+            ).'</td>';
+        $courseItem .= '<td>'.($namesOfCoaches ? implode('<br>', $namesOfCoaches) : get_lang('None')).'</td>';
+        $courseItem .= '<td>'.$numberOfUsers.'</td>';
+        $courseItem .= '<td>';
+        $courseItem .= Display::url(Display::return_icon('course_home.gif', get_lang('Course')), $courseUrl);
+
+        if ($allowSkills) {
+            $courseItem .= Display::url(
+                Display::return_icon('skills.png', get_lang('Skills')),
+                api_get_path(WEB_CODE_PATH).'admin/skill_rel_course.php?session_id='.$sessionId.'&course_id='.$course->getId()
+            );
+        }
+
+        $courseItem .= $orderButtons;
+        $courseItem .= '<a href="session_course_user_list.php?id_session='.$sessionId.'&course_code='.$course->getCode().'">'.
+                Display::return_icon('user.png', get_lang('Users'), '', ICON_SIZE_SMALL).'</a>';
+        $courseItem .= '<a href="'.api_get_path(WEB_CODE_PATH).'user/user_import.php?action=import&cidReq='.$course->getCode().'&id_session='.$sessionId.'">'.
                 Display::return_icon('import_csv.png', get_lang('ImportUsersToACourse'), null, ICON_SIZE_SMALL).'</a>
+                <a href="'.api_get_path(WEB_CODE_PATH).'user/user_export.php?file_type=csv&course_session='.$course->getCode().':'.$sessionId.'&addcsvheader=1">'.
+                Display::return_icon('export_csv.png', get_lang('ExportUsersOfACourse'), null, ICON_SIZE_SMALL).'</a>
 				<a href="../tracking/courseLog.php?id_session='.$sessionId.'&cidReq='.$course->getCode().$orig_param.'&hide_course_breadcrumb=1">'.
                 Display::return_icon('statistics.gif', get_lang('Tracking')).'</a>&nbsp;
 				<a href="session_course_edit.php?id_session='.$sessionId.'&page=resume_session.php&course_code='.$course->getCode().''.$orig_param.'">'.
-                Display::return_icon('edit.png', get_lang('Edit'), '', ICON_SIZE_SMALL).'</a>
+                Display::return_icon('teacher.png', get_lang('ModifyCoach'), '', ICON_SIZE_SMALL).'</a>
 				<a href="'.api_get_self().'?id_session='.$sessionId.'&action=delete&idChecked[]='.$course->getCode().'" onclick="javascript:if(!confirm(\''.get_lang('ConfirmYourChoice').'\')) return false;">'.
-            Display::return_icon('delete.png', get_lang('Delete')).'</a>
-			</td>
-		</tr>';
+            Display::return_icon('delete.png', get_lang('Delete')).'</a>';
+
+        $courseItem .= '</td></tr>';
         $count++;
-	}
+    }
     $courseListToShow .= $courseItem;
 }
 $courseListToShow .= '</table><br />';
 
 $url = Display::url(
-    Display::return_icon('edit.png', get_lang('Edit'), array(), ICON_SIZE_SMALL),
+    Display::return_icon('edit.png', get_lang('Edit'), [], ICON_SIZE_SMALL),
     "add_users_to_session.php?page=resume_session.php&id_session=$sessionId"
 );
 $url .= Display::url(
-    Display::return_icon('import_csv.png', get_lang('ImportUsers'), array(), ICON_SIZE_SMALL),
+    Display::return_icon('import_csv.png', get_lang('ImportUsers'), [], ICON_SIZE_SMALL),
     "session_user_import.php?id_session=$sessionId"
+);
+$url .= Display::url(
+    Display::return_icon('export_csv.png', get_lang('ExportUsers'), [], ICON_SIZE_SMALL),
+    api_get_path(WEB_CODE_PATH)."user/user_export.php?file_type=csv&session=$sessionId&addcsvheader=1"
 );
 
 $userListToShow = Display::page_subheader(get_lang('UserList').$url);
-
 $userList = SessionManager::get_users_by_session($sessionId);
 
 if (!empty($userList)) {
-    $table = new HTML_Table(array('class' => 'data_table', 'id'=>'session-user-list'));
-
+    $table = new HTML_Table(
+        ['class' => 'data_table', 'id' => 'session-user-list']
+    );
     $table->setHeaderContents(0, 0, get_lang('User'));
     $table->setHeaderContents(0, 1, get_lang('Status'));
-    $table->setHeaderContents(0, 2, get_lang('Actions'));
+    $table->setHeaderContents(0, 2, get_lang('RegistrationDate'));
+    $table->setHeaderContents(0, 3, get_lang('Actions'));
 
     $row = 1;
     foreach ($userList as $user) {
@@ -307,22 +289,22 @@ if (!empty($userList)) {
         $removeLink = Display::url(
             Display::return_icon('delete.png', get_lang('Delete')),
             api_get_self().'?id_session='.$sessionId.'&action=delete&user='.$user['user_id'],
-            array('onclick' => "javascript:if(!confirm('".get_lang('ConfirmYourChoice')."')) return false;")
+            ['onclick' => "javascript:if(!confirm('".get_lang('ConfirmYourChoice')."')) return false;"]
         );
 
-        $addUserToUrlLink= '';
+        $addUserToUrlLink = '';
         if ($multiple_url_is_on) {
             if ($user['access_url_id'] != $url_id) {
                 $userLink .= ' '.Display::return_icon(
                     'warning.png',
                     get_lang('UserNotAddedInURL'),
-                    array(),
+                    [],
                     ICON_SIZE_SMALL
                 );
                 $add = Display::return_icon(
                     'add.png',
                     get_lang('AddUsersToURL'),
-                    array(),
+                    [],
                     ICON_SIZE_SMALL
                 );
                 $addUserToUrlLink = '<a href="resume_session.php?action=add_user_to_url&id_session='.$sessionId.'&user_id='.$user['user_id'].'">'.$add.'</a>';
@@ -353,16 +335,22 @@ if (!empty($userList)) {
                 $status = get_lang('Student');
         }
 
+        $registered = !empty($user['registered_at']) ? Display::dateToStringAgoAndLongDate($user['registered_at']) : '';
+
         $table->setCellContents($row, 1, $status);
-        $table->setCellContents($row, 2, $link);
+        $table->setCellContents($row, 2, $registered);
+        $table->setCellContents($row, 3, $link);
         $row++;
     }
     $userListToShow .= $table->toHtml();
 }
 
 /** @var SequenceRepository $repo */
-$repo = Database::getManager()->getRepository('ChamiloCoreBundle:SequenceResource');
-$requirementAndDependencies = $repo->getRequirementAndDependencies($sessionId, SequenceResource::SESSION_TYPE);
+$repo = $em->getRepository('ChamiloCoreBundle:SequenceResource');
+$requirementAndDependencies = $repo->getRequirementAndDependencies(
+    $sessionId,
+    SequenceResource::SESSION_TYPE
+);
 
 $requirements = '';
 if (!empty($requirementAndDependencies['requirements'])) {
@@ -375,34 +363,32 @@ if (!empty($requirementAndDependencies['dependencies'])) {
     $dependencies .= implode(', ', array_column($requirementAndDependencies['dependencies'], 'admin_link'));
 }
 
-//$tpl = new Template(get_lang('Session'));
-$tpl = Container::getTwig();
-$tpl->addGlobal('session_header', $sessionHeader);
-$tpl->addGlobal('title', $sessionTitle);
-$tpl->addGlobal('general_coach', $generalCoach);
-$tpl->addGlobal(
-    'session_admin',
-    api_get_user_info($session->getSessionAdminId())
-);
-$tpl->addGlobal('session', $sessionInfo);
-$tpl->addGlobal(
-    'session_category',
-    is_null($sessionCategory) ? null : $sessionCategory->getName()
-);
-$tpl->addGlobal(
-    'session_dates',
-    SessionManager::parseSessionDates($sessionInfo)
-);
-$tpl->addGlobal(
-    'session_visibility',
-    SessionManager::getSessionVisibility($sessionInfo)
-);
-$tpl->addGlobal('url_list', $urlList);
-$tpl->addGlobal('extra_fields', $extraFieldData);
-$tpl->addGlobal('course_list', $courseListToShow);
-$tpl->addGlobal('user_list', $userListToShow);
-$tpl->addGlobal('dependencies', $dependencies);
-$tpl->addGlobal('requirements', $requirements);
+$promotion = null;
+if (!empty($sessionInfo['promotion_id'])) {
+    $promotion = $em->getRepository('ChamiloCoreBundle:Promotion');
+    $promotion = $promotion->find($sessionInfo['promotion_id']);
+}
 
-echo $tpl->render('@template_style/session/resume_session.html.twig');
+$programmedAnnouncement = new ScheduledAnnouncement();
+$programmedAnnouncement = $programmedAnnouncement->allowed();
 
+$tpl = new Template($tool_name);
+$tpl->assign('session_header', $sessionHeader);
+$tpl->assign('title', $sessionTitle);
+$tpl->assign('general_coach', $generalCoach);
+$tpl->assign('session_admin', api_get_user_info($session->getSessionAdminId()));
+$tpl->assign('session', $sessionInfo);
+$tpl->assign('programmed_announcement', $programmedAnnouncement);
+$tpl->assign('session_category', is_null($sessionCategory) ? null : $sessionCategory->getName());
+$tpl->assign('session_dates', SessionManager::parseSessionDates($sessionInfo, true));
+$tpl->assign('session_visibility', SessionManager::getSessionVisibility($sessionInfo));
+$tpl->assign('promotion', $promotion);
+$tpl->assign('url_list', $urlList);
+$tpl->assign('extra_fields', $extraFieldData);
+$tpl->assign('course_list', $courseListToShow);
+$tpl->assign('user_list', $userListToShow);
+$tpl->assign('dependencies', $dependencies);
+$tpl->assign('requirements', $requirements);
+
+$layout = $tpl->get_template('session/resume_session.tpl');
+$tpl->display($layout);

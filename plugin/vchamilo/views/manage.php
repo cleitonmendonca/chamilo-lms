@@ -1,22 +1,20 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 $cidReset = true;
-require_once '../../../main/inc/global.inc.php';
-require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/lib.php';
-require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/lib/vchamilo_plugin.class.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
-// security
+// Security
 api_protect_admin_script();
-
-vchamilo_check_settings();
+Virtual::checkSettings();
 
 $action = isset($_GET['what']) ? $_GET['what'] : '';
 define('CHAMILO_INTERNAL', true);
 
-$plugininstance = VChamiloPlugin::create();
+$plugin = VChamiloPlugin::create();
 $thisurl = api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php';
 
-require_js('host_list.js', 'vchamilo');
+Virtual::requireJs('host_list.js', 'vchamilo', 'head');
 
 if ($action) {
     require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/views/manage.controller.php';
@@ -24,12 +22,12 @@ if ($action) {
 
 $query = "SELECT * FROM vchamilo";
 $result = Database::query($query);
-$instances = array();
+$instances = [];
 while ($instance = Database::fetch_object($result)) {
     $instances[$instance->id] = $instance;
 }
 
-$templates = vchamilo_get_available_templates(false);
+$templates = Virtual::getAvailableTemplates();
 
 if (empty($templates)) {
     $url = api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php?what=snapshotinstance';
@@ -39,64 +37,63 @@ if (empty($templates)) {
     );
 }
 
-$table = new HTML_Table(array('class' => 'data_table'));
+$table = new HTML_Table(['class' => 'data_table']);
 $column = 0;
 $row = 0;
 
 // $table->set_additional_parameters($parameters);
-$headers = array(
+$headers = [
     '',
-    $plugininstance->get_lang('sitename'),
-    $plugininstance->get_lang('institution'),
-    $plugininstance->get_lang('dbhost').' - '.get_lang('Database'),
-    $plugininstance->get_lang('coursefolder'),
-    $plugininstance->get_lang('enabled'),
-    $plugininstance->get_lang('lastcron'),
+    $plugin->get_lang('sitename'),
+    $plugin->get_lang('dbhost').' - '.get_lang('Database'),
+    $plugin->get_lang('coursefolder'),
+    $plugin->get_lang('enabled'),
+    $plugin->get_lang('lastcron'),
     '',
-);
-$attrs = array('center' => 'left');
+];
+$attrs = ['center' => 'left'];
 $table->addRow($headers, $attrs, 'th');
 
 $i = 0;
 foreach ($instances as $instance) {
     $checkbox = '<input type="checkbox" class="vnodessel" name="vids[]" value="'.$instance->id.'" />';
-
-    //$sitelink = '<a href="'.$instance->root_web.'" target="_blank">'.$instance->sitename.'</a>';
     $sitelink = $instance->sitename;
 
     if ($instance->visible) {
         $status = '<a href="'.$thisurl.'?what=disableinstances&vids[]='.$instance->id.'" >
-                  <img src="'.$plugininstance->pix_url('enabled').'" /></a>';
+                  '.Display::returnFontAwesomeIcon('toggle-on', 2).'</a>';
     } else {
         $status = '<a href="'.$thisurl.'?what=enableinstances&vids[]='.$instance->id.'" >
-                   <img src="'.$plugininstance->pix_url('disabled').'" /></a>';
+                  '.Display::returnFontAwesomeIcon('toggle-off', 2).'</a>';
     }
 
-    $cmd = '&nbsp;<a href="'.$thisurl.'?what=editinstance&vid='.$instance->id.'" title="'.$plugininstance->get_lang('edit').'">
-            <img src="'.$plugininstance->pix_url('edit').'" /></a>';
-    $cmd .= '&nbsp;<a href="'.$thisurl.'?what=snapshotinstance&vid='.$instance->id.'" title="'.$plugininstance->get_lang('snapshotinstance').'">
-        <img src="'.$plugininstance->pix_url('snapshot').'" /></a>';
+    $cmd = '&nbsp;<a href="'.$thisurl.'?what=editinstance&vid='.$instance->id.'" title="'.$plugin->get_lang('edit').'">
+            '.Display::returnFontAwesomeIcon('pencil', 2).'</a>';
+    $cmd .= '&nbsp;<a href="'.$thisurl.'?what=snapshotinstance&vid='.$instance->id.'" title="'.$plugin->get_lang('snapshotinstance').'">
+        '.Display::returnFontAwesomeIcon('camera', 2).'</a>';
+
+    $cmd .= '<a href="'.$thisurl.'?what=upgrade&vids[]='.$instance->id.'" title="'.$plugin->get_lang('Upgrade').'">
+         &nbsp;'.Display::returnFontAwesomeIcon('wrench', 2).' </a>';
 
     if (!$instance->visible) {
-        $cmd .= '<a href="'.$thisurl.'?what=fulldeleteinstances&vids[]='.$instance->id.'" title="'.$plugininstance->get_lang('destroyinstances').'">
-        <img src="'.$plugininstance->pix_url('delete').'" /></a>';
+        $cmd .= '<a onclick="javascript:if(!confirm(\''.get_lang('AreYouSureToDelete').'\')) return false;" href="'.$thisurl.'?what=fulldeleteinstances&vids[]='.$instance->id.'" title="'.$plugin->get_lang('destroyinstances').'">
+        &nbsp;'.Display::returnFontAwesomeIcon('remove', 2).' </a>';
     } else {
-        $cmd .= '<a href="'.$thisurl.'?what=deleteinstances&vids[]='.$instance->id.'" title="'.$plugininstance->get_lang('deleteinstances').'">
-        <img src="'.$plugininstance->pix_url('delete').'" /></a>';
+        $cmd .= '<a onclick="javascript:if(!confirm(\''.get_lang('AreYouSureToDelete').'\')) return false;" href="'.$thisurl.'?what=deleteinstances&vids[]='.$instance->id.'" title="'.$plugin->get_lang('deleteinstances').'">
+         &nbsp;'.Display::returnFontAwesomeIcon('remove', 2).' </a>';
     }
 
-    $crondate = ($instance->lastcron) ? date('r', $instance->lastcron) : '';
-    $data = array(
+    $crondate = $instance->lastcron ? date('r', $instance->lastcron) : '';
+    $data = [
         $checkbox,
-        $sitelink.' ('.Display::url($instance->root_web, $instance->root_web).')',
-        $instance->institution,
+        $sitelink.' '.$instance->institution.' ('.Display::url($instance->root_web, $instance->root_web, ['target' => '_blank']).')',
         $instance->db_host.' - '.$instance->main_database,
         $instance->slug,
         $status,
         $crondate,
         $cmd,
-    );
-    $attrs = array('center' => 'left');
+    ];
+    $attrs = ['center' => 'left'];
     $table->addRow($data, $attrs, 'td');
     $i++;
 }
@@ -104,28 +101,28 @@ foreach ($instances as $instance) {
 $items = [
     [
         'url' => $thisurl.'?what=newinstance',
-        'content' => $plugininstance->get_lang('newinstance')
+        'content' => $plugin->get_lang('newinstance'),
     ],
     [
-        'url' => $thisurl.'?what=instance&registeronly=1',
-        'content' => $plugininstance->get_lang('registerinstance')
+        'url' => $thisurl.'?what=import',
+        'content' => $plugin->get_lang('ImportInstance'),
     ],
     [
         'url' => $thisurl.'?what=snapshotinstance&vid=0',
-        'content' => $plugininstance->get_lang('snapshotmaster')
+        'content' => $plugin->get_lang('snapshotmaster'),
     ],
     [
         'url' => $thisurl.'?what=clearcache&vid=0',
-        'content' => $plugininstance->get_lang('clearmastercache')
+        'content' => $plugin->get_lang('clearmastercache'),
     ],
     [
         'url' => api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/syncparams.php',
-        'content' => $plugininstance->get_lang('sync_settings')
+        'content' => $plugin->get_lang('sync_settings'),
     ],
     [
         'url' => api_get_path(WEB_CODE_PATH).'admin/configure_plugin.php?name=vchamilo',
-        'content' => get_lang('Settings')
-    ]
+        'content' => get_lang('Settings'),
+    ],
 ];
 
 $content = Display::page_header('VChamilo Instances');
@@ -134,20 +131,20 @@ $content .= Display::actions($items);
 $content .= '<form action="'.$thisurl.'">';
 $content .= $table->toHtml();
 
-$selectionoptions = array('<option value="0" selected="selected">'.$plugininstance->get_lang('choose').'</option>');
-$selectionoptions[] = '<option value="deleteinstances">'.$plugininstance->get_lang('deleteinstances').'</option>';
-$selectionoptions[] = '<option value="enableinstances">'.$plugininstance->get_lang('enableinstances').'</option>';
-$selectionoptions[] = '<option value="fulldeleteinstances">'.$plugininstance->get_lang(
+$selectionoptions = ['<option value="0" selected="selected">'.$plugin->get_lang('choose').'</option>'];
+$selectionoptions[] = '<option value="deleteinstances">'.$plugin->get_lang('deleteinstances').'</option>';
+$selectionoptions[] = '<option value="enableinstances">'.$plugin->get_lang('enableinstances').'</option>';
+$selectionoptions[] = '<option value="fulldeleteinstances">'.$plugin->get_lang(
         'destroyinstances'
     ).'</option>';
-$selectionoptions[] = '<option value="clearcache">'.$plugininstance->get_lang('clearcache').'</option>';
-$selectionoptions[] = '<option value="setconfigvalue">'.$plugininstance->get_lang('setconfigvalue').'</option>';
+$selectionoptions[] = '<option value="clearcache">'.$plugin->get_lang('clearcache').'</option>';
+$selectionoptions[] = '<option value="setconfigvalue">'.$plugin->get_lang('setconfigvalue').'</option>';
 $selectionaction = '<select name="what" onchange="this.form.submit()">'.implode('', $selectionoptions).'</select>';
 
-$content .= '<div class"vchamilo-right"><div></div><div>
-<a href="javascript:selectallhosts()">'.$plugininstance->get_lang('selectall').'</a> - 
-<a href="javascript:deselectallhosts()">'.$plugininstance->get_lang('selectnone').'</a> - 
-&nbsp; - '.$plugininstance->get_lang('withselection').' '.$selectionaction.'</div></div>';
+$content .= '<div class="vchamilo-right"><div></div><div>
+<a href="javascript:selectallhosts()">'.$plugin->get_lang('selectall').'</a> - 
+<a href="javascript:deselectallhosts()">'.$plugin->get_lang('selectnone').'</a> - 
+&nbsp; - '.$plugin->get_lang('withselection').' '.$selectionaction.'</div></div>';
 
 $content .= '</form>';
 

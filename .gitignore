@@ -1,25 +1,34 @@
 # Cache directories
-/app/bootstrap.php.cache
-/app/cache/*
-!app/cache/.gitkeep
-!app/cache/.htaccess
-/app/config/parameters.yml
-/app/logs/*
-!app/logs/.gitkeep
-/app/phpunit.xml
-/bin/
 
-/app/courses/*
-!app/courses/.gitkeep
+var/cache/*
+!var/cache/.gitkeep
+
+var/log/*
+!var/log/.gitkeep
+
+/node_modules/
+
+# Chamilo configuration
+/app/config/parameters.yml
+/app/config/add_course.conf.php
+/app/config/auth.conf.php
+/app/config/course_info.conf.php
+/app/config/events.conf.php
+/app/config/mail.conf.php
+/app/config/profile.conf.php
+/app/config/configuration.php
+
+# Courses
+var/courses/*
+!var/courses/.gitkeep
 
 # Home
 app/home/*
-
-app/logs/*
-app/Resources/views/*
+components/*
 
 # Upload content
-app/upload/*
+var/upload/*
+!var/upload/.gitkeep
 
 # Logs and databases #
 *.log
@@ -38,12 +47,34 @@ plugin/bbb/config.vm.php
 
 # Cron temp files
 main/cron/incoming/*
+plugin/vchamilo/templates/*
 
-# Stuff updated through composer
-composer.lock
+# Stuff updated through composer - Remove just before release
 vendor
 web/assets/*
-web/assetic/*
-web/bundles/*
-web/css/*
-web/js/*
+
+
+###> symfony/framework-bundle ###
+.env
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> friendsofphp/php-cs-fixer ###
+.php_cs.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> symfony/phpunit-bridge ###
+.phpunit
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
+###> symfony/web-server-bundle ###
+.web-server-pid
+###< symfony/web-server-bundle ###
+
+###> symfony/webpack-encore-pack ###
+/node_modules/
+/public/build/
+###< symfony/webpack-encore-pack ###

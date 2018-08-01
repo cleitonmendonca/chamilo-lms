@@ -1,7 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Responses to AJAX calls for install
+ * Responses to AJAX calls for install.
  */
 
 //require_once '../global.inc.php';
@@ -9,7 +9,7 @@
 $action = $_GET['a'];
 
 switch ($action) {
-	case 'send_contact_information':
+    case 'send_contact_information':
         if (!empty($_POST)) {
             // get params from contact form
             $person_name = $_POST['person_name'];
@@ -23,7 +23,7 @@ switch ($action) {
             $company_city = $_POST['company_city'];
 
             // validating required fields
-            $a_required_fields = array($person_name, $person_role, $company_name, $company_activity, $company_country);
+            $a_required_fields = [$person_name, $person_role, $company_name, $company_activity, $company_country];
             $required_field_error = false;
             foreach ($a_required_fields as $required_file) {
                 if (trim($required_file) === '') {
@@ -35,13 +35,12 @@ switch ($action) {
             if ($required_field_error) {
                 echo 'required_field_error';
             } else {
-
                 // save contact information with web service
                 // create a client
-                $client = new nusoap_client('http://version.chamilo.org/contact.php?wsdl', true);
+                $client = new SoapClient('https://version.chamilo.org/contact.php?wsdl');
 
                 // call method ws_add_contact_information
-                $contact_params = array(
+                $contact_params = [
                                         'person_name' => $person_name,
                                         'person_email' => $person_email,
                                         'person_role' => $person_role,
@@ -50,17 +49,18 @@ switch ($action) {
                                         'company_name' => $company_name,
                                         'company_activity' => $company_activity,
                                         'company_country' => $company_country,
-                                        'company_city' => $company_city
-                                    );
+                                        'company_city' => $company_city,
+                                    ];
 
-                $result = $client->call('ws_add_contact_information', array('contact_params' => $contact_params));
-
+                $result = $client->__soapCall(
+                    'ws_add_contact_information',
+                    ['contact_params' => $contact_params]
+                );
                 echo $result;
             }
-
-            }
+        }
         break;
-	default:
-		echo '';
+    default:
+        echo '';
 }
 exit;

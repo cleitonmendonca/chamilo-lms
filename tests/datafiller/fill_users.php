@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This script contains a data filling procedure for users
  * @author Yannick Warnier <yannick.warnier@beeznest.com>

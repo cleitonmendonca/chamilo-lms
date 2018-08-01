@@ -1,7 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../../main/inc/global.inc.php';
+require_once __DIR__.'/../../main/inc/global.inc.php';
 
 $plugin = new AppPlugin();
 $pluginList = $plugin->get_installed_plugins();
@@ -10,12 +10,13 @@ if (!$capturePluginInstalled) {
     exit;
 }
 
-
 $capturePath = api_get_path(WEB_PLUGIN_PATH).'jcapture/';
 $hostName = api_get_path(WEB_PATH);
 
 define('DOKU_BASE', '/tmp');
-function getSecurityToken() {};
+function getSecurityToken()
+{
+}
 
 //close sesseion
 session_write_close();
@@ -24,7 +25,7 @@ header('Content-Type: text/html; charset=utf-8');
 $imageFormat = "PNG";
 $cookies = null;
 foreach (array_keys($_COOKIE) as $cookieName) {
-    $cookies.=bin2hex($cookieName)."=".bin2hex($_COOKIE[$cookieName]).";";
+    $cookies .= bin2hex($cookieName)."=".bin2hex($_COOKIE[$cookieName]).";";
 }
 
 $pageName = 'file';

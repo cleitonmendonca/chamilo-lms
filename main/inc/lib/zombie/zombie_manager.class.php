@@ -2,7 +2,7 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * ZombieQuery
+ * ZombieQuery.
  *
  * @copyright (c) 2012 University of Geneva
  * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
@@ -10,23 +10,25 @@
  */
 class ZombieManager
 {
-    static function last_year()
+    public static function last_year()
     {
         $today = time();
         $day = date('j', $today);
         $month = date('n', $today);
         $year = date('Y', $today) - 1;
+
         return mktime(0, 0, 0, $month, $day, $year);
     }
 
     /**
-     * Returns users whose last login is prior from $ceiling
+     * Returns users whose last login is prior from $ceiling.
      *
-     * @param int|string $ceiling last login date
-     * @param bool $active_only if true returns only active users. Otherwise returns all users.
+     * @param int|string $ceiling     last login date
+     * @param bool       $active_only if true returns only active users. Otherwise returns all users.
+     *
      * @return ResultSet
      */
-    static function listZombies($ceiling, $active_only = true, $count = 0, $from = 10, $column = 'user.firstname', $direction = 'desc')
+    public static function listZombies($ceiling, $active_only = true, $count = 0, $from = 10, $column = 'user.firstname', $direction = 'desc')
     {
         if (empty($column)) {
             $column = 'user.firstname';
@@ -50,7 +52,7 @@ class ZombieManager
                     access.login_date';
 
         if (api_is_multiple_url_enabled()) {
-            $access_url_rel_user_table = Database :: get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
+            $access_url_rel_user_table = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
             $current_url_id = api_get_current_access_url_id();
 
             $sql .= " FROM $user_table as user, $login_table as access, $access_url_rel_user_table as url
@@ -79,7 +81,7 @@ class ZombieManager
         $count = intval($count);
         $from = intval($from);
 
-        $sql .=  " ORDER BY $column $direction";
+        $sql .= " ORDER BY $column $direction";
         $sql .= " LIMIT $count, $from ";
 
         $result = Database::query($sql);
@@ -90,11 +92,11 @@ class ZombieManager
     /**
      * @param $ceiling
      */
-    static function deactivate_zombies($ceiling)
+    public static function deactivate_zombies($ceiling)
     {
         $zombies = self::list_zombies($ceiling);
-        $ids  = array();
-        foreach($zombies as $zombie) {
+        $ids = [];
+        foreach ($zombies as $zombie) {
             $ids[] = $zombie['user_id'];
         }
         UserManager::deactivate_users($ids);

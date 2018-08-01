@@ -13,7 +13,7 @@
  *                      multiple forums per group
  * - sticky messages
  * - new view option: nested view
- * - quoting a message
+ * - quoting a message.
  *
  * @Author Patrick Cool <patrick.cool@UGent.be>, Ghent University
  * @Copyright Ghent University
@@ -21,11 +21,7 @@
  *
  * @package chamilo.forum
  */
-
-use ChamiloSession as Session;
-
-// Including the global initialization file.
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 // The section (tabs).
 $this_section = SECTION_COURSES;
@@ -43,22 +39,16 @@ require_once 'forumconfig.inc.php';
 require_once 'forumfunction.inc.php';
 
 // Are we in a lp ?
-$origin = '';
-if (isset($_GET['origin'])) {
-    $origin = Security::remove_XSS($_GET['origin']);
-}
-
+$origin = api_get_origin();
 /* MAIN DISPLAY SECTION */
 $current_forum = get_forum_information($_GET['forum']);
 $current_forum_category = get_forumcategory_information($current_forum['forum_category']);
 
-/* Breadcrumbs */
-
 if (api_is_in_gradebook()) {
-    $interbreadcrumb[]= array(
-        'url' => api_get_path(WEB_CODE_PATH).'gradebook/index.php?'.api_get_cidreq(),
-        'name' => get_lang('ToolGradebook')
-    );
+    $interbreadcrumb[] = [
+        'url' => Category::getUrl(),
+        'name' => get_lang('ToolGradebook'),
+    ];
 }
 
 /* Is the user allowed here? */
@@ -74,19 +64,19 @@ if (!api_is_allowed_to_edit(false, true) &&
 
 // 2. the forumcategory or forum is locked (locked <>0) and the user is not a course manager
 if (!api_is_allowed_to_edit(false, true) &&
-    (($current_forum_category['visibility'] && $current_forum_category['locked'] <> 0) OR $current_forum['locked'] <> 0)
+    (($current_forum_category['visibility'] && $current_forum_category['locked'] != 0) || $current_forum['locked'] != 0)
 ) {
     api_not_allowed();
 }
 
 // 3. new threads are not allowed and the user is not a course manager
 if (!api_is_allowed_to_edit(false, true) &&
-    $current_forum['allow_new_threads'] <> 1
+    $current_forum['allow_new_threads'] != 1
 ) {
     api_not_allowed();
 }
 // 4. anonymous posts are not allowed and the user is not logged in
-if (!$_user['user_id'] AND $current_forum['allow_anonymous'] <> 1) {
+if (!$_user['user_id'] && $current_forum['allow_anonymous'] != 1) {
     api_not_allowed();
 }
 
@@ -109,43 +99,59 @@ if (api_is_invitee()) {
 
 $groupId = api_get_group_id();
 if (!empty($groupId)) {
-    $groupProperties = GroupManager :: get_group_properties($groupId);
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'group/group.php?'.$cidreq, 'name' => get_lang('Groups'));
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'group/group_space.php?'.$cidreq, 'name' => get_lang('GroupSpace').' '.$groupProperties['name']);
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'forum/viewforum.php?'.$cidreq.'&forum='.intval($_GET['forum']), 'name' => $current_forum['forum_title']);
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'forum/newthread.php?'.$cidreq.'&forum='.intval($_GET['forum']),'name' => get_lang('NewTopic'));
+    $groupProperties = GroupManager::get_group_properties($groupId);
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'group/group.php?'.$cidreq,
+        'name' => get_lang('Groups'),
+    ];
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'group/group_space.php?'.$cidreq,
+        'name' => get_lang('GroupSpace').' '.$groupProperties['name'],
+    ];
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'forum/viewforum.php?'.$cidreq.'&forum='.intval($_GET['forum']),
+        'name' => $current_forum['forum_title'],
+    ];
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'forum/newthread.php?'.$cidreq.'&forum='.intval($_GET['forum']),
+        'name' => get_lang('NewTopic'),
+    ];
 } else {
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'forum/index.php?'.$cidreq, 'name' => $nameTools);
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'forum/viewforumcategory.php?'.$cidreq.'&forumcategory='.$current_forum_category['cat_id'], 'name' => $current_forum_category['cat_title']);
-    $interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'forum/viewforum.php?'.$cidreq.'&forum='.intval($_GET['forum']), 'name' => $current_forum['forum_title']);
-    $interbreadcrumb[] = array('url' => '#', 'name' => get_lang('NewTopic'));
+    $interbreadcrumb[] = ['url' => api_get_path(WEB_CODE_PATH).'forum/index.php?'.$cidreq, 'name' => $nameTools];
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'forum/viewforumcategory.php?'.$cidreq.'&forumcategory='.$current_forum_category['cat_id'],
+        'name' => $current_forum_category['cat_title'],
+    ];
+    $interbreadcrumb[] = [
+        'url' => api_get_path(WEB_CODE_PATH).'forum/viewforum.php?'.$cidreq.'&forum='.intval($_GET['forum']),
+        'name' => $current_forum['forum_title'],
+    ];
+    $interbreadcrumb[] = ['url' => '#', 'name' => get_lang('NewTopic')];
 }
 
-/* Resource Linker */
-if (isset($_POST['add_resources']) AND $_POST['add_resources'] == get_lang('Resources')) {
-    $_SESSION['formelements']	= $_POST;
-    $_SESSION['origin']			= $_SERVER['REQUEST_URI'];
-    $_SESSION['breadcrumbs']	= $interbreadcrumb;
-    header('Location: ../resourcelinker/resourcelinker.php');
-    exit;
-}
-
-$htmlHeadXtra[] = <<<JS
+$htmlHeadXtra[] = "
     <script>
-    $(document).on('ready', function() {
-        $('#reply-add-attachment').on('click', function(e) {
-            e.preventDefault();
-
-            var newInputFile = $('<input>', {
-                type: 'file',
-                name: 'user_upload[]'
+        $(document).on('ready', function() {
+            $('#reply-add-attachment').on('click', function(e) {
+                e.preventDefault();
+    
+                var newInputFile = $('<input>', {
+                    type: 'file',
+                    name: 'user_upload[]'
+                });
+                $('[name=\"user_upload[]\"]').parent().append(newInputFile);
             });
-
-            $('[name="user_upload[]"]').parent().append(newInputFile);
         });
-    });
     </script>
-JS;
+";
+
+$form = show_add_post_form(
+    $current_forum,
+    $forum_setting,
+    'newthread',
+    '',
+    isset($_SESSION['formelements']) ? $_SESSION['formelements'] : null
+);
 
 if ($origin == 'learnpath') {
     Display::display_reduced_header();
@@ -164,20 +170,11 @@ echo '</div>';
 // Set forum attachment data into $_SESSION
 getAttachedFiles($current_forum['forum_id'], 0, 0);
 
-$values = show_add_post_form(
-    $current_forum,
-    $forum_setting,
-    'newthread',
-    '',
-    isset($_SESSION['formelements']) ? $_SESSION['formelements'] : null
-);
-
-if (!empty($values) && isset($values['SubmitPost'])) {
-    // Add new thread in table forum_thread.
-    store_thread($current_forum, $values);
+if ($form) {
+    $form->display();
 }
 
-if (isset($origin) && $origin == 'learnpath') {
+if ($origin == 'learnpath') {
     Display::display_reduced_footer();
 } else {
     Display::display_footer();

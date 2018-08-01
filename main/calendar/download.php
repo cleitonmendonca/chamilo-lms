@@ -2,17 +2,16 @@
 /* For licensing terms, see /license.txt */
 
 /**
-*	This file is responsible for  passing requested documents to the browser.
-*	Html files are parsed to fix a few problems with URLs,
-*	but this code will hopefully be replaced soon by an Apache URL
-*	rewrite mechanism.
-*
-*	@package chamilo.calendar
-*/
-
+ * This file is responsible for  passing requested documents to the browser.
+ * Html files are parsed to fix a few problems with URLs,
+ * but this code will hopefully be replaced soon by an Apache URL
+ * rewrite mechanism.
+ *
+ * @package chamilo.calendar
+ */
 session_cache_limiter('public');
 
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $this_section = SECTION_COURSES;
 
 // IMPORTANT to avoid caching of documents
@@ -54,7 +53,7 @@ $full_file_name = api_get_path(SYS_COURSE_PATH).$course_info['path'].'/upload/ca
 
 //if the rewrite rule asks for a directory, we redirect to the document explorer
 if (is_dir($full_file_name)) {
-    while ($doc_url{$dul = strlen($doc_url) - 1} == '/') {
+    while ($doc_url[$dul = strlen($doc_url) - 1] == '/') {
         $doc_url = substr($doc_url, 0, $dul);
     }
     // create the path
@@ -80,9 +79,12 @@ if (Database::num_rows($result)) {
     $title = str_replace(' ', '_', $row['filename']);
     if (Security::check_abs_path(
         $full_file_name,
-        api_get_path(SYS_COURSE_PATH).$course_info['path'].'/upload/calendar/')
-    ) {
-        DocumentManager::file_send_for_download($full_file_name, true, $title);
+        api_get_path(SYS_COURSE_PATH).$course_info['path'].'/upload/calendar/'
+    )) {
+        $result = DocumentManager::file_send_for_download($full_file_name, true, $title);
+        if ($result === false) {
+            api_not_allowed(true);
+        }
     }
 }
 

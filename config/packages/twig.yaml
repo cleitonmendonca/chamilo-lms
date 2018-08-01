@@ -1,0 +1,48 @@
+twig:
+    debug: '%kernel.debug%'
+    paths: ['%kernel.project_dir%/templates', '%kernel.project_dir%/main/template/']
+    form_themes:
+        - '@SonataFormatter/Form/formatter.html.twig'
+    exception_controller: 'Chamilo\ThemeBundle\Controller\ExceptionController::showAction'
+    globals:
+        show_toolbar: true
+        show_footer: true
+        software_name: Chamilo
+        version: 2
+        session_teachers:
+        teachers:
+        news_counter:
+        news_list:
+        messages_count:
+        message_link:
+        is_profile_editable:
+        administrator_name:
+        execution_stats:
+        course_session_block:
+        show_course_shortcut:
+        show_course_navigation_menu:
+        actions:
+        header:
+        message:
+        show_media_element: 1
+        plugin_content_bottom:
+        plugin_content_top:
+        plugin_main_bottom:
+        plugin_course_tool_plugin:
+        plugin_footer_center:
+        plugin_footer_left:
+        plugin_footer_right:
+        plugin_header_center:
+        plugin_header_left:
+        plugin_header_right:
+        plugin_header_main:
+        plugin_login_bottom:
+        plugin_login_top:
+        plugin_login_left:
+        plugin_login_right:
+        plugin_main_top:
+        plugin_menu_administrator:
+        plugin_menu_bottom:
+        plugin_menu_top:
+        plugin_pre_footer:
+        footer_extra_content:

@@ -1,20 +1,23 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Application\Migrations\Schema\V111;
 
-use Doctrine\DBAL\Migrations\AbstractMigration;
+use Application\Migrations\AbstractMigrationChamilo;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * Auto-generated Migration: Please modify to your needs!
+ * Class Version20160330103045
+ * @package Application\Migrations\Schema\V111
  */
-class Version20160330103045 extends AbstractMigration
+class Version20160330103045 extends AbstractMigrationChamilo
 {
     /**
      * @param Schema $schema
      */
     public function up(Schema $schema)
     {
+        /*
         $this->addSql(
             'CREATE TABLE page__site (id INT AUTO_INCREMENT NOT NULL, enabled TINYINT(1) NOT NULL, name VARCHAR(255) NOT NULL, relative_path VARCHAR(255) DEFAULT NULL, host VARCHAR(255) NOT NULL, enabled_from DATETIME DEFAULT NULL, enabled_to DATETIME DEFAULT NULL, is_default TINYINT(1) NOT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, locale VARCHAR(6) DEFAULT NULL, title VARCHAR(64) DEFAULT NULL, meta_keywords VARCHAR(255) DEFAULT NULL, meta_description VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB'
         );
@@ -106,17 +109,41 @@ class Version20160330103045 extends AbstractMigration
         $this->addSql("ALTER TABLE timeline__action_component ADD CONSTRAINT FK_6ACD1B169D32F035 FOREIGN KEY (action_id) REFERENCES timeline__action (id) ON DELETE CASCADE;");
         $this->addSql("ALTER TABLE timeline__action_component ADD CONSTRAINT FK_6ACD1B16E2ABAFFF FOREIGN KEY (component_id) REFERENCES timeline__component (id) ON DELETE CASCADE;");
         //$this->addSql("CREATE UNIQUE INDEX UNIQ_8D93D649A0D96FBF ON user (email_canonical);");
+        */
+        $table = $schema->getTable('track_stored_values_stack');
+        $hasIndex = $table->hasIndex('user_sco_course_sv_stack');
+        if ($hasIndex) {
+            $this->addSql('DROP INDEX user_sco_course_sv_stack ON track_stored_values_stack');
+        }
 
-        $this->addSql('DROP TABLE extra_field_saved_search');
-        $this->addSql('DROP INDEX user_sco_course_sv_stack ON track_stored_values_stack');
-        $this->addSql('ALTER TABLE session_rel_user ADD duration INT DEFAULT NULL');
-        $this->addSql('DROP INDEX user_sco_course_sv ON track_stored_values');
+        $table = $schema->getTable('session_rel_user');
+        $hasColumn = $table->hasColumn('duration');
+        if (!$hasColumn) {
+            $this->addSql('ALTER TABLE session_rel_user ADD duration INT DEFAULT NULL');
+        }
 
-        $this->addSql('DROP INDEX UNIQ_8D93D649F85E0677 ON user');
-        $this->addSql(
-            'ALTER TABLE user ADD email_canonical VARCHAR(255) NOT NULL, ADD credentials_expired TINYINT(1), ADD credentials_expire_at DATETIME DEFAULT NULL, ADD expires_at DATETIME DEFAULT NULL, ADD expired TINYINT(1), ADD locked TINYINT(1),ADD enabled TINYINT(1) NOT NULL, ADD locked TINYINT(1) NOT NULL, ADD expired TINYINT(1) NOT NULL, ADD expires_at DATETIME DEFAULT NULL, ADD roles LONGTEXT NOT NULL COMMENT \'(DC2Type:array)\', ADD credentials_expired TINYINT(1) NOT NULL, ADD credentials_expire_at DATETIME DEFAULT NULL, CHANGE username username VARCHAR(255) NOT NULL, CHANGE username_canonical username_canonical VARCHAR(255) NOT NULL, CHANGE email email VARCHAR(255) NOT NULL'
-        );
-        $this->addSql('ALTER TABLE user ADD enabled TINYINT(1) NOT NULL;');
+        $table = $schema->getTable('track_stored_values');
+        $hasIndex = $table->hasIndex('user_sco_course_sv');
+        if ($hasIndex) {
+            $this->addSql('DROP INDEX user_sco_course_sv ON track_stored_values');
+        }
+
+        $table = $schema->getTable('user');
+        $hasIndex = $table->hasIndex('UNIQ_8D93D649F85E0677');
+        if ($hasIndex) {
+            $this->addSql('DROP INDEX UNIQ_8D93D649F85E0677 ON user');
+        }
+
+        $this->addSql('ALTER TABLE user ADD email_canonical VARCHAR(255) NOT NULL');
+        $this->addSql('ALTER TABLE user ADD credentials_expired TINYINT(1)');
+        $this->addSql('ALTER TABLE user ADD credentials_expire_at DATETIME DEFAULT NULL');
+        $this->addSql('ALTER TABLE user ADD locked TINYINT(1) NOT NULL');
+        $this->addSql('ALTER TABLE user ADD enabled TINYINT(1) NOT NULL');
+        $this->addSql('ALTER TABLE user ADD expired TINYINT(1) NOT NULL');
+        $this->addSql('ALTER TABLE user ADD expires_at DATETIME DEFAULT NULL');
+        $this->addSql('ALTER TABLE user CHANGE username username VARCHAR(100) NOT NULL');
+        $this->addSql('ALTER TABLE user CHANGE username_canonical username_canonical VARCHAR(100) NOT NULL');
+        $this->addSql('ALTER TABLE user CHANGE email email VARCHAR(100) NOT NULL');
 
         $sql = "UPDATE user SET email_canonical = email";
         $this->addSql($sql);
@@ -126,6 +153,7 @@ class Version20160330103045 extends AbstractMigration
 
         $sql = "UPDATE user SET roles = 'a:0:{}'";
         $this->addSql($sql);
+
         $sql = "UPDATE user SET enabled = '1' WHERE active = 1";
         $this->addSql($sql);
 
@@ -135,10 +163,10 @@ class Version20160330103045 extends AbstractMigration
         $sql = "UPDATE user SET username_canonical = username";
         $this->addSql($sql);
 
-        $this->addSql("CREATE TABLE fos_user_user_group (user_id INT NOT NULL, group_id INT NOT NULL, INDEX IDX_B3C77447A76ED395 (user_id), INDEX IDX_B3C77447FE54D947 (group_id), PRIMARY KEY(user_id, group_id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB;");
-        $this->addSql("CREATE TABLE fos_group (id INT AUTO_INCREMENT NOT NULL, name VARCHAR(255) NOT NULL, roles LONGTEXT NOT NULL COMMENT '(DC2Type:array)', code VARCHAR(40) NOT NULL, UNIQUE INDEX UNIQ_4B019DDB5E237E06 (name), UNIQUE INDEX UNIQ_4B019DDB77153098 (code), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB;");
-        $this->addSql("ALTER TABLE fos_user_user_group ADD CONSTRAINT FK_B3C77447A76ED395 FOREIGN KEY (user_id) REFERENCES user (id);");
-        $this->addSql("ALTER TABLE fos_user_user_group ADD CONSTRAINT FK_B3C77447FE54D947 FOREIGN KEY (group_id) REFERENCES fos_group (id);");
+        $this->addSql("CREATE TABLE fos_group(id INT AUTO_INCREMENT NOT NULL, code VARCHAR(40) NOT NULL, UNIQUE INDEX UNIQ_4B019DDB77153098 (code), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB");
+        $this->addSql("CREATE TABLE fos_user_user_group (user_id INT NOT NULL, group_id INT NOT NULL, INDEX IDX_B3C77447A76ED395 (user_id), INDEX IDX_B3C77447FE54D947 (group_id), PRIMARY KEY(user_id, group_id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB");
+        $this->addSql("ALTER TABLE fos_user_user_group ADD CONSTRAINT FK_B3C77447A76ED395 FOREIGN KEY (user_id) REFERENCES user (id)");
+        $this->addSql("ALTER TABLE fos_user_user_group ADD CONSTRAINT FK_B3C77447FE54D947 FOREIGN KEY (group_id) REFERENCES fos_group (id)");
     }
 
     /**
@@ -146,46 +174,5 @@ class Version20160330103045 extends AbstractMigration
      */
     public function down(Schema $schema)
     {
-        $this->addSql('ALTER TABLE page__page DROP FOREIGN KEY FK_2FAE39EDF6BD1646');
-        $this->addSql('ALTER TABLE page__snapshot DROP FOREIGN KEY FK_3963EF9AF6BD1646');
-        $this->addSql('ALTER TABLE page__page DROP FOREIGN KEY FK_2FAE39ED727ACA70');
-        $this->addSql('ALTER TABLE page__page DROP FOREIGN KEY FK_2FAE39ED158E0B66');
-        $this->addSql('ALTER TABLE page__snapshot DROP FOREIGN KEY FK_3963EF9AC4663E4');
-        $this->addSql('ALTER TABLE page__bloc DROP FOREIGN KEY FK_FCDC1A97C4663E4');
-        $this->addSql('ALTER TABLE page__bloc DROP FOREIGN KEY FK_FCDC1A97727ACA70');
-        $this->addSql('ALTER TABLE classification__category DROP FOREIGN KEY FK_43629B36727ACA70');
-        $this->addSql('ALTER TABLE media__media DROP FOREIGN KEY FK_5C6DD74E12469DE2');
-        $this->addSql('ALTER TABLE classification__category DROP FOREIGN KEY FK_43629B36E25D857E');
-        $this->addSql('ALTER TABLE classification__tag DROP FOREIGN KEY FK_CA57A1C7E25D857E');
-        $this->addSql('ALTER TABLE classification__collection DROP FOREIGN KEY FK_A406B56AE25D857E');
-        $this->addSql('ALTER TABLE media__gallery_media DROP FOREIGN KEY FK_80D4C5414E7AF8F');
-        $this->addSql('ALTER TABLE classification__category DROP FOREIGN KEY FK_43629B36EA9FDD75');
-        $this->addSql('ALTER TABLE classification__collection DROP FOREIGN KEY FK_A406B56AEA9FDD75');
-        $this->addSql('ALTER TABLE media__gallery_media DROP FOREIGN KEY FK_80D4C541EA9FDD75');
-        $this->addSql(
-            'CREATE TABLE extra_field_saved_search (id INT AUTO_INCREMENT NOT NULL, field_id INT DEFAULT NULL, user_id INT DEFAULT NULL, value LONGTEXT DEFAULT NULL COLLATE utf8_unicode_ci, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, INDEX IDX_16ABE32A443707B0 (field_id), INDEX IDX_16ABE32AA76ED395 (user_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB'
-        );
-        $this->addSql(
-            'ALTER TABLE extra_field_saved_search ADD CONSTRAINT FK_16ABE32A443707B0 FOREIGN KEY (field_id) REFERENCES extra_field (id)'
-        );
-        $this->addSql(
-            'ALTER TABLE extra_field_saved_search ADD CONSTRAINT FK_16ABE32AA76ED395 FOREIGN KEY (user_id) REFERENCES user (id)'
-        );
-        $this->addSql('DROP TABLE page__site');
-        $this->addSql('DROP TABLE page__page');
-        $this->addSql('DROP TABLE page__snapshot');
-        $this->addSql('DROP TABLE page__bloc');
-        $this->addSql('DROP TABLE classification__category');
-        $this->addSql('DROP TABLE classification__context');
-        $this->addSql('DROP TABLE classification__tag');
-        $this->addSql('DROP TABLE classification__collection');
-        $this->addSql('DROP TABLE media__gallery');
-        $this->addSql('DROP TABLE media__media');
-        $this->addSql('DROP TABLE media__gallery_media');
-        $this->addSql('ALTER TABLE session_rel_user DROP duration');
-        $this->addSql('CREATE INDEX user_sco_course_sv ON track_stored_values (user_id, sco_id, course_id, sv_key)');
-        $this->addSql(
-            'CREATE INDEX user_sco_course_sv_stack ON track_stored_values_stack (user_id, sco_id, course_id, sv_key, stack_order)'
-        );
     }
 }

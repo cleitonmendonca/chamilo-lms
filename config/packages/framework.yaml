@@ -1,0 +1,22 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    default_locale: '%env(APP_LOCALE)%'
+    translator:
+        fallbacks: ['en']
+    csrf_protection: ~
+    #esi: ~
+    #fragments: ~
+    php_errors:
+        log: true
+    templating:
+        engines: ['twig', 'php']
+    session:
+        # handler_id set to null will use default session handler from php.ini
+        handler_id: ~
+        name: chamilo2
+    fragments: ~
+    http_method_override: true
+    assets:
+        json_manifest_path: '%kernel.project_dir%/public/build/manifest.json'
+#        base_path: '%env(APP_URL_APPEND)%'
+    annotations: true

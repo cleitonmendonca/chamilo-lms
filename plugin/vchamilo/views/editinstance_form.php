@@ -1,18 +1,20 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 /**
- * Class ChamiloForm
+ * Class ChamiloForm.
  */
 abstract class ChamiloForm
 {
+    public $_definition_finalized;
     protected $_form;
     protected $_mode;
     protected $_cancelurl;
     protected $_customdata;
-    public $_definition_finalized;
 
     /**
      * ChamiloForm constructor.
+     *
      * @param $mode
      * @param $returnurl
      * @param $cancelurl
@@ -25,17 +27,22 @@ abstract class ChamiloForm
         $this->_cancelurl = $cancelurl;
         $this->_customdata = $customdata;
 
-        $attributes = array('style' => 'width: 60%; float: '.($text_dir == 'rtl' ? 'right;' : 'left;'));
-        // $this->_form = new FormValidator($mode.'_instance', 'post', $returnurl, '', $attributes, true);
-        $this->_form = new FormValidator($mode.'_instance', 'post', $returnurl, '', $attributes);
+        $attributes = ['style' => 'width: 60%; float: '.($text_dir == 'rtl' ? 'right;' : 'left;')];
+        $this->_form = new FormValidator(
+            $mode.'_instance',
+            'post',
+            $returnurl,
+            '',
+            $attributes
+        );
     }
 
-    public abstract function definition();
-    public abstract function validation($data, $files = null);
+    abstract public function definition();
 
-    public function validate(
+    abstract public function validation($data, $files = null);
 
-    ) {
+    public function validate()
+    {
         return $this->_form->validate();
     }
 
@@ -44,7 +51,8 @@ abstract class ChamiloForm
         return $this->_form->display();
     }
 
-    public function definition_after_data(){
+    public function definition_after_data()
+    {
     }
 
     public function return_form()
@@ -62,11 +70,12 @@ abstract class ChamiloForm
      * if there is no submitted data.
      *
      * @param bool $slashed true means return data with addslashes applied
+     *
      * @return object submitted data; NULL if not valid or not submitted
      */
-    public function get_data($slashed=true)
+    public function get_data($slashed = true)
     {
-        $cform =& $this->_form;
+        $cform = &$this->_form;
 
         if ($this->is_submitted() and $this->is_validated()) {
             $data = $cform->exportValues(null, $slashed);
@@ -74,7 +83,7 @@ abstract class ChamiloForm
             if (empty($data)) {
                 return null;
             } else {
-                return (object)$data;
+                return (object) $data;
             }
         } else {
             return null;
@@ -85,11 +94,12 @@ abstract class ChamiloForm
      * Return submitted data without validation or NULL if there is no submitted data.
      *
      * @param bool $slashed true means return data with addslashes applied
+     *
      * @return object submitted data; NULL if not submitted
      */
-    public function get_submitted_data($slashed=true)
+    public function get_submitted_data($slashed = true)
     {
-        $cform =& $this->_form;
+        $cform = &$this->_form;
 
         if ($this->is_submitted()) {
             $data = $cform->exportValues(null, $slashed);
@@ -97,7 +107,7 @@ abstract class ChamiloForm
             if (empty($data)) {
                 return null;
             } else {
-                return (object)$data;
+                return (object) $data;
             }
         } else {
             return null;
@@ -121,10 +131,10 @@ abstract class ChamiloForm
      */
     public function is_cancelled()
     {
-        $cform =& $this->_form;
-        if ($cform->isSubmitted()){
-            foreach ($cform->_cancelButtons as $cancelbutton){
-                if (optional_param($cancelbutton, 0, PARAM_RAW)){
+        $cform = &$this->_form;
+        if ($cform->isSubmitted()) {
+            foreach ($cform->_cancelButtons as $cancelbutton) {
+                if (optional_param($cancelbutton, 0, PARAM_RAW)) {
                     return true;
                 }
             }
@@ -135,7 +145,7 @@ abstract class ChamiloForm
 
     /**
      * Check that form data is valid.
-     * You should almost always use this, rather than {@see validate_defined_fields}
+     * You should almost always use this, rather than {@see validate_defined_fields}.
      *
      * @return bool true if form data valid
      */
@@ -162,23 +172,23 @@ abstract class ChamiloForm
      * for example, to selectively add new elements depending on a no_submit_button press,
      * but only when the form is valid when the no_submit_button is pressed,
      *
-     * @param boolean $validateonnosubmit optional, defaults to false.  The default behaviour
-     *                is NOT to validate the form when a no submit button has been pressed.
-     *                pass true here to override this behaviour
+     * @param bool $validateonnosubmit optional, defaults to false.  The default behaviour
+     *                                 is NOT to validate the form when a no submit button has been pressed.
+     *                                 pass true here to override this behaviour
      *
      * @return bool true if form data valid
      */
-    public function validate_defined_fields($validateonnosubmit=false)
+    public function validate_defined_fields($validateonnosubmit = false)
     {
         static $validated = null; // one validation is enough
-        $cform =& $this->_form;
+        $cform = &$this->_form;
 
-        if ($this->no_submit_button_pressed() && empty($validateonnosubmit)){
+        if ($this->no_submit_button_pressed() && empty($validateonnosubmit)) {
             return false;
         } elseif ($validated === null) {
             $internal_val = $cform->validate();
 
-            $files = array();
+            $files = [];
             $file_val = $this->_validate_files($files);
             if ($file_val !== true) {
                 if (!empty($file_val)) {
@@ -191,19 +201,18 @@ abstract class ChamiloForm
 
             $data = $cform->exportValues(null, true);
             $chamilo_val = $this->validation($data, $files);
-            if ((is_array($chamilo_val) && count($chamilo_val)!==0)) {
+            if ((is_array($chamilo_val) && count($chamilo_val) !== 0)) {
                 // non-empty array means errors
                 foreach ($chamilo_val as $element => $msg) {
                     $cform->setElementError($element, $msg);
                 }
                 $chamilo_val = false;
-
             } else {
                 // anything else means validation ok
                 $chamilo_val = true;
             }
 
-            $validated = ($internal_val and $chamilo_val and $file_val);
+            $validated = ($internal_val && $chamilo_val && $file_val);
         }
 
         return $validated;
@@ -217,7 +226,7 @@ abstract class ChamiloForm
             return $nosubmit;
         }
 
-        $cform =& $this->_form;
+        $cform = &$this->_form;
         $nosubmit = false;
         if (!$this->is_submitted()) {
             return false;
@@ -241,14 +250,14 @@ abstract class ChamiloForm
      * already exist and data is being edited (edit entry form).
      *
      * @param mixed $default_values object or array of default values
-     * @param bool $slashed true if magic quotes applied to data values
+     * @param bool  $slashed        true if magic quotes applied to data values
      */
     public function set_data($default_values, $slashed = false)
     {
         if (is_object($default_values)) {
-            $default_values = (array)$default_values;
+            $default_values = (array) $default_values;
         }
-        $filter = $slashed ? 'stripslashes' : NULL;
+        $filter = $slashed ? 'stripslashes' : null;
         $this->_form->setDefaults($default_values, $filter);
     }
 
@@ -257,7 +266,7 @@ abstract class ChamiloForm
      */
     public function _validate_files(&$files)
     {
-        $files = array();
+        $files = [];
 
         if (empty($_FILES)) {
             // we do not need to do any checks because no files were submitted
@@ -265,15 +274,15 @@ abstract class ChamiloForm
             return true;
         }
 
-        $errors = array();
-        $mform =& $this->_form;
+        $errors = [];
+        $mform = &$this->_form;
 
         // check the files
         $status = $this->_upload_manager->preprocess_files();
 
         // now check that we really want each file
-        foreach ($_FILES as $elname=>$file) {
-            if ($mform->elementExists($elname) and $mform->getElementType($elname)=='file') {
+        foreach ($_FILES as $elname => $file) {
+            if ($mform->elementExists($elname) and $mform->getElementType($elname) == 'file') {
                 $required = $mform->isElementRequired($elname);
                 if (!empty($this->_upload_manager->files[$elname]['uploadlog']) &&
                     empty($this->_upload_manager->files[$elname]['clear'])
@@ -283,8 +292,7 @@ abstract class ChamiloForm
                         continue;
                     }
                     $errors[$elname] = $this->_upload_manager->files[$elname]['uploadlog'];
-
-                } else if (!empty($this->_upload_manager->files[$elname]['clear'])) {
+                } elseif (!empty($this->_upload_manager->files[$elname]['clear'])) {
                     $files[$elname] = $this->_upload_manager->files[$elname]['tmp_name'];
                 }
             } else {
@@ -294,11 +302,9 @@ abstract class ChamiloForm
 
         // return errors if found
         if ($status && 0 == count($errors)) {
-
             return true;
-
         } else {
-            $files = array();
+            $files = [];
 
             return $errors;
         }
@@ -306,15 +312,17 @@ abstract class ChamiloForm
 }
 
 /**
- * Class InstanceForm
+ * Class InstanceForm.
  */
 class InstanceForm extends ChamiloForm
 {
+    /** @var Plugin */
     public $_plugin;
     public $instance;
 
     /**
      * InstanceForm constructor.
+     *
      * @param $plugin
      * @param string $mode
      */
@@ -323,87 +331,114 @@ class InstanceForm extends ChamiloForm
         global $_configuration;
 
         $this->_plugin = $plugin;
-        $returnurl = $_configuration['root_web'].'plugin/vchamilo/views/editinstance.php';
+        $returnUrl = $_configuration['root_web'].'plugin/vchamilo/views/editinstance.php';
         if ($mode == 'update') {
-            $returnurl = $_configuration['root_web'].'plugin/vchamilo/views/editinstance.php?vid='.intval($_GET['vid']);
+            $returnUrl = $_configuration['root_web'].'plugin/vchamilo/views/editinstance.php?vid='.intval($_GET['vid']);
         }
 
         $cancelurl = $_configuration['root_web'].'plugin/vchamilo/views/manage.php';
-        parent::__construct($mode, $returnurl, $cancelurl);
+        parent::__construct($mode, $returnUrl, $cancelurl);
         $this->instance = $instance;
         $this->definition();
     }
 
-    /**
-     *
-     */
     public function definition()
     {
         global $_configuration;
 
-        $cform = $this->_form;
+        $form = $this->_form;
+        $plugin = $this->_plugin;
 
-        /*
-         * Host's id.
-         */
-        $cform->addElement('hidden', 'vid');
-        $cform->addElement('hidden', 'what', $this->_mode.'instance');
-        $cform->addElement('hidden', 'registeronly');
+        $form->addElement('hidden', 'vid');
+        $form->addElement('hidden', 'what', $this->_mode.'instance');
+        $form->addElement('hidden', 'registeronly');
 
-        /*
-         * Features fieldset.
-         */
-        $cform->addElement('header', $this->_plugin->get_lang('hostdefinition'));
-        // Name.
-        $cform->addElement('text', 'sitename', $this->_plugin->get_lang('sitename'));
-        $cform->applyFilter('sitename', 'trim');
-
-        $cform->addElement(
-            'text',
-            'institution',
-            $this->_plugin->get_lang('institution')
+        $form->addHeader($plugin->get_lang('hostdefinition'));
+        $form->addText(
+            'sitename',
+            [
+                $plugin->get_lang('sitename'),
+                $plugin->get_lang('SiteNameExample'),
+            ]
         );
-
-        $cform->applyFilter('institution', 'trim');
+        $form->applyFilter('sitename', 'trim');
+        $form->addText(
+            'institution',
+            [
+                $plugin->get_lang('institution'),
+                $plugin->get_lang('InstitutionExample'),
+            ]
+        );
+        $form->applyFilter('institution', 'trim');
 
         // Host's name.
-        $elementWeb = $cform->addElement(
+        $elementWeb = $form->addElement(
             'text',
             'root_web',
-            $this->_plugin->get_lang('rootweb')
+            [$this->_plugin->get_lang('rootweb'), $plugin->get_lang('RootWebExample')]
         );
-        $cform->applyFilter('root_web', 'trim');
+        $form->applyFilter('root_web', 'trim');
+
+        $form->addElement(
+            'text',
+            'url_append',
+            ['url_append', $plugin->get_lang('UrlAppendExample')]
+        );
 
         if ($this->_mode == 'update') {
+            $encryptList = Virtual::getEncryptList();
+            $encryptMethod = $form->addElement(
+                'select',
+                'password_encryption',
+                get_lang('EncryptMethodUserPass'),
+                $encryptList
+            );
+            $encryptMethod->freeze();
             $elementWeb->freeze();
         }
 
         /*
          * Database fieldset.
          */
-        $cform->addElement('header', $this->_plugin->get_lang('dbgroup'));
+        $form->addElement('header', $plugin->get_lang('dbgroup'));
 
         // Database host.
-        $cform->addElement('text', 'db_host', $this->_plugin->get_lang('dbhost'), array('id' => 'id_vdbhost'));
-        $cform->applyFilter('db_host', 'trim');
+        $form->addElement(
+            'text',
+            'db_host',
+            $this->_plugin->get_lang('dbhost'),
+            ['id' => 'id_vdbhost']
+        );
+        $form->applyFilter('db_host', 'trim');
 
         // Database login.
-        $cform->addElement('text', 'db_user', $this->_plugin->get_lang('dbuser'), array('id' => 'id_vdbuser'));
-        $cform->applyFilter('db_user', 'trim');
+        $form->addElement(
+            'text',
+            'db_user',
+            $this->_plugin->get_lang('dbuser'),
+            ['id' => 'id_vdbuser']
+        );
+        $form->applyFilter('db_user', 'trim');
 
         // Database password.
-        $cform->addElement(
+        $form->addElement(
             'password',
             'db_password',
             $this->_plugin->get_lang('dbpassword'),
-            array('id' => 'id_vdbpassword')
+            ['id' => 'id_vdbpassword']
         );
 
         // Database name.
-        $cform->addElement('text', 'main_database', $this->_plugin->get_lang('maindatabase'));
+        $form->addText(
+            'main_database',
+            [
+                $plugin->get_lang('maindatabase'),
+                $plugin->get_lang('DatabaseDescription'),
+            ]
+        );
 
         // Button for testing database connection.
-        $cform->addElement(
+        $form->addElement(
             'button',
             'testconnection',
             $this->_plugin->get_lang('testconnection'),
@@ -414,35 +449,98 @@ class InstanceForm extends ChamiloForm
             'onclick="opencnxpopup(\''.$_configuration['root_web'].'\'); return false;"'
         );
 
-        /*
+        $form->addText('archive_url', $this->_plugin->get_lang('ArchiveUrl'));
+        $form->addText('home_url', $this->_plugin->get_lang('HomeUrl'));
+        $form->addText('upload_url', $this->_plugin->get_lang('UploadUrl'));
+        $form->addText(
+            'css_theme_folder',
+            [
+                $this->_plugin->get_lang('ThemeFolder'),
+                $this->_plugin->get_lang('ThemeFolderExplanation'),
+            ],
+            false
+        );
+        //$form->addText('course_url', $this->_plugin->get_lang('CourseUrl'));
+
+        /**
          * Template selection.
          */
         if ($this->is_in_add_mode()) {
-            $cform->addElement('header', $this->_plugin->get_lang('templating'));
+            $form->addElement('header', $this->_plugin->get_lang('templating'));
 
-            $templateoptions = vchamilo_get_available_templates();
+            $templateoptions = Virtual::getAvailableTemplates();
 
             // Template choice
-            $cform->addElement('select', 'template', $this->_plugin->get_lang('template'), $templateoptions);
+            $form->addSelect(
+                'template',
+                $this->_plugin->get_lang('template'),
+                $templateoptions
+            );
         } else {
             if ($this->instance) {
-                $cform->addLabel($this->_plugin->get_lang('template'), $this->instance->template);
+                $form->addLabel(
+                    'slug',
+                    $this->instance['slug']
+                );
+
+                $form->addLabel(
+                    'archive_real_root',
+                    api_add_trailing_slash(Virtual::getConfig('vchamilo', 'archive_real_root')).
+                    $this->instance['slug']
+                );
+
+                $form->addLabel(
+                    'course_real_root',
+                    api_add_trailing_slash(Virtual::getConfig('vchamilo', 'course_real_root')).
+                        $this->instance['slug']
+                );
+
+                $form->addLabel(
+                    'home_real_root',
+                    api_add_trailing_slash(Virtual::getConfig('vchamilo', 'home_real_root')).$this->instance['slug']
+                );
+
+                $form->addLabel(
+                    'upload_real_root',
+                    api_add_trailing_slash(Virtual::getConfig('vchamilo', 'upload_real_root')).$this->instance['slug']
+                );
+
+                $form->addLabel(
+                    $this->_plugin->get_lang('template'),
+                    $this->instance['template']
+                );
             }
         }
 
-        $cform->addButtonSave($this->_plugin->get_lang('savechanges'), 'submitbutton');
+        $form->addButtonSave(
+            $this->_plugin->get_lang('savechanges'),
+            'submitbutton'
+        );
 
         // Rules
-        $cform->addRule('sitename', $this->_plugin->get_lang('sitenameinputerror'), 'required', null, 'client');
-        $cform->addRule(
+        $form->addRule(
+            'sitename',
+            $this->_plugin->get_lang('sitenameinputerror'),
+            'required',
+            null,
+            'client'
+        );
+        $form->addRule(
             'institution',
             $this->_plugin->get_lang('institutioninputerror'),
             'required',
             null,
             'client'
         );
-        $cform->addRule('root_web', $this->_plugin->get_lang('rootwebinputerror'), 'required', null, 'client');
-        $cform->addRule(
+
+        $form->addRule(
+            'root_web',
+            $this->_plugin->get_lang('rootwebinputerror'),
+            'required',
+            null,
+            'client'
+        );
+        $form->addRule(
             'main_database',
             $this->_plugin->get_lang('databaseinputerror'),
             'required',
@@ -453,25 +551,25 @@ class InstanceForm extends ChamiloForm
 
     /**
      * @param array $data
-     * @param null $files
+     * @param null  $files
+     *
      * @return array
      */
     public function validation($data, $files = null)
     {
-        global $plugininstance;
+        global $plugin;
 
-        $errors = array();
-
+        $errors = [];
         $tablename = Database::get_main_table('vchamilo');
         $vchamilo = Database::select(
             '*',
             $tablename,
-            array('where' => array(' root_web = ? ' => array($data['root_web']))),
+            ['where' => [' root_web = ? ' => [$data['root_web']]]],
             'first'
         );
 
         if ($vchamilo && isset($data['vid']) && $data['vid'] != $vchamilo['id']) {
-            $errors['root_web'] = $plugininstance->get_lang('errorrootwebexists');
+            $errors['root_web'] = $plugin->get_lang('RootWebExists');
         }
 
         if (!empty($errors)) {

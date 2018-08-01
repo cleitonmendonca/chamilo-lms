@@ -1,8 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use Chamilo\CoreBundle\Framework\Container;
-
+require_once __DIR__.'/../inc/global.inc.php';
 api_protect_admin_script();
 
 $tableUser = Database::get_main_table(TABLE_MAIN_USER);

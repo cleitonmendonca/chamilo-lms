@@ -2,25 +2,25 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Script
+ * Script.
+ *
  * @package chamilo.gradebook
  */
-
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 api_block_anonymous_users();
 GradebookUtils::block_students();
 
-$evaledit = Evaluation :: load($_GET['editeval']);
+$evaledit = Evaluation::load($_GET['editeval']);
 if ($evaledit[0]->is_locked() && !api_is_platform_admin()) {
     api_not_allowed();
 }
 $form = new EvalForm(
-    EvalForm :: TYPE_EDIT,
+    EvalForm::TYPE_EDIT,
     $evaledit[0],
     null,
     'edit_eval_form',
     null,
-    api_get_self() . '?editeval=' . Security::remove_XSS($_GET['editeval'])
+    api_get_self().'?editeval='.intval($_GET['editeval']).'&'.api_get_cidreq()
 );
 if ($form->validate()) {
     $values = $form->exportValues();
@@ -36,25 +36,24 @@ if ($form->validate()) {
     $final_weight = $values['weight_mask'];
 
     $eval->set_weight($final_weight);
-
     $eval->set_max($values['max']);
-    if (empty ($values['visible'])) {
+    if (empty($values['visible'])) {
         $visible = 0;
     } else {
         $visible = 1;
     }
     $eval->set_visible($visible);
     $eval->save();
-    header('Location: '.$_SESSION['gradebook_dest'].'?editeval=&selectcat=' . $eval->get_category_id());
+    header('Location: '.Category::getUrl().'editeval=&selectcat='.$eval->get_category_id());
     exit;
 }
-$selectcat_inter=isset($_GET['selectcat'])?Security::remove_XSS($_GET['selectcat']):'';
-$interbreadcrumb[] = array (
-    'url' => $_SESSION['gradebook_dest'].'?selectcat='.$selectcat_inter,
-    'name' => get_lang('Gradebook'
-    ));
+$selectcat_inter = isset($_GET['selectcat']) ? (int) $_GET['selectcat'] : 0;
+$interbreadcrumb[] = [
+    'url' => Category::getUrl().'selectcat='.$selectcat_inter,
+    'name' => get_lang('Gradebook'),
+];
 
-$htmlHeadXtra[] = '<script type="text/javascript">
+$htmlHeadXtra[] = '<script>
 $(document).ready( function() {
     $("#hid_category_id").change(function() {
        $("#hid_category_id option:selected").each(function () {
@@ -73,6 +72,6 @@ $(document).ready( function() {
 });
 </script>';
 
-Display :: display_header(get_lang('EditEvaluation'));
+Display::display_header(get_lang('EditEvaluation'));
 $form->display();
-Display :: display_footer();
+Display::display_footer();

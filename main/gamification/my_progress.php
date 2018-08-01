@@ -1,20 +1,24 @@
 <?php
-
 /* For licensing terms, see /license.txt */
+
+use Chamilo\CoreBundle\Entity\Repository\TrackECourseAccessRepository;
+
 /**
- * See the progress for a user when the gamification mode is active
+ * See the progress for a user when the gamification mode is active.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.gamification
  */
 $cidReset = true;
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $this_section = SECTION_TRACKING;
 $nameTools = get_lang('MyProgress');
 
 api_block_anonymous_users();
 
-if (api_get_setting('platform.gamification_mode') == '0') {
+if (api_get_setting('gamification_mode') == '0') {
     api_not_allowed(true);
 }
 
@@ -22,19 +26,14 @@ $userId = api_get_user_id();
 $sessionId = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 $allowAccess = false;
 
-$userManager = UserManager::getManager();
 $entityManager = Database::getManager();
+$user = api_get_user_entity($userId);
 
-$user = $userManager->findUserBy(['id' => $userId]);
-
-if (empty($sessionId)) {
-    $trackCourseAccessRepository = $entityManager->getRepository(
-        'ChamiloCoreBundle:TrackECourseAccess'
-    );
-
+if (empty($sessionId) && $user) {
+    /** @var TrackECourseAccessRepository $trackCourseAccessRepository */
+    $trackCourseAccessRepository = $entityManager->getRepository('ChamiloCoreBundle:TrackECourseAccess');
     $lastCourseAccess = $trackCourseAccessRepository->getLastAccessByUser($user);
     $lastSessionId = 0;
-
     if ($lastCourseAccess) {
         $lastSessionId = $lastCourseAccess->getSessionId();
     }
@@ -42,8 +41,8 @@ if (empty($sessionId)) {
     $UserIsSubscribedToSession = SessionManager::isUserSubscribedAsStudent($lastSessionId, $user->getId());
 
     if (!empty($lastSessionId) && $UserIsSubscribedToSession) {
-        $urlWithSession = api_get_self() . '?' . http_build_query([
-            'session_id' => $lastCourseAccess->getSessionId()
+        $urlWithSession = api_get_self().'?'.http_build_query([
+            'session_id' => $lastCourseAccess->getSessionId(),
         ]);
 
         header("Location: $urlWithSession");
@@ -52,10 +51,9 @@ if (empty($sessionId)) {
 }
 
 $sessionCourseSubscriptions = $user->getSessionCourseSubscriptions();
-$currentSession = $entityManager->find('ChamiloCoreBundle:Session', $sessionId);
+$currentSession = api_get_session_entity($sessionId);
 
 $sessionList = [];
-
 foreach ($sessionCourseSubscriptions as $subscription) {
     $session = $subscription->getSession();
 
@@ -104,7 +102,7 @@ if ($currentSession) {
 
         $courseData = [
             'title' => $course->getTitle(),
-            'stats' => []
+            'stats' => [],
         ];
 
         $learningPathList = new LearnpathList(
@@ -116,13 +114,13 @@ if ($currentSession) {
         foreach ($learningPathList->list as $learningPathId => $learningPath) {
             $courseData['stats'][] = [
                 $learningPath['lp_name'],
-                'newscorm/lp_controller.php?' . http_build_query([
+                'lp/lp_controller.php?'.http_build_query([
                     'action' => 'stats',
                     'cidReq' => $course->getCode(),
                     'id_session' => $currentSession->getId(),
                     'gidReq' => 0,
-                    'lp_id' => $learningPathId
-                ]) . api_get_cidreq()
+                    'lp_id' => $learningPathId,
+                ]).api_get_cidreq(),
             ];
         }
 

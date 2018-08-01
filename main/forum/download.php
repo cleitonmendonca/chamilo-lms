@@ -1,5 +1,6 @@
 <?php
 /* For licensing terms, see /license.txt */
+
 /**
  * This file is responsible for  passing requested documents to the browser.
  * Html files are parsed to fix a few problems with URLs,
@@ -8,10 +9,9 @@
  *
  * @package chamilo.document
  */
-
 session_cache_limiter('public');
 
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $this_section = SECTION_COURSES;
 
 require_once 'forumconfig.inc.php';
@@ -31,7 +31,7 @@ $doc_url = str_replace('///', '&', $doc_url);
 $doc_url = str_replace(' ', '+', $doc_url);
 $doc_url = str_replace('/..', '', $doc_url); //echo $doc_url;
 
-if (! isset($_course)) {
+if (!isset($_course)) {
     api_not_allowed(true);
 }
 
@@ -41,7 +41,7 @@ $full_file_name = api_get_path(SYS_COURSE_PATH).api_get_course_path().'/upload/f
 if (is_dir($full_file_name)) {
     //remove last slash if present
     //mod_rewrite can change /some/path/ to /some/path// in some cases, so clean them all off (René)
-    while ($doc_url{$dul = strlen($doc_url) - 1} == '/') {
+    while ($doc_url[$dul = strlen($doc_url) - 1] == '/') {
         $doc_url = substr($doc_url, 0, $dul);
     }
     //create the path
@@ -51,11 +51,11 @@ if (is_dir($full_file_name)) {
     exit;
 }
 
-$tbl_forum_attachment  = Database::get_course_table(TABLE_FORUM_ATTACHMENT);
+$tbl_forum_attachment = Database::get_course_table(TABLE_FORUM_ATTACHMENT);
 $tbl_forum_post = Database::get_course_table(TABLE_FORUM_POST);
 
 $course_id = api_get_course_int_id();
-$courseInfo =     api_get_course_info_by_id($course_id);
+$courseInfo = api_get_course_info_by_id($course_id);
 
 // launch event
 Event::event_download($doc_url);
@@ -85,11 +85,11 @@ $forum_forum_visibility = api_get_item_visibility(
     api_get_session_id()
 );
 
-if ($forum_thread_visibility==1 && $forum_forum_visibility==1) {
+if ($forum_thread_visibility == 1 && $forum_forum_visibility == 1) {
     if (Security::check_abs_path(
         $full_file_name,
-        api_get_path(SYS_COURSE_PATH).$courseInfo['path'].'/upload/forum/')
-    ) {
+        api_get_path(SYS_COURSE_PATH).$courseInfo['path'].'/upload/forum/'
+    )) {
         DocumentManager::file_send_for_download(
             $full_file_name,
             true,

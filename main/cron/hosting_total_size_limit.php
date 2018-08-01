@@ -4,7 +4,8 @@
 require_once __DIR__.'/../inc/global.inc.php';
 
 /**
- * Checks total platform size
+ * Checks total platform size.
+ *
  * @param bool $debug
  *
  * @return bool
@@ -20,9 +21,9 @@ function isTotalPortalSizeBiggerThanLimit($debug = true)
     $file = api_get_path(SYS_COURSE_PATH).'hosting_total_size.php';
 
     // Default data
-    $hostingData = array(
+    $hostingData = [
         'frequency' => 86400,
-    );
+    ];
 
     $log = null;
 
@@ -97,7 +98,7 @@ function calculateTotalPortalSize($debug)
     $totalSize = $row['total'];
 
     if ($debug) {
-        echo "Total size in table $table " . (round($totalSize / 1024)) . " MB \n";
+        echo "Total size in table $table ".(round($totalSize / 1024))." MB \n";
     }
 
     $table = Database::get_course_table(TABLE_FORUM_ATTACHMENT);
@@ -107,7 +108,7 @@ function calculateTotalPortalSize($debug)
     $subTotal = $row['total'];
     $totalSize += $subTotal;
     if ($debug) {
-        echo "Total size in table $table " . (round($subTotal / 1024)) . " MB \n";
+        echo "Total size in table $table ".(round($subTotal / 1024))." MB \n";
     }
 
     $totalSize = $totalSize / 1024;

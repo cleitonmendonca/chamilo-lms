@@ -1,16 +1,14 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 $cidReset = true;
 define('CHAMILO_INTERNAL', true);
 
-global $plugininstance;
+global $plugin;
 
-require_once '../../../main/inc/global.inc.php';
-require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/lib.php';
-require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/lib/vchamilo_plugin.class.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/views/editinstance_form.php';
 
-// security
 api_protect_admin_script();
 
 $htmlHeadXtra[] = '<script src="'.api_get_path(WEB_PLUGIN_PATH).'vchamilo/js/host_form.js" type="text/javascript" language="javascript"></script>';
@@ -19,29 +17,46 @@ $htmlHeadXtra[] = '<script src="'.api_get_path(WEB_PLUGIN_PATH).'vchamilo/js/hos
 $id = isset($_REQUEST['vid']) ? $_REQUEST['vid'] : '';
 $action = isset($_REQUEST['what']) ? $_REQUEST['what'] : '';
 $registeronly = isset($_REQUEST['registeronly']) ? $_REQUEST['registeronly'] : 0;
-$plugininstance = VChamiloPlugin::create();
+$plugin = VChamiloPlugin::create();
 $thisurl = api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php';
-
-$coursePath = vchamilo_get_config('vchamilo', 'course_real_root');
-$homePath = vchamilo_get_config('vchamilo', 'home_real_root');
 
 if ($id) {
     $mode = 'update';
 } else {
-    $mode = $registeronly ? 'register' : 'add' ;
+    $mode = $registeronly ? 'register' : 'add';
 }
 
-$vhost = [];
-if ($id) {
-    $sql = "SELECT * FROM vchamilo WHERE id = $id";
-    $result = Database::query($sql);
-    $vhost = Database::fetch_array($result, 'ASSOC');
-}
+$vhost = (array) Virtual::getInstance($id);
 
-$form = new InstanceForm($plugininstance, $mode, $vhost);
+$form = new InstanceForm($plugin, $mode, $vhost);
 
 if ($data = $form->get_data()) {
-    include api_get_path(SYS_PLUGIN_PATH).'vchamilo/views/editinstance.controller.php';
+    switch ($data->what) {
+        case 'addinstance':
+        case 'registerinstance':
+            Virtual::addInstance($data);
+            echo '<a class="btn btn-primary" href="'.api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php'.'">Continue</a>';
+            exit;
+            break;
+        case 'updateinstance':
+            unset($data->what);
+            unset($data->submitbutton);
+            unset($data->registeronly);
+            unset($data->template);
+            $data->lastcron = 0;
+            $data->lastcrongap = 0;
+            $data->croncount = 0;
+            $id = $data->vid;
+            unset($data->vid);
+            unset($data->testconnection);
+            unset($data->testdatapath);
+            unset($data->vid);
+
+            Database::update('vchamilo', (array) $data, ['id = ?' => $id], false);
+            Display::addFlash(Display::return_message(get_lang('Updated')));
+            Virtual::redirect(api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php');
+            break;
+    }
 }
 
 if ($id) {
@@ -56,7 +71,7 @@ if ($id) {
 
 $content = $form->return_form();
 
-$interbreadcrumb[] = array('url' => 'manage.php', 'name' => get_lang('VChamilo'));
+$interbreadcrumb[] = ['url' => 'manage.php', 'name' => get_lang('VChamilo')];
 
 $tpl = new Template(get_lang('Instance'), true, true, false, true, false);
 $tpl->assign('content', $content);

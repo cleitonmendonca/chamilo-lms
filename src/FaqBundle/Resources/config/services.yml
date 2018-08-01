@@ -1,0 +1,6 @@
+services:
+    _defaults:
+        autowire: true
+
+    Chamilo\FaqBundle\Repository\:
+        resource: ../../Repository

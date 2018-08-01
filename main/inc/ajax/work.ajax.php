@@ -1,10 +1,9 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Responses to AJAX calls
+ * Responses to AJAX calls.
  */
-
-//require_once '../global.inc.php';
+require_once __DIR__.'/../global.inc.php';
 require_once api_get_path(SYS_CODE_PATH).'work/work.lib.php';
 
 $action = isset($_REQUEST['a']) ? $_REQUEST['a'] : null;
@@ -19,6 +18,7 @@ switch ($action) {
         $courseInfo = api_get_course_info();
         $sessionId = api_get_session_id();
         $userId = api_get_user_id();
+        $groupId = api_get_group_id();
 
         if (!empty($_FILES)) {
             $files = $_FILES['files'];
@@ -39,16 +39,27 @@ switch ($action) {
                 $values = [
                     'contains_file' => 1,
                     'title' => $file['name'],
-                    'description' => ''
+                    'description' => '',
                 ];
-                $result = processWorkForm($workInfo, $values, $courseInfo, $sessionId, 0, $userId, $file);
 
-                $json = array();
+                $result = processWorkForm(
+                    $workInfo,
+                    $values,
+                    $courseInfo,
+                    $sessionId,
+                    $groupId,
+                    $userId,
+                    $file,
+                    api_get_configuration_value('assignment_prevent_duplicate_upload'),
+                    false
+                );
+
+                $json = [];
                 if (!empty($result) && is_array($result) && empty($result['error'])) {
                     $json['name'] = Display::url(
                         api_htmlentities($result['title']),
                         api_htmlentities($result['view_url']),
-                        array('target' => '_blank')
+                        ['target' => '_blank']
                     );
 
                     $json['url'] = $result['view_url'];
@@ -60,7 +71,7 @@ switch ($action) {
                     );
                 } else {
                     $json['url'] = '';
-                    $json['error'] = get_lang('Error');
+                    $json['error'] = isset($result['error']) ? $result['error'] : get_lang('Error');
                 }
                 $resultList[] = $json;
             }
@@ -86,7 +97,7 @@ switch ($action) {
         $is_allowed_to_edit = api_is_allowed_to_edit(null, true);
         $itemId = isset($_GET['item_id']) ? intval($_GET['item_id']) : '';
 
-        $result = array();
+        $result = [];
 
         if (!empty($_FILES) && !empty($itemId)) {
             $file = $_FILES['file'];
@@ -95,13 +106,15 @@ switch ($action) {
             $workInfo = get_work_data_by_id($itemId);
             $workInfoParent = get_work_data_by_id($workInfo['parent_id']);
             $resultUpload = uploadWork($workInfoParent, $courseInfo, true, $workInfo);
-
-            $work_table = Database:: get_course_table(
+            if (!$resultUpload) {
+                echo 'false';
+                break;
+            }
+            $work_table = Database::get_course_table(
                 TABLE_STUDENT_PUBLICATION
             );
 
             if (isset($resultUpload['url']) && !empty($resultUpload['url'])) {
-
                 $title = isset($resultUpload['filename']) && !empty($resultUpload['filename']) ? $resultUpload['filename'] : get_lang('Untitled');
                 $url = Database::escape_string($resultUpload['url']);
                 $title = Database::escape_string($title);
@@ -115,31 +128,36 @@ switch ($action) {
                 $result['title'] = $resultUpload['filename'];
                 $result['url'] = 'view.php?'.api_get_cidreq().'&id='.$itemId;
 
-                $json = array();
+                $json = [];
                 $json['name'] = Display::url(
                     api_htmlentities($result['title']),
                     api_htmlentities($result['url']),
-                    array('target' => '_blank')
+                    ['target' => '_blank']
                 );
 
                 $json['type'] = api_htmlentities($file['type']);
                 $json['size'] = format_file_size($file['size']);
-
             }
+
             if (isset($result['url'])) {
                 $json['result'] = Display::return_icon(
                     'accept.png',
-                    get_lang('Uploaded')
+                    get_lang('Uploaded'),
+                    [],
+                    ICON_SIZE_TINY
                 );
             } else {
                 $json['result'] = Display::return_icon(
                     'exclamation.png',
-                    get_lang('Error')
+                    get_lang('Error'),
+                    [],
+                    ICON_SIZE_TINY
                 );
             }
+
+            header('Content-Type: application/json');
             echo json_encode($json);
         }
-
         break;
     default:
         echo '';

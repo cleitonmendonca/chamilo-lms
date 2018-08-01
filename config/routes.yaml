@@ -1,0 +1,48 @@
+logout:
+    path: /logout
+
+_admin:
+    resource: routes/sonata_admin.yaml
+    prefix: /administration
+
+sonata_admin_redirect:
+    path: /administration/dashboard
+
+sonata_admin_my_dashboard:
+    path: /administration
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController::redirectAction
+    defaults:
+        route: sonata_admin_dashboard
+        permanent: false
+
+sonata_user_admin_security_logout:
+    path: /logout
+
+
+#admin_dashboard:
+#    pattern: /administration/
+#    defaults:
+#        _controller: FrameworkBundle:Redirect:redirect
+#        route: sonata_admin_dashboard
+#        permanent: true # this for 301
+
+#admin_without_locale:
+#    pattern: /administration
+#    defaults:
+#        _controller: FrameworkBundle:Redirect:redirect
+#        route: sonata_admin_dashboard
+#        permanent: true # this for 301
+
+#admin_dashboard_without_locale:
+#    pattern: /administration/dashboard
+#    defaults:
+#        _controller: FrameworkBundle:Redirect:redirect
+#        route: sonata_admin_dashboard
+#        permanent: true
+#_api:
+#    resource: routing_api.yml
+#    prefix:   /api
+
+liip_theme:
+    resource: "@LiipThemeBundle/Resources/config/routing.xml"
+    prefix: /theme

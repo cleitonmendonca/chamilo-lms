@@ -111,7 +111,7 @@ class HTML_QuickForm_input extends HTML_QuickForm_element
      * @access    public
      * @return    void
      */
-    function setValue($value)
+    public function setValue($value)
     {
         $this->updateAttributes(array('value'=>$value));
     } // end func setValue
@@ -126,7 +126,7 @@ class HTML_QuickForm_input extends HTML_QuickForm_element
      * @access    public
      * @return    string
      */
-    function getValue()
+    public function getValue()
     {
         return $this->getAttribute('value');
     } // end func getValue
@@ -143,7 +143,7 @@ class HTML_QuickForm_input extends HTML_QuickForm_element
      */
     public function toHtml()
     {
-        if ($this->_flagFrozen) {
+        if ($this->isFrozen()) {
             return $this->getFrozenHtml();
         } else {
             return $this->_getTabs() . '<input' . $this->_getAttrString($this->_attributes) . ' />';

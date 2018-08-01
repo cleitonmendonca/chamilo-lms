@@ -78,7 +78,7 @@ class Shibboleth
 
     public static function sys_path()
     {
-        $path = dirname(__FILE__) . '/../';
+        $path = __DIR__.'/../';
         return $path;
     }
 
@@ -128,7 +128,7 @@ class Shibboleth
 
     /**
      *
-     * @param ShibbolethUser $user
+     * @param ShibbolethUser $shibb_user
      */
     public static function save($shibb_user)
     {
@@ -230,6 +230,7 @@ class Shibboleth
      * Sends an email to the Chamilo and Shibboleth administrators in the name
      * of the logged-in user.
      *
+     * @param string $subject
      */
     public static function email_admin($subject, $message)
     {

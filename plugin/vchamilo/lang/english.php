@@ -1,11 +1,9 @@
 <?php
 /**
- *
  * @copyright (c) 2014 Valery Fremaux
  * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
  * @author Valery Fremaux <valery.fremaux@gmail.com>
  */
-
 $strings['archiverealroot'] = 'Archive container real root (no symlinks here)';
 $strings['backtoindex'] = 'Back to instance index';
 $strings['badconnection'] = 'Connection FAILED';
@@ -23,10 +21,10 @@ $strings['datapathavailable'] = 'Data path is available and ready to be used as 
 $strings['datapathnotavailable'] = 'Data path exists but has already files in it at <br/>';
 $strings['datapathcreated'] = 'Data path has been created as :<br/>';
 $strings['dbgroup'] = 'Database Settings';
-$strings['dbhost'] = 'DB Host';
-$strings['dbpassword'] = 'DB Password';
+$strings['dbhost'] = 'Database Host';
+$strings['dbpassword'] = 'Password';
 $strings['dbprefix'] = 'Database prefix';
-$strings['dbuser'] = 'DB Username';
+$strings['dbuser'] = 'Username';
 $strings['deleteifempty'] = 'Delete if empty';
 $strings['deleteinstances'] = 'Remove instance';
 $strings['destroyinstances'] = 'Full delete instance';
@@ -43,7 +41,7 @@ $strings['hostdefinition'] = 'Host definition';
 $strings['hostlist'] = 'Other hosts';
 $strings['institution'] = 'Institution';
 $strings['lastcron'] = 'Last cron';
-$strings['maindatabase'] = 'Main database';
+$strings['maindatabase'] = 'Database name';
 $strings['manage_instances'] = 'Go to instance manager';
 $strings['newinstance'] = 'Add new instance';
 $strings['no'] = 'No';
@@ -62,14 +60,13 @@ $strings['sitename'] = 'Site Name';
 $strings['snapshotinstance'] = 'Snapshot';
 $strings['snapshotmaster'] = 'Snapshot master Chamilo';
 $strings['statisticsdatabase'] = 'Statistics database';
-$strings['successfinishedcapture'] = 'Capture of chamilo is finished';
+$strings['successfinishedcapture'] = 'Snapshot of chamilo is finished';
 $strings['sync_settings'] = 'Synchronize settings';
 $strings['tableprefix'] = 'Table prefix';
 $strings['template'] = 'Template';
 $strings['templating'] = 'Templating';
-$strings['testconnection'] = 'Test DB connexion';
+$strings['testconnection'] = 'Test database connexion';
 $strings['testdatapath'] = 'Test data location';
-$strings['trackingenabled'] = 'Tracking enabled';
 $strings['userpersonaldatabase'] = 'User personal database';
 $strings['vchamilo'] = 'Virtual Chamilo';
 $strings['vchamilosnapshot1'] = 'STEP 1 OF 3 : Directories for snapshot have been created. Continue with database backup ...';
@@ -101,3 +98,26 @@ $strings['accessurl'] = 'Access URL';
 $strings['value'] = 'Value';
 $strings['syncall'] = 'Sync all the selection';
 $strings['syncthis'] = 'Sync this setting';
+
+$strings['SiteNameExample'] = 'Example: Chamilo';
+$strings['InstitutionExample'] = 'Example: Chamilo Association';
+$strings['RootWebExample'] = 'Example: http://www.chamilo.org/ (with final slash)';
+$strings['DatabaseDescription'] = 'A new database will be created with that name.';
+$strings['RootWebExists'] = 'An instance with the same root web exists.';
+$strings['ImportInstance'] = 'Import instance';
+$strings['ConfigurationPath'] = 'Chamilo configuration path';
+$strings['UploadRealRoot'] = 'Upload files';
+$strings['DatabaseAccessShouldBeDifferentThanMasterChamilo'] = 'Database server should be different than the Chamilo master';
+$strings['UrlAppendExample'] = 'Example: /chamilo_v1 (with first slash)';
+
+$strings['FromVersion'] = 'From version';
+$strings['CoursePath'] = 'Path to courses directory';
+$strings['HomePath'] = 'Path to home directory';
+$strings['UploadPath'] = 'Path to upload directory';
+
+$strings['ArchiveUrl'] = 'Archive URL';
+$strings['HomeUrl'] = 'Home URL';
+$strings['UploadUrl'] = 'Upload URL';
+$strings['CourseUrl'] = 'Course URL';
+$strings['ThemeFolder'] = 'Theme folder';
+$strings['ThemeFolderExplanation'] = 'Theme folder should be located inside the web/css/themes/ folder';

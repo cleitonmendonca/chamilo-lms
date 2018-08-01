@@ -1,100 +1,59 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-/**
- * Chat tool
- * @package chamilo.chat
- */
+define('CHAMILO_LOAD_WYSIWYG', false);
 
-use ChamiloSession as Session;
-use Chamilo\CoreBundle\Framework\Container;
+require_once __DIR__.'/../inc/global.inc.php';
 
-////require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_CHAT;
-$this_section = SECTION_COURSES;
-$nameTools = get_lang('ToolChat');
+api_protect_course_script(true);
 
-$origin = isset($_GET["origin"]) ? Security::remove_XSS($_GET["origin"]) : null;
-$target = isset($_GET["target"]) ? Security::remove_XSS($_GET["target"]) : null;
-
-if ($origin != 'whoisonline') {
-    api_protect_course_script(true);
-} else {
-    $origin = Session::read('origin');
-    $target = Session::read('target');
-    Session::write('origin', $origin);
-    Session::write('target', $target);
-}
-
-api_protect_course_group(GroupManager::GROUP_TOOL_CHAT, false);
-
-/*  TRACKING */
 Event::event_access_tool(TOOL_CHAT);
-header('Content-Type: text/html; charset=UTF-8');
 
-/*
- * Choose CSS style (platform's, user's, or course's)
- */
-$my_style = api_get_visual_theme();
+// View
+$externalCSS = [
+    'jquery-emojiarea/jquery.emojiarea.css',
+    'jquery-textcomplete/jquery.textcomplete.css',
+    'emojione/css/emojione.min.css',
+    'emojione/css/autocomplete.css',
+    'highlight/styles/github.css',
+];
 
-$mycourseid = api_get_course_id();
-if (!empty($mycourseid) && $mycourseid != -1) {
-	$open_chat_window = api_get_course_setting('allow_open_chat_window');
+foreach ($externalCSS as $css) {
+    $htmlHeadXtra[] = api_get_css(api_get_path(WEB_LIBRARY_JS_PATH).$css);
 }
 
-$courseCode = Security::remove_XSS($_GET['cidReq']);
+$htmlHeadXtra[] = api_get_css(api_get_path(WEB_CSS_PATH).'chat.css');
+$htmlHeadXtra[] = api_get_css(api_get_path(WEB_CSS_PATH).'markdown.css');
 
-?>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8" />
-<link rel="stylesheet" type="text/css" href="<?php echo api_get_path(WEB_CSS_PATH); ?>chat.css">
-<?php
-echo '<title>'.get_lang('Chat').' - '.$mycourseid.' - '.api_get_setting(
-        'platform.site_name'
-    ).'</title>';
+$externalJS = [
+    'highlight/highlight.pack.js',
+    'jquery-textcomplete/jquery.textcomplete.js',
+    'emojione/js/emojione.min.js',
+    'jquery-emojiarea/jquery.emojiarea.js',
+];
 
-$groupId = api_get_group_id();
-
-// If it is a group chat then the breadcrumbs.
-if (!empty($groupId)) {
-	$group_properties  = GroupManager :: get_group_properties($groupId);
-    $interbreadcrumb[] = array(
-        'url' => api_get_path(WEB_CODE_PATH).'group/group.php?'.api_get_cidreq(),
-        'name' => get_lang('Groups')
-    );
-	$interbreadcrumb[] = array(
-        'url' => api_get_path(WEB_CODE_PATH).'group/group_space.php?'.api_get_cidreq(),
-        'name' => get_lang('GroupSpace').' '.$group_properties['name']
-    );
-	$noPHP_SELF = true;
-	$shortBanner = false;
-	$add_group_to_title = ' ('.$group_properties['name'].')';
-	$groupfilter = 'group_id="'.$groupId.'"';
-} else {
-	$groupfilter = 'group_id=0';
+foreach ($externalJS as $js) {
+    $htmlHeadXtra[] = api_get_js($js);
 }
 
-if (empty($open_chat_window)) {
-    //Display::display_header($tool_name, 'Chat');
+$iconList = [];
+
+foreach (Emojione\Emojione::$shortcode_replace as $key => $icon) {
+    if (!in_array($key, CourseChatUtils::getEmojisToInclude())) {
+        continue;
+    }
+
+    $iconList[$key] = strtoupper($icon).'.png';
 }
 
-$url = api_get_path(WEB_CODE_PATH).'chat/';
-$params = api_get_cidreq();
+$view = new Template(get_lang('Chat'), false, false, false, true, false);
+$view->assign('icons', $iconList);
+$view->assign('emoji_strategy', CourseChatUtils::getEmojiStrategy());
+$view->assign('emoji_smile', \Emojione\Emojione::toImage(':smile:'));
+$view->assign('restrict_to_coach', api_get_configuration_value('course_chat_restrict_to_coach'));
 
-echo '<div class="page-chat">';
-echo '<iframe src="'.$url.'chat_whoisonline.php?'.$params.'" name="chat_whoisonline" scrolling="no" style="height:550px; width:35%; border: 0px none; float:left"></iframe>';
-echo '<iframe src="'.$url.'chat_chat.php?origin='.$origin.'&target='.$target.'&'.$params.'" name="chat_chat" id="chat_chat" scrolling="auto" height="380" style="width:65%; border: 0px none; float:right"></iframe>';
-echo '<iframe src="'.$url.'chat_message.php?'.$params.'" name="chat_message" scrolling="no" height="182px" style="width:65%; border: 0px none; float:right"></iframe>';
-echo '<iframe src="'.$url.'chat_hidden.php?'.$params.'" name="chat_hidden" height="0px" style="height:0px; border: 0px none"></iframe>';
-echo '</div>';
+$template = $view->get_template('chat/chat.tpl');
+$content = $view->fetch($template);
 
-if (empty($open_chat_window)) {
-    Display::display_footer();
-}
-
-echo '</html>';
-
-// Hide headers
-Container::$legacyTemplate = 'layout_one_col_no_content.html.twig';
+$view->assign('content', $content);
+$view->display_no_layout_template();

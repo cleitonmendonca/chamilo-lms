@@ -6,6 +6,7 @@
  *
  *	@package chamilo.help
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
 $help_name = isset($_GET['open']) ? Security::remove_XSS($_GET['open']) : null;
 if (empty($help_name)) {

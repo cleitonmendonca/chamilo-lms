@@ -22,11 +22,10 @@ class DatePicker extends HTML_QuickForm_text
 
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->_appendName = true;
-        $this->_type = 'date_picker';
     }
 
     /**
-     * HTML code to display this datepicker
+     * HTML code to display this datepicker.
      *
      * @return string
      */
@@ -41,17 +40,25 @@ class DatePicker extends HTML_QuickForm_text
         $label = $this->getLabel();
 
         if (!empty($value)) {
-            $value = api_format_date($value, DATE_TIME_FORMAT_LONG_24H);
+            $value = api_format_date($value, DATE_FORMAT_LONG_NO_DAY);
         }
 
-        return $this->getElementJS() . '
+        return '
             <div class="input-group">
-                <span class="input-group-addon">
-                    <input ' . $this->_getAttrString($this->_attributes) . '>
+                <span class="input-group-addon cursor-pointer">
+                    <input '.$this->_getAttrString($this->_attributes).'>
                 </span>
-                <input class="form-control" type="text" readonly id="' . $id . '_alt" value="' . $value . '">
+                <p class="form-control disabled" id="'.$id.'_alt_text">'.$value.'</p>
+                <input class="form-control" type="hidden" id="'.$id.'_alt" value="'.$value.'">
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="button"
+                            title="'.sprintf(get_lang('ResetFieldX'), $this->_label).'">
+                        <span class="fa fa-trash text-danger" aria-hidden="true"></span>
+                        <span class="sr-only">'.sprintf(get_lang('ResetFieldX'), $this->_label).'</span>
+                    </button>
+                </span>
             </div>
-        ';
+        '.$this->getElementJS();
     }
 
     /**
@@ -61,40 +68,10 @@ class DatePicker extends HTML_QuickForm_text
     {
         $value = substr($value, 0, 16);
         $this->updateAttributes(
-            array(
-                'value' => $value
-            )
+            [
+                'value' => $value,
+            ]
         );
-    }
-
-    /**
-     * Get the necessary javascript for this datepicker
-     * @return string
-     */
-    private function getElementJS()
-    {
-        $js = null;
-        $id = $this->getAttribute('id');
-
-        $js .= "<script>
-            $(function() {
-                $('#$id').hide().datepicker({
-                    defaultDate: '" . $this->getValue() . "',
-                    dateFormat: 'yy-mm-dd',
-                    altField: '#{$id}_alt',
-                    altFormat: \"" . get_lang('DateFormatLongNoDayJS') . "\",
-                    showOn: 'both',
-                    buttonImage: '" . Display::return_icon('attendance.png', null, [], ICON_SIZE_TINY, true, true) . "',
-                    buttonImageOnly: true,
-                    buttonText: '" . get_lang('SelectDate') . "',
-                    changeMonth: true,
-                    changeYear: true,
-                    yearRange: 'c-60y:c+5y'
-                });
-            });
-        </script>";
-
-        return $js;
     }
 
     /**
@@ -113,7 +90,7 @@ class DatePicker extends HTML_QuickForm_text
             if (empty($size)) {
                 $sizeTemp = 8;
             }
-            $size = array(2, $sizeTemp, 2);
+            $size = [2, $sizeTemp, 2];
         } else {
             if (is_array($size)) {
                 if (count($size) != 3) {
@@ -121,11 +98,11 @@ class DatePicker extends HTML_QuickForm_text
                     if (empty($size)) {
                         $sizeTemp = 8;
                     }
-                    $size = array(2, $sizeTemp, 2);
+                    $size = [2, $sizeTemp, 2];
                 }
                 // else just keep the $size array as received
             } else {
-                $size = array(2, intval($size), 2);
+                $size = [2, intval($size), 2];
             }
         }
 
@@ -148,7 +125,7 @@ class DatePicker extends HTML_QuickForm_text
             case FormValidator::LAYOUT_HORIZONTAL:
                 return '
                 <div class="form-group {error_class}">
-                    <label {label-for} class="col-sm-'.$size[0].' control-label" >
+                    <label {label-for} class="col-sm-'.$size[0].' control-label {extra_label_class}" >
                         <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
                         {label}
                     </label>
@@ -162,7 +139,7 @@ class DatePicker extends HTML_QuickForm_text
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">
@@ -176,5 +153,59 @@ class DatePicker extends HTML_QuickForm_text
                 return '{element}';
                 break;
         }
+    }
+
+    /**
+     * Get the necessary javascript for this datepicker.
+     *
+     * @return string
+     */
+    private function getElementJS()
+    {
+        $js = null;
+        $id = $this->getAttribute('id');
+
+        $js .= "<script>                    
+            $(function() {
+                var txtDate = $('#$id'),
+                    inputGroup = txtDate.parents('.input-group'),
+                    txtDateAlt = $('#{$id}_alt'),
+                    txtDateAltText = $('#{$id}_alt_text');
+                    
+                txtDate
+                    .hide()
+                    .datepicker({
+                        defaultDate: '".$this->getValue()."',
+                        dateFormat: 'yy-mm-dd',
+                        altField: '#{$id}_alt',
+                        altFormat: \"".get_lang('DateFormatLongNoDayJS')."\",
+                        showOn: 'both',
+                        buttonImage: '".Display::return_icon('attendance.png', null, [], ICON_SIZE_TINY, true, true)."',
+                        buttonImageOnly: true,
+                        buttonText: '".get_lang('SelectDate')."',
+                        changeMonth: true,
+                        changeYear: true,
+                        yearRange: 'c-60y:c+5y'
+                    })
+                    .on('change', function (e) {
+                        txtDateAltText.text(txtDateAlt.val());
+                    });
+                    
+                txtDateAltText.on('click', function () {
+                    txtDate.datepicker('show');
+                });
+
+                inputGroup
+                    .find('button')
+                    .on('click', function (e) {
+                        e.preventDefault();
+
+                        $('#$id, #{$id}_alt').val('');
+                        $('#{$id}_alt_text').html('');
+                    });
+            });
+        </script>";
+
+        return $js;
     }
 }

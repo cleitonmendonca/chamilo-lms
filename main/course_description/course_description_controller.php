@@ -4,8 +4,10 @@
 /**
  * Class CourseDescriptionController
  * This file contains class used like controller,
- * it should be included inside a dispatcher file (e.g: index.php)
+ * it should be included inside a dispatcher file (e.g: index.php).
+ *
  * @author Christian Fasanando <christian1827@gmail.com>
+ *
  * @package chamilo.course_description
  */
 class CourseDescriptionController
@@ -14,7 +16,7 @@ class CourseDescriptionController
     private $view;
 
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
@@ -24,16 +26,18 @@ class CourseDescriptionController
 
     /**
      * It's used for listing course description,
-     * render to listing view
-     * @param boolean    true for listing history (optional)
+     * render to listing view.
+     *
+     * @param bool    true for listing history (optional)
      * @param array    message for showing by action['edit','add','destroy'] (optional)
      */
-    public function listing($history = false, $messages = array())
+    public function listing($history = false, $messages = [])
     {
+        $is_allowed_to_edit = api_is_allowed_to_edit(null, true);
         $course_description = new CourseDescription();
         $session_id = api_get_session_id();
+        $data = [];
         $course_description->set_session_id($session_id);
-        $data = array();
         $course_description_data = $course_description->get_description_data();
         $data['descriptions'] = isset($course_description_data['descriptions']) ? $course_description_data['descriptions'] : '';
         $data['default_description_titles'] = $course_description->get_default_description_title();
@@ -42,8 +46,10 @@ class CourseDescriptionController
         $data['messages'] = $messages;
         $browser = api_get_navigator();
 
+        api_protect_course_script(true);
+
         if (!is_array($data['descriptions'])) {
-            $data['descriptions'] = array($data['descriptions']);
+            $data['descriptions'] = [$data['descriptions']];
         }
 
         foreach ($data['descriptions'] as $description) {
@@ -54,18 +60,60 @@ class CourseDescriptionController
                 header("X-XSS-Protection: 0");
             }
         }
+        $actions = null;
+        $actionLeft = null;
+        // display actions menu
+        if ($is_allowed_to_edit) {
+            $categories = [];
+            foreach ($data['default_description_titles'] as $id => $title) {
+                $categories[$id] = $title;
+            }
+            $categories[ADD_BLOCK] = get_lang('NewBloc');
+            $i = 1;
 
-        // render to the view
-        $this->view->set_data($data);
-        $this->view->set_layout('layout');
-        $this->view->set_template('listing');
-        $this->view->render();
+            ksort($categories);
+            foreach ($categories as $id => $title) {
+                if ($i == ADD_BLOCK) {
+                    $actionLeft .= '<a href="index.php?'.api_get_cidreq().'&action=add">'.
+                        Display::return_icon(
+                            $data['default_description_icon'][$id],
+                            $title,
+                            '',
+                            ICON_SIZE_MEDIUM
+                        ).
+                        '</a>';
+                    break;
+                } else {
+                    $actionLeft .= '<a href="index.php?action=edit&'.api_get_cidreq().'&description_type='.$id.'">'.
+                        Display::return_icon(
+                            $data['default_description_icon'][$id],
+                            $title,
+                            '',
+                            ICON_SIZE_MEDIUM
+                        ).
+                        '</a>';
+                    $i++;
+                }
+            }
+            $actions = Display::toolbarAction('toolbar', [0 => $actionLeft]);
+        }
+
+        $tpl = new Template(get_lang('CourseProgram'));
+        $tpl->assign('listing', $data);
+        $tpl->assign('is_allowed_to_edit', $is_allowed_to_edit);
+        $tpl->assign('actions', $actions);
+        $tpl->assign('session_id', $session_id);
+        $templateName = $tpl->get_template('course_description/index.tpl');
+        $content = $tpl->fetch($templateName);
+        $tpl->assign('content', $content);
+        $tpl->display_one_col_template();
     }
 
     /**
      * It's used for editing a course description,
-     * render to listing or edit view
-     * @param int $id description item id
+     * render to listing or edit view.
+     *
+     * @param int $id               description item id
      * @param int $description_type description type id
      */
     public function edit($id, $description_type)
@@ -73,7 +121,7 @@ class CourseDescriptionController
         $course_description = new CourseDescription();
         $session_id = api_get_session_id();
         $course_description->set_session_id($session_id);
-        $data = array();
+        $data = [];
         $data['id'] = $id;
         $affected_rows = null;
         if (strtoupper($_SERVER['REQUEST_METHOD']) == "POST") {
@@ -133,7 +181,6 @@ class CourseDescriptionController
                 $this->view->render();
             }
         } else {
-
             $data['default_description_titles'] = $course_description->get_default_description_title();
             $data['default_description_title_editable'] = $course_description->get_default_description_title_editable();
             $data['default_description_icon'] = $course_description->get_default_description_icon();
@@ -153,7 +200,7 @@ class CourseDescriptionController
                 if (isset($_GET['id_session'])) {
                     $session_id = intval($_GET['id_session']);
                 }
-		        $course_description_data = $course_description->get_data_by_id(
+                $course_description_data = $course_description->get_data_by_id(
                     $id,
                     null,
                     $session_id
@@ -162,7 +209,7 @@ class CourseDescriptionController
                 $data['description_title'] = $course_description_data['description_title'];
                 $data['description_content'] = $course_description_data['description_content'];
                 $data['progress'] = $course_description_data['progress'];
-		        $data['descriptions'] = $course_description->get_data_by_description_type(
+                $data['descriptions'] = $course_description->get_data_by_description_type(
                     $description_type,
                     null,
                     $session_id
@@ -179,7 +226,7 @@ class CourseDescriptionController
 
     /**
      * It's used for adding a course description,
-     * render to listing or add view
+     * render to listing or add view.
      */
     public function add()
     {
@@ -187,7 +234,7 @@ class CourseDescriptionController
         $session_id = api_get_session_id();
         $course_description->set_session_id($session_id);
 
-        $data = array();
+        $data = [];
         if (strtoupper($_SERVER['REQUEST_METHOD']) == "POST") {
             if (!empty($_POST['title']) && !empty($_POST['contentDescription'])) {
 
@@ -241,7 +288,8 @@ class CourseDescriptionController
 
     /**
      * It's used for destroy a course description,
-     * render to listing view
+     * render to listing view.
+     *
      * @param int $id description type
      */
     public function destroy($id)

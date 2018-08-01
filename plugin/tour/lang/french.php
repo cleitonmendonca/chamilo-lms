@@ -1,8 +1,10 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Strings to english L10n
+ * Strings to english L10n.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.plugin.tour
  */
 $strings['plugin_title'] = 'Tour guidé';
@@ -24,7 +26,7 @@ $strings['Skip'] = 'Passer';
 $strings['Next'] = 'Suivant';
 $strings['Prev'] = 'Précédent';
 $strings['Done'] = 'Terminé';
-$strings['StartButtonText'] = 'Démarrer le tour guidé';
+$strings['StartButtonText'] = 'Tour guidé';
 
 /* String for the steps */
 // if body class = section-mycampus

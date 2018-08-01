@@ -1,8 +1,17 @@
-<script type='text/javascript' src="../js/buycourses.js"></script>
-
 <link rel="stylesheet" type="text/css" href="../resources/css/style.css"/>
 
-{{ curency_form }}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ 'GlobalConfig'|get_plugin_lang('BuyCoursesPlugin') }}</h3>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-12">
+                {{ global_config_form }}
+            </div>
+        </div>
+    </div>
+</div>
 
 <p class="alert alert-info">
     {{ 'PluginInstruction'|get_plugin_lang('BuyCoursesPlugin') }}
@@ -64,29 +73,48 @@
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead>
-                                <tr>
-                                    <th>{{ 'Name'|get_lang }}</th>
-                                    <th>{{ 'BankAccount'|get_plugin_lang('BuyCoursesPlugin') }}</th>
-                                    <th>{{ 'SWIFT'|get_plugin_lang('BuyCoursesPlugin') }}</th>
-                                    <th>{{ 'Actions'|get_lang }}</th>
-                                </tr>
+                            <tr>
+                                <th>{{ 'Name'|get_lang }}</th>
+                                <th>{{ 'BankAccount'|get_plugin_lang('BuyCoursesPlugin') }}</th>
+                                <th>{{ 'SWIFT'|get_plugin_lang('BuyCoursesPlugin') }}</th>
+                                <th>{{ 'Actions'|get_lang }}</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {% for account in transfer_accounts %}
-                                    <tr>
-                                        <td>{{ account.name }}</td>
-                                        <td>{{ account.account }}</td>
-                                        <td>{{ account.swift }}</td>
-                                        <td>
-                                            <a href="{{ _p.web_self ~ '?' ~ {'action':'delete_taccount', 'id': account.id}|url_encode() }}" class="btn btn-danger btn-sm">
-                                                <em class="fa fa-remove"></em> {{ 'Delete'|get_lang }}
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
+                            {% for account in transfer_accounts %}
+                                <tr>
+                                    <td>{{ account.name }}</td>
+                                    <td>{{ account.account }}</td>
+                                    <td>{{ account.swift }}</td>
+                                    <td>
+                                        <a href="{{ _p.web_self ~ '?' ~ {'action':'delete_taccount', 'id': account.id}|url_encode() }}"
+                                           class="btn btn-danger btn-sm">
+                                            <em class="fa fa-remove"></em> {{ 'Delete'|get_lang }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% if culqi_enable == "true" %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">{{ 'CulqiConfig'|get_plugin_lang('BuyCoursesPlugin') }}</h3>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-5">
+                    <p>{{ 'InfoCulqiCredentials'|get_plugin_lang('BuyCoursesPlugin') }}</p>
+                </div>
+                <div class="col-md-7">
+                    {{ culqi_form }}
                 </div>
             </div>
         </div>

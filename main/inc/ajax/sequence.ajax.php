@@ -1,17 +1,17 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-/**
- * Responses to AJAX calls
- */
-
 use Chamilo\CoreBundle\Entity\Sequence;
 use Chamilo\CoreBundle\Entity\SequenceResource;
+use ChamiloSession as Session;
 use Fhaculty\Graph\Graph;
 use Fhaculty\Graph\Vertex;
-use Chamilo\CoreBundle\Framework\Container;
+use Graphp\GraphViz\GraphViz;
 
-//require_once '../global.inc.php';
+/**
+ * Responses to AJAX calls.
+ */
+require_once __DIR__.'/../global.inc.php';
 
 $action = isset($_REQUEST['a']) ? $_REQUEST['a'] : null;
 $id = isset($_REQUEST['id']) ? $_REQUEST['id'] : null;
@@ -39,8 +39,15 @@ switch ($action) {
                 if ($sequence->hasGraph()) {
                     $graph = $sequence->getUnSerializeGraph();
                     $graph->setAttribute('graphviz.node.fontname', 'arial');
-                    $graphviz = new \Graphp\GraphViz\GraphViz();
-                    echo $graphviz->createImageHtml($graph);
+                    $graphviz = new GraphViz();
+                    $graphImage = '';
+                    try {
+                        $graphImage = $graphviz->createImageHtml($graph);
+                    } catch (UnexpectedValueException $e) {
+                        error_log($e->getMessage().' - Graph could not be rendered in resources sequence because GraphViz command "dot" could not be executed - Make sure graphviz is installed.');
+                        $graphImage = '<p class="text-center"><small>'.get_lang('MissingChartLibraryPleaseCheckLog').'</small></p>';
+                    }
+                    echo $graphImage;
                 }
                 break;
         }
@@ -66,7 +73,7 @@ switch ($action) {
                             'default',
                             [
                                 'class' => 'delete_vertex btn btn-block btn-xs',
-                                'data-id' => $id
+                                'data-id' => $id,
                             ]
                         );
 
@@ -78,16 +85,16 @@ switch ($action) {
                             [
                                 'class' => 'undo_delete btn btn-block btn-xs',
                                 'style' => 'display: none;',
-                                'data-id' => $id
+                                'data-id' => $id,
                             ]
                         );
                     }
 
-                    $link = '<div class="parent" data-id="' . $id . '">';
+                    $link = '<div class="parent" data-id="'.$id.'">';
                     $link .= '<div class="big-icon">';
                     $link .= $image;
-                    $link .= '<div class="sequence-course">' . $sessionInfo['name'] . '</div>';
-                    $link .= '<a href="#" class="sequence-id">' . $id . '</a>';
+                    $link .= '<div class="sequence-course">'.$sessionInfo['name'].'</div>';
+                    $link .= '<a href="#" class="sequence-id">'.$id.'</a>';
                     $link .= $linkDelete;
                     $link .= $linkUndo;
                     $link .= '</div></div>';
@@ -122,19 +129,78 @@ switch ($action) {
         if ($sequenceResource->getSequence()->hasGraph()) {
             $graph = $sequenceResource->getSequence()->getUnSerializeGraph();
             if ($graph->hasVertex($vertexId)) {
-                $vertex = $graph->getVertex($vertexId);
-                $vertex->destroy();
+                $edgeIterator = $graph->getEdges()->getIterator();
+                $edgeToDelete = null;
+                foreach ($edgeIterator as $edge) {
+                    if ($edge->getVertexStart()->getId() == $vertexId && $edge->getVertexEnd()->getId() == $id) {
+                        $edgeToDelete = $edge;
+                        $vertexFromTo = null;
+                        $vertexToFrom = null;
+                        foreach ($edgeIterator as $edges) {
+                            if (intval($edges->getVertexEnd()->getId()) === intval($id)) {
+                                $vertexFromTo = $edges;
+                            }
 
-                /** @var SequenceResource $sequenceResource */
-                $sequenceResourceToDelete = $repository->findOneBy(
-                    [
-                        'resourceId' => $vertexId,
-                        'type' => $type,
-                        'sequence' => $sequence
-                    ]
-                );
+                            if (intval($edges->getVertexStart()->getId()) === intval($vertexId)) {
+                                $vertexToFrom = $edges;
+                            }
+                        }
 
-                $em->remove($sequenceResourceToDelete);
+                        if ($vertexFromTo && !$vertexToFrom) {
+                            Session::write('sr_vertex', true);
+                            $vertex = $graph->getVertex($id);
+                            $vertex->destroy();
+                            $em->remove($sequenceResource);
+                        }
+
+                        if ($vertexToFrom && $vertexFromTo) {
+                            $vertex = $graph->getVertex($vertexId);
+                            $edgeToDelete->destroy();
+                        }
+
+                        if ($vertexToFrom && !$vertexFromTo) {
+                            $vertex = $graph->getVertex($vertexId);
+                            $vertex->destroy();
+                            $sequenceResourceToDelete = $repository->findOneBy(
+                                [
+                                    'resourceId' => $vertexId,
+                                    'type' => $type,
+                                    'sequence' => $sequence,
+                                ]
+                            );
+                            $em->remove($sequenceResourceToDelete);
+                        }
+
+                        if (!$vertexToFrom && !$vertexFromTo) {
+                            Session::write('sr_vertex', true);
+                            $vertexTo = $graph->getVertex($id);
+                            $vertexFrom = $graph->getVertex($vertexId);
+                            if ($vertexTo->getVerticesEdgeFrom()->count() > 1) {
+                                $vertexFrom->destroy();
+                                $sequenceResourceToDelete = $repository->findOneBy(
+                                    [
+                                        'resourceId' => $vertexId,
+                                        'type' => $type,
+                                        'sequence' => $sequence,
+                                    ]
+                                );
+                                $em->remove($sequenceResourceToDelete);
+                            } else {
+                                $vertexTo->destroy();
+                                $vertexFrom->destroy();
+                                $sequenceResourceToDelete = $repository->findOneBy(
+                                    [
+                                        'resourceId' => $vertexId,
+                                        'type' => $type,
+                                        'sequence' => $sequence,
+                                    ]
+                                );
+                                $em->remove($sequenceResource);
+                                $em->remove($sequenceResourceToDelete);
+                            }
+                        }
+                    }
+                }
 
                 $sequence->setGraphAndSerialize($graph);
                 $em->merge($sequence);
@@ -217,6 +283,12 @@ switch ($action) {
 
         if (empty($sequence)) {
             exit;
+        }
+        $vertexFromSession = Session::read('sr_vertex');
+        if ($vertexFromSession) {
+            Session::erase('sr_vertex');
+            echo Display::return_message(get_lang('Saved'), 'success');
+            break;
         }
 
         $parents = str_replace($id, '', $parents);
@@ -316,26 +388,26 @@ switch ($action) {
 
                 $courseController = new CoursesController();
 
-                $subscribeButton = '';
+                $view = new Template(null, false, false, false, false, false);
+                $view->assign('sequences', $sequenceList);
+                $view->assign('allow_subscription', $allowSubscription);
+
                 if ($allowSubscription) {
-                    $subscribeButton =
+                    $view->assign(
+                        'subscribe_button',
                         $courseController->getRegisteredInSessionButton(
                             $session['id'],
                             $session['name'],
                             false
                         )
-                    ;
+                    );
                 }
 
-                echo Container::getTemplating()->render(
-                    '@template_style/sequence_resource/session_requirements.html.twig',
-                    [
-                        'sequences' => $sequenceList,
-                        'allow_subscription' => $allowSubscription,
-                        'subscribe_button' => $subscribeButton
-                    ]
+                $template = $view->get_template(
+                    'sequence_resource/session_requirements.tpl'
                 );
 
+                $view->display($template);
                 break;
         }
         break;

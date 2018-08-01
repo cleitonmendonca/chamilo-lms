@@ -1,12 +1,18 @@
 <?php
 /* For licensing terms, see /license.txt */
+use Chamilo\CoreBundle\Component\Utils\ChamiloApi;
+
 /**
  * Action controller for the upload process. The display scripts (web forms) redirect
  * the process here to do what needs to be done with each file.
+ *
  * @package chamilo.upload
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
+$htmlHeadXtra[] = '<script language="javascript" src="../inc/lib/javascript/upload.js" type="text/javascript"></script>';
 $htmlHeadXtra[] = '<script type="text/javascript">
 	var myUpload = new upload(0);
 </script>';
@@ -14,11 +20,11 @@ $htmlHeadXtra[] = '<script type="text/javascript">
 if (isset($_POST['convert'])) {
     $cwdir = getcwd();
     if (isset($_FILES['user_file'])) {
-        $allowed_extensions = array('odp', 'sxi', 'ppt', 'pps', 'sxd', 'pptx');
+        $allowed_extensions = ['odp', 'sxi', 'ppt', 'pps', 'sxd', 'pptx'];
         if (in_array(strtolower(pathinfo($_FILES['user_file']['name'], PATHINFO_EXTENSION)), $allowed_extensions)) {
-            require_once api_get_path(SYS_CODE_PATH).'newscorm/lp_upload.php';
+            require_once api_get_path(SYS_CODE_PATH).'lp/lp_upload.php';
             if (isset($o_ppt) && $first_item_id != 0) {
-                if (api_get_setting('search.search_enabled') == 'true') {
+                if (api_get_setting('search_enabled') == 'true') {
                     require_once api_get_path(LIBRARY_PATH).'specific_fields_manager.lib.php';
                     $specific_fields = get_specific_field_list();
                     foreach ($specific_fields as $specific_field) {
@@ -27,13 +33,19 @@ if (isset($_POST['convert'])) {
                             foreach ($values as $value) {
                                 $value = trim($value);
                                 if (!empty($value)) {
-                                    add_specific_field_value($specific_field['id'], api_get_course_id(), TOOL_LEARNPATH, $o_ppt->lp_id, $value);
+                                    add_specific_field_value(
+                                        $specific_field['id'],
+                                        api_get_course_id(),
+                                        TOOL_LEARNPATH,
+                                        $o_ppt->lp_id,
+                                        $value
+                                    );
                                 }
                             }
                         }
                     }
                 }
-                header('Location: ../newscorm/lp_controller.php?'.api_get_cidreq().'&lp_id='.$o_ppt->lp_id.'&action=view_item&id='.$first_item_id);
+                header('Location: ../lp/lp_controller.php?'.api_get_cidreq().'&lp_id='.$o_ppt->lp_id.'&action=view_item&id='.$first_item_id);
                 exit;
             } else {
                 if (!empty($o_ppt->error)) {
@@ -57,7 +69,7 @@ if (!$is_allowed_to_edit) {
     api_not_allowed(true);
 }
 
-$interbreadcrumb[]= array ("url"=>"../newscorm/lp_controller.php?action=list", "name"=> get_lang("Doc"));
+$interbreadcrumb[] = ["url" => "../lp/lp_controller.php?action=list", "name" => get_lang("Doc")];
 
 $nameTools = get_lang("OogieConversionPowerPoint");
 Display :: display_header($nameTools);
@@ -69,16 +81,18 @@ if (!empty($errorMessage)) {
 
 $div_upload_limit = get_lang('UploadMaxSize').' : '.ini_get('post_max_size');
 
-$form = new FormValidator('upload_ppt', 'POST', '', '');
+$form = new FormValidator('upload_ppt', 'POST', '?'.api_get_cidreq(), '');
 $form->addElement('header', get_lang("WelcomeOogieSubtitle"));
 $form->addElement('html', Display::return_message($message, 'info', false));
-$form->addElement('file', 'user_file', array(Display::return_icon('powerpoint_big.gif'), $div_upload_limit));
+$form->addElement('file', 'user_file', [Display::return_icon('powerpoint_big.gif'), $div_upload_limit]);
 $form->addElement('checkbox', 'take_slide_name', '', get_lang('TakeSlideName'));
-if (api_get_setting('search.search_enabled') == 'true') {
-    require_once(api_get_path(LIBRARY_PATH) . 'specific_fields_manager.lib.php');
+$options = ChamiloApi::getDocumentConversionSizes();
+$form->addElement('select', 'slide_size', get_lang('SlideSize'), $options);
+if (api_get_setting('search_enabled') === 'true') {
+    require_once api_get_path(LIBRARY_PATH).'specific_fields_manager.lib.php';
     $specific_fields = get_specific_field_list();
     $form->addElement('checkbox', 'index_document', '', get_lang('SearchFeatureDoIndexDocument'));
-    $form->addElement('select_language', 'language', get_lang('SearchFeatureDocumentLanguage'));
+    $form->addSelectLanguage('language', get_lang('SearchFeatureDocumentLanguage'));
     foreach ($specific_fields as $specific_field) {
         $form->addElement('text', $specific_field['code'], $specific_field['name'].' : ');
     }
@@ -86,8 +100,13 @@ if (api_get_setting('search.search_enabled') == 'true') {
 
 $form->addButtonUpload(get_lang('ConvertToLP'), 'convert');
 $form->addElement('hidden', 'ppt2lp', 'true');
-$form->add_real_progress_bar(md5(rand(0, 10000)), 'user_file', 1, true);
-$defaults = array('take_slide_name'=>'checked="checked"','index_document'=>'checked="checked"');
+$form->addProgress();
+$size = api_get_setting('service_ppt2lp', 'size');
+$defaults = [
+    'take_slide_name' => 'checked="checked"',
+    'index_document' => 'checked="checked"',
+    'slide_size' => $size,
+];
 $form->setDefaults($defaults);
 
 // display the form

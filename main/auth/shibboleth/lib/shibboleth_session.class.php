@@ -4,7 +4,7 @@ namespace Shibboleth;
 
 use ChamiloSession as Session;
 use Database;
-
+use Event;
 
 /**
  * A Chamilo user session. Used as there is no session object so far provided by the core API.
@@ -15,7 +15,6 @@ use Database;
  */
 class ShibbolethSession
 {
-
     /**
      * @return ShibbolethSession
      */
@@ -42,13 +41,15 @@ class ShibbolethSession
     {
         $_SESSION['_user'] = array();
         online_logout(null, false);
+        global $logoutInfo;
+        Event::courseLogout($logoutInfo);
     }
 
     /**
      * Create a Shibboleth session for the user ID
      *
-     * @param  string $uid - The user ID
-     * @return $_user (array) - The user infos array created when the user logs in
+     * @param  string $uid The user ID
+     * @return array $_user The user infos array created when the user logs in
      */
     function login($uid)
     {
@@ -56,7 +57,7 @@ class ShibbolethSession
          * This is BAD. Logic should be migrated into a function and stop relying on global variables.
          */
         global $_uid, $is_allowedCreateCourse, $is_platformAdmin, $_real_cid, $is_courseAdmin;
-        global $is_courseMember, $is_courseTutor, $is_courseCoach, $is_allowed_in_course, $is_sessionAdmin, $_gid;
+        global $is_courseMember, $is_courseTutor, $is_session_general_coach, $is_allowed_in_course, $is_sessionAdmin, $_gid;
         $_uid = $uid;
 
         //is_allowedCreateCourse
@@ -78,7 +79,7 @@ class ShibbolethSession
         $_SESSION['noredirection'] = true;
 
         //must be called before 'init_local.inc.php'
-        Event::event_login($_uid);
+        Event::eventLogin($_uid);
 
         //used in 'init_local.inc.php' this is BAD but and should be changed
         $loginFailed = false;

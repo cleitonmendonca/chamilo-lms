@@ -1,11 +1,9 @@
 <?php
 /**
- *
  * @copyright (c) 2014 Valery Fremaux
  * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
  * @author Valery Fremaux <valery.fremaux@gmail.com>
  */
-
 $strings['archiverealroot'] = 'Container effectif d\'archives (chemin réel)';
 $strings['backtoindex'] = 'Retour aux instances';
 $strings['cancel'] = 'Annuler';
@@ -24,7 +22,7 @@ $strings['dbgroup'] = 'Réglages de base de données';
 $strings['dbhost'] = 'Hôte de BdD';
 $strings['dbpassword'] = 'Mot de passe';
 $strings['dbprefix'] = 'Préfix de base';
-$strings['dbuser'] = 'Utilisateur BdD';
+$strings['dbuser'] = 'Utilisateur de BdD';
 $strings['deleteinstances'] = "Désactiver";
 $strings['destroyinstances'] = "Détruire";
 $strings['edit'] = 'Modifier les paramètres';
@@ -39,7 +37,7 @@ $strings['hostdefinition'] = 'Définition d\'hôte';
 $strings['hostlist'] = 'Les sites du réseau';
 $strings['institution'] = 'Institution';
 $strings['lastcron'] = 'Dernier cron';
-$strings['maindatabase'] = 'Base de données principale';
+$strings['maindatabase'] = 'Nom de BdD';
 $strings['manage_instances'] = 'Aller au gestionnaire d\'instances';
 $strings['sync_settings'] = 'Synchroniser des réglages';
 $strings['deleteifempty'] = 'Supprimer la clef si vide';
@@ -67,11 +65,10 @@ $strings['template'] = 'Modèle';
 $strings['templating'] = 'Templating';
 $strings['testconnection'] = "Test de la connexion";
 $strings['testdatapath'] = "Test de l'emplacement de données";
-$strings['trackingenabled'] = "Tracking activé";
 $strings['userpersonaldatabase'] = 'base de données des données personnelles';
 $strings['vchamilo'] = 'Chamilo Virtuel';
-$strings['vchamilosnapshot1'] = 'ETAPE 1 DE 3 : Les répertoires de snapshot ont été créés. contibuer avec la capture des bases...';
-$strings['vchamilosnapshot2'] = 'ETAPE 2 DE 3 : Les bases ont été capturées. continuer avec la récupération des fichiers d\'usage... Attention, cette étape peut être longue si la plate-forme est fortement chargée en documents...';
+$strings['vchamilosnapshot1'] = 'ETAPE 1 DE 3 : Les répertoires de snapshot ont été créés. Continuer avec la capture des bases...';
+$strings['vchamilosnapshot2'] = 'ETAPE 2 DE 3 : Les bases ont été capturées. Continuer avec la récupération des fichiers d\'usage... Attention, cette étape peut être longue si la plate-forme est fortement chargée en documents...';
 $strings['vchamilosnapshot3'] = 'ETAPE 3 DE 3 : Fichiers capturés.';
 $strings['withselection'] = "Avec la sélection : ";
 $strings['yes'] = 'Oui';
@@ -81,10 +78,10 @@ $strings['mysqlcmd'] = 'Chemin vers le client mysql';
 $strings['mysqldumpcms'] = 'Chemin vers la commande mysqldump';
 
 $strings['sitenameinputerror'] = "Le nom de site est vide";
-$strings['institutioninputerror'] = "L'institutiob est vide ou invalide";
+$strings['institutioninputerror'] = "L'institution est vide ou invalide";
 $strings['rootwebinputerror'] = "L'URL d'acces est vide ou invalide";
 $strings['databaseinputerror'] = "La base de données n'est pas définie";
-$strings['coursefolderinputerror'] = "Le réperotire de cours n'est pas défini";
+$strings['coursefolderinputerror'] = "Le répertoire du cours n'est pas défini";
 
 $strings['httpproxyhost'] = "Hôte Proxy HTTP";
 $strings['httpproxyport'] = "Port Proxy HTTP";
@@ -94,8 +91,18 @@ $strings['httpproxypassword'] = "Mot de passe Proxy";
 
 $strings['variable'] = 'Variable';
 $strings['subkey'] = 'Clef';
-$strings['category'] = 'Categorie';
+$strings['category'] = 'Catégorie';
 $strings['accessurl'] = 'Sous-site';
 $strings['value'] = 'Valeur';
 $strings['syncall'] = 'Synchroniser la sélection';
 $strings['syncthis'] = 'Synchroniser ce réglage';
+
+$strings['SiteNameExample'] = 'Exemple: Chamilo';
+$strings['InstitutionExample'] = 'Exemple: Chamilo Association';
+$strings['RootWebExample'] = 'Exemple: http://www.chamilo.org/';
+$strings['DatabaseDescription'] = 'Une nouvelle base de données sera créée avec ce nom.';
+$strings['RootWebExists'] = 'Une instance avec le même nom existe déjà.';
+$strings['FromVersion'] = 'Version d\'origine';
+$strings['CoursePath'] = 'Chemin vers répertoire de cours';
+$strings['HomePath'] = 'Chemin vers répertoire home';
+$strings['UploadPath'] = 'Chemin vers répertoire upload';

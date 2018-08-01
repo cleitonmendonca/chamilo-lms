@@ -15,18 +15,16 @@
  * @author Julio Montoya code rewritten
  * @author Patrick Cool
  * @author René Haentjens, added CSV file import (October 2004)
+ *
  * @package chamilo.link
-
  */
-
-// Including libraries
-////require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_LINK;
+require_once __DIR__.'/../inc/global.inc.php';
+$current_course_tool = TOOL_LINK;
 
 $this_section = SECTION_COURSES;
-api_protect_course_script();
+api_protect_course_script(true);
 
-$htmlHeadXtra[] = '<script type="text/javascript">
+$htmlHeadXtra[] = '<script>
     $(document).ready( function() {
         for (i=0;i<$(".actions").length;i++) {
             if ($(".actions:eq("+i+")").html()=="<table border=\"0\"></table>" || $(".actions:eq("+i+")").html()=="" || $(".actions:eq("+i+")").html()==null) {
@@ -41,7 +39,7 @@ $htmlHeadXtra[] = '<script type="text/javascript">
         $("#url_id_"+id).html(loading);
         $("#url_id_"+id).load(url);
      }
- </script>';
+</script>';
 
 // @todo change the $_REQUEST into $_POST or $_GET
 // @todo remove this code
@@ -71,31 +69,22 @@ $course_id = api_get_course_int_id();
 $session_id = api_get_session_id();
 $condition_session = api_get_session_condition($session_id, true, true);
 
-if ($action == 'addlink') {
+if ($action === 'addlink') {
     $nameTools = '';
-    $interbreadcrumb[] = array(
-        'url' => 'link.php?'.api_get_cidreq(),
-        'name' => get_lang('Links'),
-    );
-    $interbreadcrumb[] = array('url' => '#', 'name' => get_lang('AddLink'));
+    $interbreadcrumb[] = ['url' => 'link.php', 'name' => get_lang('Links')];
+    $interbreadcrumb[] = ['url' => '#', 'name' => get_lang('AddLink')];
 }
 
-if ($action == 'addcategory') {
+if ($action === 'addcategory') {
     $nameTools = '';
-    $interbreadcrumb[] = array(
-        'url' => 'link.php?'.api_get_cidreq(),
-        'name' => get_lang('Links'),
-    );
-    $interbreadcrumb[] = array('url' => '#', 'name' => get_lang('AddCategory'));
+    $interbreadcrumb[] = ['url' => 'link.php', 'name' => get_lang('Links')];
+    $interbreadcrumb[] = ['url' => '#', 'name' => get_lang('AddCategory')];
 }
 
-if ($action == 'editlink') {
+if ($action === 'editlink') {
     $nameTools = '';
-    $interbreadcrumb[] = array(
-        'url' => 'link.php?'.api_get_cidreq(),
-        'name' => get_lang('Links'),
-    );
-    $interbreadcrumb[] = array('url' => '#', 'name' => get_lang('EditLink'));
+    $interbreadcrumb[] = ['url' => 'link.php', 'name' => get_lang('Links')];
+    $interbreadcrumb[] = ['url' => '#', 'name' => get_lang('EditLink')];
 }
 
 // Statistics
@@ -108,59 +97,79 @@ $id = isset($_REQUEST['id']) ? $_REQUEST['id'] : null;
 $scope = isset($_REQUEST['scope']) ? $_REQUEST['scope'] : null;
 $show = isset($_REQUEST['show']) && in_array(trim($_REQUEST['show']), ['all', 'none']) ? $_REQUEST['show'] : '';
 $categoryId = isset($_REQUEST['category_id']) ? intval($_REQUEST['category_id']) : '';
-
 $linkListUrl = api_get_self().'?'.api_get_cidreq().'&category_id='.$categoryId.'&show='.$show;
+$content = '';
+$token = Security::get_existing_token();
 
-$content = null;
+$protectedActions = [
+    'addlink',
+    'editlink',
+    'addcategory',
+    'editcategory',
+    'deletelink',
+    'deletecategory',
+    'visible',
+    'invisible',
+    'up',
+    'down',
+    'move_link_up',
+    'move_link_down',
+];
+
+// block access
+if (in_array($action, $protectedActions) &&
+    !api_is_allowed_to_edit(null, true)
+) {
+    api_not_allowed(true);
+}
+
 switch ($action) {
     case 'addlink':
-        if (api_is_allowed_to_edit(null, true)) {
-            $form = Link::getLinkForm(null, 'addlink');
-            if ($form->validate()) {
-                // Here we add a link
-                Link::addlinkcategory("link");
-                header('Location: '.$linkListUrl);
-                exit;
-            }
-            $content = $form->returnForm();
+        $form = Link::getLinkForm(null, 'addlink', $token);
+        if ($form->validate() && Security::check_token('get')) {
+            // Here we add a link
+            $linkId = Link::addlinkcategory('link');
+            Skill::saveSkills($form, ITEM_TYPE_LINK, $linkId);
+
+            Security::clear_token();
+            header('Location: '.$linkListUrl);
+            exit;
         }
+        $content = $form->returnForm();
         break;
     case 'editlink':
         $form = Link::getLinkForm($id, 'editlink');
         if ($form->validate()) {
-
             Link::editLink($id, $form->getSubmitValues());
+            Skill::saveSkills($form, ITEM_TYPE_LINK, $id);
             header('Location: '.$linkListUrl);
             exit;
         }
         $content = $form->returnForm();
         break;
     case 'addcategory':
-        if (api_is_allowed_to_edit(null, true)) {
-            $form = Link::getCategoryForm(null, 'addcategory');
+        $form = Link::getCategoryForm(null, 'addcategory');
 
-            if ($form->validate()) {
-                // Here we add a category
-                Link::addlinkcategory('category');
-                header('Location: '.$linkListUrl);
-                exit;
-            }
-            $content = $form->returnForm();
+        if ($form->validate()) {
+            // Here we add a category
+            Link::addlinkcategory('category');
+            header('Location: '.$linkListUrl);
+            exit;
         }
+        $content = $form->returnForm();
         break;
     case 'editcategory':
-        if (api_is_allowed_to_edit(null, true)) {
-            $form = Link::getCategoryForm($id, 'editcategory');
+        $form = Link::getCategoryForm($id, 'editcategory');
 
-            if ($form->validate()) {
-                // Here we edit a category
-                Link::editCategory($id, $form->getSubmitValues());
+        if ($form->validate()) {
+            // Here we edit a category
+            Link::editCategory($id, $form->getSubmitValues());
 
-                header('Location: '.$linkListUrl);
-                exit;
-            }
-            $content = $form->returnForm();
+            header('Location: '.$linkListUrl);
+            exit;
         }
+        $content = $form->returnForm();
+
         break;
     case 'deletelink':
         // Here we delete a link
@@ -196,6 +205,16 @@ switch ($action) {
         header('Location: '.$linkListUrl);
         exit;
         break;
+    case 'move_link_up':
+        Link::moveLinkUp($id);
+        header('Location: '.$linkListUrl);
+        exit;
+        break;
+    case 'move_link_down':
+        Link::moveLinkDown($id);
+        header('Location: '.$linkListUrl);
+        exit;
+        break;
     case 'list':
     default:
         ob_start();
@@ -204,9 +223,11 @@ switch ($action) {
         break;
 }
 
-//Display::display_header($nameTools, 'Links');
+Display::display_header($nameTools, 'Links');
 
 /*	Introduction section */
 Display::display_introduction_section(TOOL_LINK);
 
 echo $content;
+
+Display::display_footer();

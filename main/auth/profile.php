@@ -1,85 +1,48 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-/**
-* This file displays the user's profile,
-* optionally it allows users to modify their profile as well.
-*
-* See inc/conf/profile.conf.php to modify settings
-*
-* @package chamilo.auth
-*/
-
 use Chamilo\UserBundle\Entity\User;
 use ChamiloSession as Session;
 
+/**
+ * This file displays the user's profile,
+ * optionally it allows users to modify their profile as well.
+ *
+ * See inc/conf/profile.conf.php to modify settings
+ *
+ * @package chamilo.auth
+ */
 $cidReset = true;
+require_once __DIR__.'/../inc/global.inc.php';
 
-if (api_get_setting('social.allow_social_tool') == 'true') {
+if (api_get_setting('allow_social_tool') == 'true') {
     $this_section = SECTION_SOCIAL;
 } else {
     $this_section = SECTION_MYPROFILE;
 }
 
-//$htmlHeadXtra[] = api_get_password_checker_js('#username', '#password1');
-
 $_SESSION['this_section'] = $this_section;
 
-if (!(isset($_user['user_id']) && $_user['user_id']) || api_is_anonymous($_user['user_id'], true)) {
+if (!(isset($_user['user_id']) && $_user['user_id']) ||
+    api_is_anonymous($_user['user_id'], true)
+) {
     api_not_allowed(true);
 }
 
+$gMapsPlugin = GoogleMapsPlugin::create();
+$geolocalization = $gMapsPlugin->get('enable_api') === 'true';
+
+if ($geolocalization) {
+    $gmapsApiKey = $gMapsPlugin->get('api_key');
+    $htmlHeadXtra[] = '<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=true&key='.$gmapsApiKey.'" ></script>';
+}
+
 $htmlHeadXtra[] = api_get_password_checker_js('#username', '#password1');
-$htmlHeadXtra[] = api_get_css('components/cropper/dist/cropper.min.css');
-$htmlHeadXtra[] = api_get_js('components/cropper/dist/cropper.min.js');
+//$htmlHeadXtra[] = api_get_css_asset('cropper/dist/cropper.min.css');
+//$htmlHeadXtra[] = api_get_asset('cropper/dist/cropper.min.js');
 $htmlHeadXtra[] = '<script>
 $(document).ready(function() {
-    var $image = $("#previewImage");
-    var $input = $("[name=\'cropResult\']");
-    var $cropButton = $("#cropButton");
-    var canvas = "";
-    var imageWidth = "";
-    var imageHeight = "";
-
-    $("input:file").change(function() {
-        var oFReader = new FileReader();
-        oFReader.readAsDataURL(document.getElementById("picture_form").files[0]);
-
-        oFReader.onload = function (oFREvent) {
-            $image.attr("src", this.result);
-            $("#labelCropImage").html("'.get_lang('Preview').'");
-            $("#cropImage").addClass("thumbnail");
-            $cropButton.removeClass("hidden");
-            // Destroy cropper
-            $image.cropper("destroy");
-
-            $image.cropper({
-                aspectRatio: 1 / 1,
-                responsive : true,
-                center : false,
-                guides : false,
-                movable: false,
-                zoomable: false,
-                rotatable: false,
-                scalable: false,
-                crop: function(e) {
-                    // Output the result data for cropping image.
-                    $input.val(e.x+","+e.y+","+e.width+","+e.height);
-                }
-            });
-        };
-    });
-
-    $("#cropButton").on("click", function() {
-        var canvas = $image.cropper("getCroppedCanvas");
-        var dataUrl = canvas.toDataURL();
-        $image.attr("src", dataUrl);
-        $image.cropper("destroy");
-        $cropButton.addClass("hidden");
-        return false;
-    });
-
-    $(\'#id_generate_api_key\').on(\'click\', function (e) {
+    $("#id_generate_api_key").on("click", function (e) {
         e.preventDefault();
 
         $.ajax({
@@ -92,6 +55,7 @@ $(document).ready(function() {
             }
         });
     });
+
 });
 
 function confirmation(name) {
@@ -105,27 +69,11 @@ function show_image(image,width,height) {
     width = parseInt(width) + 20;
     height = parseInt(height) + 20;
     window_x = window.open(image,\'windowX\',\'width=\'+ width + \', height=\'+ height + \'\');
-
-}
-
-function hide_icon_edit(element_html)  {
-    ident="#edit_image";
-    $(ident).hide();
-}
-function show_icon_edit(element_html) {
-    ident="#edit_image";
-    $(ident).show();
 }
 </script>';
 
-$warning_msg = '';
-if (!empty($_GET['fe'])) {
-    $warning_msg .= get_lang('UplUnableToSaveFileFilteredExtension');
-    $_GET['fe'] = null;
-}
-
 $jquery_ready_content = '';
-if (api_get_setting('message.allow_message_tool') == 'true') {
+if (api_get_setting('allow_message_tool') === 'true') {
     $jquery_ready_content = <<<EOF
     $(".message-content .message-delete").click(function(){
         $(this).parents(".message-content").animate({ opacity: "hide" }, "slow");
@@ -135,55 +83,55 @@ EOF;
 }
 
 $tool_name = is_profile_editable() ? get_lang('ModifProfile') : get_lang('ViewProfile');
-$table_user = Database :: get_main_table(TABLE_MAIN_USER);
+$table_user = Database::get_main_table(TABLE_MAIN_USER);
 
 /*
  * Get initial values for all fields.
  */
-$user_data = api_get_user_info(api_get_user_id());
+$user_data = api_get_user_info(
+    api_get_user_id(),
+    false,
+    false,
+    false,
+    false,
+    true,
+    true
+);
 $array_list_key = UserManager::get_api_keys(api_get_user_id());
 $id_temp_key = UserManager::get_api_key_id(api_get_user_id(), 'dokeos');
 $value_array = $array_list_key[$id_temp_key];
 $user_data['api_key_generate'] = $value_array;
 
 if ($user_data !== false) {
-    if (api_get_setting('profile.login_is_email') == 'true') {
+    if (api_get_setting('login_is_email') == 'true') {
         $user_data['username'] = $user_data['email'];
     }
     if (is_null($user_data['language'])) {
-        $user_data['language'] = api_get_setting('language.platform_language');
+        $user_data['language'] = api_get_setting('platformLanguage');
     }
 }
 
 /*
  * Initialize the form.
  */
-$form = new FormValidator(
-    'profile',
-    'post',
-    api_get_self()."?".str_replace('&fe=1', '', Security::remove_XSS($_SERVER['QUERY_STRING'])),
-    null
-);
+$form = new FormValidator('profile');
 
 if (api_is_western_name_order()) {
     //    FIRST NAME and LAST NAME
-    $form->addElement('text', 'firstname', get_lang('FirstName'), array('size' => 40));
-    $form->addElement('text', 'lastname',  get_lang('LastName'),  array('size' => 40));
+    $form->addElement('text', 'firstname', get_lang('FirstName'), ['size' => 40]);
+    $form->addElement('text', 'lastname', get_lang('LastName'), ['size' => 40]);
 } else {
     //    LAST NAME and FIRST NAME
-    $form->addElement('text', 'lastname',  get_lang('LastName'),  array('size' => 40));
-    $form->addElement('text', 'firstname', get_lang('FirstName'), array('size' => 40));
+    $form->addElement('text', 'lastname', get_lang('LastName'), ['size' => 40]);
+    $form->addElement('text', 'firstname', get_lang('FirstName'), ['size' => 40]);
 }
-
-$options = api_get_setting_in_list('profile.changeable_options', 'name');
-if (!$options) {
-    $form->freeze(array('lastname', 'firstname'));
+if (api_get_setting('profile', 'name') !== 'true') {
+    $form->freeze(['lastname', 'firstname']);
 }
-
-$form->applyFilter(array('lastname', 'firstname'), 'stripslashes');
-$form->applyFilter(array('lastname', 'firstname'), 'trim');
-$form->applyFilter(array('lastname', 'firstname'), 'html_filter');
-$form->addRule('lastname' , get_lang('ThisFieldIsRequired'), 'required');
+$form->applyFilter(['lastname', 'firstname'], 'stripslashes');
+$form->applyFilter(['lastname', 'firstname'], 'trim');
+$form->applyFilter(['lastname', 'firstname'], 'html_filter');
+$form->addRule('lastname', get_lang('ThisFieldIsRequired'), 'required');
 $form->addRule('firstname', get_lang('ThisFieldIsRequired'), 'required');
 
 //    USERNAME
@@ -191,18 +139,14 @@ $form->addElement(
     'text',
     'username',
     get_lang('UserName'),
-    array(
+    [
         'id' => 'username',
         'maxlength' => USERNAME_MAX_LENGTH,
         'size' => USERNAME_MAX_LENGTH,
-    )
+    ]
 );
-
-if (api_get_setting('profile.login_is_email') == 'true') {
-    $options = api_get_setting_in_list('profile.changeable_options', 'login');
-    if (!$options) {
-        $form->freeze('username');
-    }
+if (api_get_setting('profile', 'login') !== 'true' || api_get_setting('login_is_email') == 'true') {
+    $form->freeze('username');
 }
 $form->applyFilter('username', 'stripslashes');
 $form->applyFilter('username', 'trim');
@@ -211,38 +155,28 @@ $form->addRule('username', get_lang('UsernameWrong'), 'username');
 $form->addRule('username', get_lang('UserTaken'), 'username_available', $user_data['username']);
 
 //    OFFICIAL CODE
-//if (CONFVAL_ASK_FOR_OFFICIAL_CODE) {
-if (true) {
-    $form->addElement('text', 'official_code', get_lang('OfficialCode'), array('size' => 40));
-    $options = api_get_setting_in_list(
-        'profile.changeable_options',
-        'officialcode'
-    );
-    if (!$options) {
+if (defined('CONFVAL_ASK_FOR_OFFICIAL_CODE') && CONFVAL_ASK_FOR_OFFICIAL_CODE === true) {
+    $form->addElement('text', 'official_code', get_lang('OfficialCode'), ['size' => 40]);
+    if (api_get_setting('profile', 'officialcode') !== 'true') {
         $form->freeze('official_code');
     }
     $form->applyFilter('official_code', 'stripslashes');
     $form->applyFilter('official_code', 'trim');
     $form->applyFilter('official_code', 'html_filter');
-    if (api_get_setting_in_list(
-            'registration.required_profile_fields',
-            'officialcode'
-        ) && !$options
+    if (api_get_setting('registration', 'officialcode') === 'true' &&
+        api_get_setting('profile', 'officialcode') === 'true'
     ) {
         $form->addRule('official_code', get_lang('ThisFieldIsRequired'), 'required');
     }
 }
 
 //    EMAIL
-$form->addElement('email', 'email', get_lang('Email'), array('size' => 40));
-$options = api_get_setting_in_list('profile.changeable_options', 'email');
-if (!$options) {
+$form->addElement('email', 'email', get_lang('Email'), ['size' => 40]);
+if (api_get_setting('profile', 'email') !== 'true') {
     $form->freeze('email');
 }
 
-if (api_get_setting_in_list('registration.required_profile_fields', 'email') &&
-    !api_get_setting_in_list('profile.changeable_options', 'email')
-) {
+if (api_get_setting('registration', 'email') == 'true' && api_get_setting('profile', 'email') == 'true') {
     $form->applyFilter('email', 'stripslashes');
     $form->applyFilter('email', 'trim');
     $form->addRule('email', get_lang('ThisFieldIsRequired'), 'required');
@@ -250,17 +184,16 @@ if (api_get_setting_in_list('registration.required_profile_fields', 'email') &&
 }
 
 // OPENID URL
-/*if (is_profile_editable() && api_get_setting('openid_authentication') == 'true') {
-    $form->addElement('text', 'openid', get_lang('OpenIDURL'), array('size' => 40));
-    $options = api_get_setting_in_list('profile.changeable_options', 'openid');
-    if (!$options) {
+if (is_profile_editable() && api_get_setting('openid_authentication') == 'true') {
+    $form->addElement('text', 'openid', get_lang('OpenIDURL'), ['size' => 40]);
+    if (api_get_setting('profile', 'openid') !== 'true') {
         $form->freeze('openid');
     }
     $form->applyFilter('openid', 'trim');
-}*/
+}
 
 //    PHONE
-$form->addElement('text', 'phone', get_lang('Phone'), array('size' => 20));
+$form->addElement('text', 'phone', get_lang('Phone'), ['size' => 20]);
 if (api_get_setting('profile', 'phone') !== 'true') {
     $form->freeze('phone');
 }
@@ -270,33 +203,26 @@ $form->applyFilter('phone', 'html_filter');
 
 //  PICTURE
 if (is_profile_editable() && api_get_setting('profile', 'picture') == 'true') {
-    $form->addElement(
-        'file',
+    $form->addFile(
         'picture',
-        ($user_data['picture_uri'] != '' ? get_lang('UpdateImage') : get_lang(
-            'AddImage'
-        )),
-        array('id' => 'picture_form', 'class' => 'picture-form')
+        [
+            $user_data['picture_uri'] != '' ? get_lang('UpdateImage') : get_lang('AddImage'),
+            get_lang('OnlyImagesAllowed'),
+        ],
+        [
+            'id' => 'picture',
+            'class' => 'picture-form',
+            'crop_image' => true,
+            'crop_ratio' => '1 / 1',
+            'accept' => 'image/*',
+        ]
     );
-    $form->addHtml(''
-                . '<div class="form-group">'
-                    . '<label for="cropImage" id="labelCropImage" class="col-sm-2 control-label"></label>'
-                        . '<div class="col-sm-8">'
-                            . '<div id="cropImage" class="cropCanvas">'
-                                . '<img id="previewImage" >'
-                            . '</div>'
-                            . '<div>'
-                                . '<button class="btn btn-primary hidden" name="cropButton" id="cropButton"><em class="fa fa-crop"></em> '.get_lang('CropYourPicture').'</button>'
-                            . '</div>'
-                        . '</div>'
-                . '</div>'
-    . '');
-    $form->addHidden('cropResult', '');
-    $form->add_progress_bar();
+
+    $form->addProgress();
     if (!empty($user_data['picture_uri'])) {
         $form->addElement('checkbox', 'remove_picture', null, get_lang('DelImage'));
     }
-    $allowed_picture_types = api_get_supported_image_extensions();
+    $allowed_picture_types = api_get_supported_image_extensions(false);
     $form->addRule(
         'picture',
         get_lang('OnlyImagesAllowed').' ('.implode(', ', $allowed_picture_types).')',
@@ -306,13 +232,13 @@ if (is_profile_editable() && api_get_setting('profile', 'picture') == 'true') {
 }
 
 //    LANGUAGE
-$form->addElement('select_language', 'language', get_lang('Language'));
+$form->addSelectLanguage('language', get_lang('Language'));
 if (api_get_setting('profile', 'language') !== 'true') {
     $form->freeze('language');
 }
 
-//THEME
-if (is_profile_editable() && api_get_setting('profile.user_selected_theme') == 'true') {
+// THEME
+if (is_profile_editable() && api_get_setting('user_selected_theme') == 'true') {
     $form->addElement('SelectTheme', 'theme', get_lang('Theme'));
     if (api_get_setting('profile', 'theme') !== 'true') {
         $form->freeze('theme');
@@ -321,7 +247,7 @@ if (is_profile_editable() && api_get_setting('profile.user_selected_theme') == '
 }
 
 //    EXTENDED PROFILE  this make the page very slow!
-if (api_get_setting('profile.extended_profile') == 'true') {
+if (api_get_setting('extended_profile') === 'true') {
     $width_extended_profile = 500;
     //    MY COMPETENCES
     $form->addHtmlEditor(
@@ -329,11 +255,11 @@ if (api_get_setting('profile.extended_profile') == 'true') {
         get_lang('MyCompetences'),
         false,
         false,
-        array(
+        [
             'ToolbarSet' => 'Profile',
             'Width' => $width_extended_profile,
             'Height' => '130',
-        )
+        ]
     );
     //    MY DIPLOMAS
     $form->addHtmlEditor(
@@ -341,11 +267,11 @@ if (api_get_setting('profile.extended_profile') == 'true') {
         get_lang('MyDiplomas'),
         false,
         false,
-        array(
+        [
             'ToolbarSet' => 'Profile',
             'Width' => $width_extended_profile,
             'Height' => '130',
-        )
+        ]
     );
     // WHAT I AM ABLE TO TEACH
     $form->addHtmlEditor(
@@ -353,11 +279,11 @@ if (api_get_setting('profile.extended_profile') == 'true') {
         get_lang('MyTeach'),
         false,
         false,
-        array(
+        [
             'ToolbarSet' => 'Profile',
             'Width' => $width_extended_profile,
             'Height' => '130',
-        )
+        ]
     );
 
     //    MY PRODUCTIONS
@@ -371,15 +297,15 @@ if (api_get_setting('profile.extended_profile') == 'true') {
         get_lang('MyPersonalOpenArea'),
         false,
         false,
-        array(
+        [
             'ToolbarSet' => 'Profile',
             'Width' => $width_extended_profile,
             'Height' => '350',
-        )
+        ]
     );
     // openarea is untrimmed for maximum openness
-    $form->applyFilter(array('competences', 'diplomas', 'teach', 'openarea'), 'stripslashes');
-    $form->applyFilter(array('competences', 'diplomas', 'teach'), 'trim');
+    $form->applyFilter(['competences', 'diplomas', 'teach', 'openarea'], 'stripslashes');
+    $form->applyFilter(['competences', 'diplomas', 'teach'], 'trim');
 }
 
 //    PASSWORD, if auth_source is platform
@@ -387,29 +313,26 @@ if (is_platform_authentication() &&
     is_profile_editable() &&
     api_get_setting('profile', 'password') == 'true'
 ) {
-    $form->addElement('password', 'password0', array(get_lang('Pass'), get_lang('Enter2passToChange')), array('size' => 40));
-    $form->addElement('password', 'password1', get_lang('NewPass'), array('id'=> 'password1', 'size' => 40));
+    $form->addElement('password', 'password0', [get_lang('Pass'), get_lang('Enter2passToChange')], ['size' => 40]);
+    $form->addElement('password', 'password1', get_lang('NewPass'), ['id' => 'password1', 'size' => 40]);
 
-    $checkPass = api_get_setting('security.allow_strength_pass_checker');
-    if ($checkPass == 'true') {
-        $form->addElement('label', null, '<div id="password_progress"></div>');
-    }
-    $form->addElement('password', 'password2', get_lang('Confirmation'), array('size' => 40));
+    $form->addElement('password', 'password2', get_lang('Confirmation'), ['size' => 40]);
     //    user must enter identical password twice so we can prevent some user errors
-    $form->addRule(array('password1', 'password2'), get_lang('PassTwo'), 'compare');
-    if (CHECK_PASS_EASY_TO_FIND) {
-        $form->addRule('password1', get_lang('CurrentPasswordEmptyOrIncorrect'), 'callback', 'api_check_password');
-    }
+    $form->addRule(['password1', 'password2'], get_lang('PassTwo'), 'compare');
+    $form->addPasswordRule('password1');
 }
 
 $extraField = new ExtraField('user');
-$return = $extraField->addElements($form, api_get_user_id());
+$return = $extraField->addElements(
+    $form,
+    api_get_user_id()
+);
 
 $jquery_ready_content = $return['jquery_ready_content'];
 
 // the $jquery_ready_content variable collects all functions that
 // will be load in the $(document).ready javascript function
-$htmlHeadXtra[] ='<script>
+$htmlHeadXtra[] = '<script>
 $(document).ready(function(){
     '.$jquery_ready_content.'
 });
@@ -421,7 +344,7 @@ if (api_get_setting('profile', 'apikeys') == 'true') {
         'text',
         'api_key_generate',
         get_lang('MyApiKey'),
-        array('size' => 40, 'id' => 'id_api_key_generate')
+        ['size' => 40, 'id' => 'id_api_key_generate']
     );
     $form->addElement('html', '</div>');
     $form->addButton(
@@ -445,21 +368,27 @@ $form->setDefaults($user_data);
 /**
  * Is user auth_source is platform ?
  *
- * @return  boolean if auth_source is platform
+ * @return bool if auth_source is platform
  */
-function is_platform_authentication() {
+function is_platform_authentication()
+{
     $tab_user_info = api_get_user_info();
+
     return $tab_user_info['auth_source'] == PLATFORM_AUTH_SOURCE;
 }
 
 /**
  * Can a user edit his/her profile?
  *
- * @return    boolean    Editability of the profile
+ * @return bool Editability of the profile
  */
-function is_profile_editable() {
+function is_profile_editable()
+{
+    if (isset($GLOBALS['profileIsEditable'])) {
+        return (bool) $GLOBALS['profileIsEditable'];
+    }
+
     return true;
-    return $GLOBALS['profileIsEditable'];
 }
 
 /*
@@ -469,8 +398,9 @@ function is_profile_editable() {
 /**
  * Upload a submitted user production.
  *
- * @param    $user_id    User id
- * @return    The filename of the new production or FALSE if the upload has failed
+ * @param   $user_id User id
+ *
+ * @return The filename of the new production or FALSE if the upload has failed
  */
 function upload_user_production($user_id)
 {
@@ -487,39 +417,52 @@ function upload_user_production($user_id)
             return $filename;
         }
     }
+
     return false; // this should be returned if anything went wrong with the upload
 }
 
 /**
- * Check current user's current password
+ * Check current user's current password.
+ *
  * @param    char    email
- * @return    bool true o false
- * @uses Gets user ID from global variable
+ *
+ * @return bool true o false
+ *
+ * @uses \Gets user ID from global variable
  */
-function check_user_email($email) {
+function check_user_email($email)
+{
     $user_id = api_get_user_id();
     if ($user_id != strval(intval($user_id)) || empty($email)) {
         return false;
     }
-    $table_user = Database :: get_main_table(TABLE_MAIN_USER);
+    $table_user = Database::get_main_table(TABLE_MAIN_USER);
     $email = Database::escape_string($email);
     $sql = "SELECT * FROM $table_user
             WHERE user_id='".$user_id."' AND email='".$email."'";
     $result = Database::query($sql);
+
     return Database::num_rows($result) != 0;
 }
 
 $filtered_extension = false;
 
 if ($form->validate()) {
+    $hook = HookUpdateUser::create();
+
+    if ($hook) {
+        $hook->notifyUpdateUser(HOOK_EVENT_TYPE_PRE);
+    }
+
     $wrong_current_password = false;
     $user_data = $form->getSubmitValues(1);
-
+    /** @var User $user */
     $user = UserManager::getRepository()->find(api_get_user_id());
 
     // set password if a new one was provided
     $validPassword = false;
     $passwordWasChecked = false;
+
     if ($user &&
         (!empty($user_data['password0']) &&
         !empty($user_data['password1'])) ||
@@ -528,8 +471,9 @@ if ($form->validate()) {
     ) {
         $passwordWasChecked = true;
         $validPassword = UserManager::isPasswordValid(
+            $user->getPassword(),
             $user_data['password0'],
-            $user
+            $user->getSalt()
         );
 
         if ($validPassword) {
@@ -564,9 +508,7 @@ if ($form->validate()) {
                 $changeemail = $user_data['email'];
             }
 
-            if (!check_user_email($user_data['email']) &&
-                empty($user_data['password0'])
-            ){
+            if (!check_user_email($user_data['email']) && empty($user_data['password0'])) {
                 Display::addFlash(
                     Display:: return_message(
                         get_lang('ToChangeYourEmailMustTypeYourPassword'),
@@ -584,7 +526,7 @@ if ($form->validate()) {
             api_get_user_id(),
             $_FILES['picture']['name'],
             $_FILES['picture']['tmp_name'],
-            $user_data['cropResult']
+            $user_data['picture_crop_result']
         );
 
         if ($new_picture) {
@@ -659,12 +601,12 @@ if ($form->validate()) {
         //ensure there is at least a http:// scheme in the URI provided
         $user_data['openid'] = 'http://'.$my_user_openid;
     }
-    $extras = array();
+    $extras = [];
 
     //Checking the user language
     $languages = api_get_languages();
-    if (!in_array($user_data['language'], $languages['folder'])) {
-        $user_data['language'] = api_get_setting('language.platform_language');
+    if (!in_array($user_data['language'], $languages)) {
+        $user_data['language'] = api_get_setting('platformLanguage');
     }
     $_SESSION['_user']['language'] = $user_data['language'];
 
@@ -672,10 +614,10 @@ if ($form->validate()) {
     $profile_list = api_get_setting('profile');
     //Adding missing variables
 
-    $available_values_to_modify = array();
+    $available_values_to_modify = [];
     foreach ($profile_list as $key => $status) {
         if ($status == 'true') {
-            switch($key) {
+            switch ($key) {
                 case 'login':
                     $available_values_to_modify[] = 'username';
                     break;
@@ -696,7 +638,7 @@ if ($form->validate()) {
     //Fixing missing variables
     $available_values_to_modify = array_merge(
         $available_values_to_modify,
-        array('competences', 'diplomas', 'openarea', 'teach', 'openid')
+        ['competences', 'diplomas', 'openarea', 'teach', 'openid', 'address']
     );
 
     // build SQL query
@@ -704,8 +646,8 @@ if ($form->validate()) {
     unset($user_data['api_key_generate']);
 
     foreach ($user_data as $key => $value) {
-        if (substr($key, 0, 6) == 'extra_') { //an extra field
-           continue;
+        if (substr($key, 0, 6) === 'extra_') { //an extra field
+            continue;
         } elseif (strpos($key, 'remove_extra_') !== false) {
         } else {
             if (in_array($key, $available_values_to_modify)) {
@@ -722,11 +664,6 @@ if ($form->validate()) {
         }
         if (isset($password) && in_array('password', $available_values_to_modify)) {
             $changePassword = true;
-            /*$password = api_get_encrypted_password($password);
-            $sql .= " password = '".Database::escape_string($password)."'";*/
-        } else {
-            // remove trailing , from the query we have so far
-            //$sql = rtrim($sql, ',');
         }
     } else {
         if (isset($changeemail) && !isset($password) && in_array('email', $available_values_to_modify)) {
@@ -737,28 +674,22 @@ if ($form->validate()) {
                     $sql .= " email = '".Database::escape_string($changeemail)."' ";
                 }
                 $changePassword = true;
-                /*$password = api_get_encrypted_password($password);
-                $sql .= " password = '".Database::escape_string($password)."'";*/
-            } else {
-                // remove trailing , from the query we have so far
-                //$sql = rtrim($sql, ',');
             }
         }
     }
 
     $sql = rtrim($sql, ',');
-
     if ($changePassword && !empty($password)) {
         UserManager::updatePassword(api_get_user_id(), $password);
     }
 
-    if (api_get_setting('profile', 'officialcode') == 'true' &&
+    if (api_get_setting('profile', 'officialcode') === 'true' &&
         isset($user_data['official_code'])
     ) {
         $sql .= ", official_code = '".Database::escape_string($user_data['official_code'])."'";
     }
 
-    $sql .= " WHERE user_id  = '".api_get_user_id()."'";
+    $sql .= " WHERE id  = '".api_get_user_id()."'";
     Database::query($sql);
 
     if ($passwordWasChecked == false) {
@@ -776,12 +707,21 @@ if ($form->validate()) {
     $extraField = new ExtraFieldValue('user');
     $extraField->saveFieldValues($user_data);
 
-    $userInfo = api_get_user_info();
+    $userInfo = api_get_user_info(
+        api_get_user_id(),
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+    );
     Session::write('_user', $userInfo);
 
-    // re-init the system to take new settings into account
-    //$_SESSION['_user']['uidReset'] = true;
-    //$_SESSION['noredirection'] = true;
+    if ($hook) {
+        $hook->notifyUpdateUser(HOOK_EVENT_TYPE_POST);
+    }
+
     $url = api_get_self();
     header("Location: ".$url);
     exit;
@@ -789,42 +729,41 @@ if ($form->validate()) {
 
 // the header
 
-$actions = null;
-if (api_get_setting('social.allow_social_tool') != 'true') {
-    if (api_get_setting('profile.extended_profile') == 'true') {
-        $actions .= '<div class="actions">';
-
-        if (api_get_setting('social.allow_social_tool') == 'true' &&
-            api_get_setting('message.allow_message_tool') == 'true'
-        ) {
+$actions = '';
+if (api_get_setting('allow_social_tool') !== 'true') {
+    if (api_get_setting('extended_profile') === 'true') {
+        if (api_get_setting('allow_message_tool') === 'true') {
             $actions .= '<a href="'.api_get_path(WEB_PATH).'main/social/profile.php">'.
                 Display::return_icon('shared_profile.png', get_lang('ViewSharedProfile')).'</a>';
-        }
-        if (api_get_setting('message.allow_message_tool') == 'true') {
             $actions .= '<a href="'.api_get_path(WEB_PATH).'main/messages/inbox.php">'.
                 Display::return_icon('inbox.png', get_lang('Messages')).'</a>';
         }
         $show = isset($_GET['show']) ? '&amp;show='.Security::remove_XSS($_GET['show']) : '';
 
-        if (isset($_GET['type']) && $_GET['type'] == 'extended') {
+        if (isset($_GET['type']) && $_GET['type'] === 'extended') {
             $actions .= '<a href="profile.php?type=reduced'.$show.'">'.
-                Display::return_icon('edit.png', get_lang('EditNormalProfile'),'',16).'</a>';
+                Display::return_icon('edit.png', get_lang('EditNormalProfile'), '', 16).'</a>';
         } else {
             $actions .= '<a href="profile.php?type=extended'.$show.'">'.
-                Display::return_icon('edit.png', get_lang('EditExtendProfile'),'',16).'</a>';
+                Display::return_icon('edit.png', get_lang('EditExtendProfile'), '', 16).'</a>';
         }
-        $actions .= '</div>';
     }
 }
 
-$show_delete_account_button = api_get_setting('platform_unsubscribe_allowed') == 'true' ? true : false;
+$show_delete_account_button = api_get_setting('platform_unsubscribe_allowed') === 'true' ? true : false;
 
 $tpl = new Template(get_lang('ModifyProfile'));
-$tpl->assign('actions', $actions);
 
-SocialManager::setSocialUserBlock($tpl, $user_id, 'messages');
+if ($actions) {
+    $tpl->assign(
+        'actions',
+        Display::toolbarAction('toolbar', [$actions])
+    );
+}
 
-if (api_get_setting('social.allow_social_tool') == 'true') {
+SocialManager::setSocialUserBlock($tpl, api_get_user_id(), 'messages');
+
+if (api_get_setting('allow_social_tool') === 'true') {
     SocialManager::setSocialUserBlock($tpl, api_get_user_id(), 'home');
     $menu = SocialManager::show_social_menu(
         'home',
@@ -836,7 +775,7 @@ if (api_get_setting('social.allow_social_tool') == 'true') {
 
     $tpl->assign('social_menu_block', $menu);
     $tpl->assign('social_right_content', $form->returnForm());
-    $social_layout = $tpl->get_template('social/edit_profile.tpl');
+    $social_layout = $tpl->get_template('social/edit_profile.html.twig');
     $tpl->display($social_layout);
 } else {
     $bigImage = UserManager::getUserPicture(api_get_user_id(), USER_IMAGE_SIZE_BIG);

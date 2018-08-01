@@ -3,58 +3,61 @@
 
 /**
  * @package chamilo.social
+ *
  * @author Julio Montoya <gugli100@gmail.com>
  */
 $cidReset = true;
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_block_anonymous_users();
 
-if (api_get_setting('social.allow_social_tool') != 'true') {
+if (api_get_setting('allow_social_tool') !== 'true') {
     api_not_allowed();
 }
 
 $this_section = SECTION_SOCIAL;
 
-$interbreadcrumb[] = array ('url' =>'profile.php','name' => get_lang('SocialNetwork'));
-$interbreadcrumb[] = array ('url' =>'#','name' => get_lang('Invitations'));
+$interbreadcrumb[] = ['url' => 'profile.php', 'name' => get_lang('SocialNetwork')];
+$interbreadcrumb[] = ['url' => '#', 'name' => get_lang('Invitations')];
+
+$userGroupModel = new UserGroup();
 
 if (is_array($_GET) && count($_GET) > 0) {
     foreach ($_GET as $key => $value) {
         switch ($key) {
             case 'accept':
-                $useRole = GroupPortalManager::get_user_group_role(api_get_user_id(), $value);
+                $useRole = $userGroupModel->get_user_group_role(api_get_user_id(), $value);
 
                 if (in_array(
                     $useRole,
-                    array(
+                    [
                         GROUP_USER_PERMISSION_PENDING_INVITATION_SENT_BY_USER,
-                        GROUP_USER_PERMISSION_PENDING_INVITATION
-                    )
+                        GROUP_USER_PERMISSION_PENDING_INVITATION,
+                    ]
                 )) {
-                    GroupPortalManager::update_user_role(api_get_user_id(), $value, GROUP_USER_PERMISSION_READER);
+                    $userGroupModel->update_user_role(api_get_user_id(), $value, GROUP_USER_PERMISSION_READER);
 
                     Display::addFlash(
                         Display::return_message(get_lang('UserIsSubscribedToThisGroup'), 'success')
                     );
 
-                    header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+                    header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
                     exit;
                 }
 
                 if (in_array(
                     $useRole,
-                    array(
+                    [
                         GROUP_USER_PERMISSION_READER,
                         GROUP_USER_PERMISSION_ADMIN,
-                        GROUP_USER_PERMISSION_MODERATOR
-                    )
+                        GROUP_USER_PERMISSION_MODERATOR,
+                    ]
                 )) {
                     Display::addFlash(
                         Display::return_message(get_lang('UserIsAlreadySubscribedToThisGroup'), 'warning')
                     );
 
-                    header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+                    header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
                     exit;
                 }
 
@@ -62,23 +65,21 @@ if (is_array($_GET) && count($_GET) > 0) {
                     Display::return_message(get_lang('UserIsNotSubscribedToThisGroup'), 'warning')
                 );
 
-                header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+                header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
                 exit;
                 break;
             case 'deny':
-                GroupPortalManager::delete_user_rel_group(api_get_user_id(), $value);
+                $userGroupModel->delete_user_rel_group(api_get_user_id(), $value);
 
                 Display::addFlash(
                     Display::return_message(get_lang('GroupInvitationWasDeny'))
                 );
 
-                header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+                header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
                 exit;
         }
     }
 }
-
-$userGroup = new UserGroup();
 
 $content = null;
 
@@ -90,7 +91,7 @@ $socialInvitationsBlock = '<div id="id_response" align="center"></div>';
 $user_id = api_get_user_id();
 $list_get_invitation = SocialManager::get_list_invitation_of_friends_by_user_id($user_id);
 $list_get_invitation_sent = SocialManager::get_list_invitation_sent_by_user_id($user_id);
-$pending_invitations = $userGroup->get_groups_by_user(
+$pending_invitations = $userGroupModel->get_groups_by_user(
     $user_id,
     GROUP_USER_PERMISSION_PENDING_INVITATION
 );
@@ -110,49 +111,54 @@ if ($total_invitations == 0 && count($_GET) <= 0) {
 
 if ($number_loop != 0) {
     $invitationHtml = '';
+
     foreach ($list_get_invitation as $invitation) {
         $sender_user_id = $invitation['user_sender_id'];
         $user_info = api_get_user_info($sender_user_id);
         $userPicture = $user_info['avatar'];
-        $invitationHtml .= '<div id="id_'.$sender_user_id.'" class="panel panel-default">';
+        $invitationHtml .= '<div id="id_'.$sender_user_id.'" class="block-invitation">';
 
         $title = Security::remove_XSS($invitation['title'], STUDENT, true);
         $content = Security::remove_XSS($invitation['content'], STUDENT, true);
         $date = api_convert_and_format_date($invitation['send_date'], DATE_TIME_FORMAT_LONG);
         $invitationHtml .= '<div class="row">';
         $invitationHtml .= '<div class="col-md-2">';
-        $invitationHtml .= '<a href="profile.php?u='.$sender_user_id.'"><img class="img-responsive" src="'.$userPicture.'"/></a>';
+        $invitationHtml .= '<a href="profile.php?u='.$sender_user_id.'"><img class="img-responsive img-rounded" src="'.$userPicture.'"/></a>';
         $invitationHtml .= '</div>';
         $invitationHtml .= '<div class="col-md-10">';
-        $invitationHtml .= '<h4 class="title-profile"><a href="profile.php?u='.$sender_user_id.'">
-                                    '.$user_info['complete_name'].'</a>:
-                                    </h4>';
-        $invitationHtml .= '<div class="content-invitation">'.$content.'</div>';
-        $invitationHtml .= '<div class="date-invitation">'.get_lang('DateSend').' : '.$date.'</div>';
 
-        $invitationHtml .= '<div class="btn-group" role="group">';
+        $invitationHtml .= '<div class="pull-right">';
+        $invitationHtml .= '<div class="btn-group btn-group-sm" role="group">';
         $invitationHtml .= Display::toolbarButton(
-            get_lang('AcceptInvitation'),
-            api_get_path(WEB_AJAX_PATH) . 'social.ajax.php?' . http_build_query([
+            null,
+            api_get_path(WEB_AJAX_PATH).'social.ajax.php?'.http_build_query([
                 'a' => 'add_friend',
                 'friend_id' => $sender_user_id,
-                'is_my_friend' => 'friend'
+                'is_my_friend' => 'friend',
             ]),
             'check',
-            'success',
-            ['id' => 'btn-accept-' . $sender_user_id]
+            'default',
+            ['id' => 'btn-accept-'.$sender_user_id]
         );
         $invitationHtml .= Display::toolbarButton(
-            get_lang('DenyInvitation'),
-            api_get_path(WEB_AJAX_PATH) . 'social.ajax.php?' . http_build_query([
+            null,
+            api_get_path(WEB_AJAX_PATH).'social.ajax.php?'.http_build_query([
                 'a' => 'deny_friend',
                 'denied_friend_id' => $sender_user_id,
             ]),
             'times',
-            'danger',
-            ['id' => 'btn-deny-' . $sender_user_id]
+            'default',
+            ['id' => 'btn-deny-'.$sender_user_id]
         );
         $invitationHtml .= '</div>';
+        $invitationHtml .= '</div>';
+
+        $invitationHtml .= '<h5 class="title-profile"><a href="profile.php?u='.$sender_user_id.'">
+                            '.$user_info['complete_name'].'</a>:
+                            </h5>';
+        $invitationHtml .= '<div class="content-invitation">'.$content.'</div>';
+        $invitationHtml .= '<div class="date-invitation">'.get_lang('DateSend').' : '.$date.'</div>';
+
         $invitationHtml .= '</div>';
         $invitationHtml .= '</div></div>';
     }
@@ -178,7 +184,7 @@ if (count($list_get_invitation_sent) > 0) {
         $invitationSentHtml .= '<div class="col-md-9">';
         $invitationSentHtml .= '<h4 class="title-profile"><a class="profile_link" href="profile.php?u='.$sender_user_id.'">'.$user_info['complete_name'].'</a></h4>';
         $invitationSentHtml .= '<div class="content-invitation">'.$title.' : '.$content.'</div>';
-        $invitationSentHtml .= '<div class="date-invitation">'. get_lang('DateSend').' : '.$date.'</div>';
+        $invitationSentHtml .= '<div class="date-invitation">'.get_lang('DateSend').' : '.$date.'</div>';
         $invitationSentHtml .= '</div>';
         $invitationSentHtml .= '</div></div>';
     }
@@ -186,21 +192,21 @@ if (count($list_get_invitation_sent) > 0) {
 }
 
 if (count($pending_invitations) > 0) {
-    $new_invitation = array();
+    $new_invitation = [];
     $waitingInvitation = '';
     foreach ($pending_invitations as $invitation) {
-        $picture = $userGroup->get_picture_group(
+        $picture = $userGroupModel->get_picture_group(
             $invitation['id'],
             $invitation['picture'],
-            80
+            null,
+            GROUP_IMAGE_SIZE_BIG
         );
-        $img = '<img class="social-groups-image" src="'.$picture['file'].'" />';
+        $img = '<img class="img-responsive" src="'.$picture['file'].'" />';
         $invitation['picture_uri'] = '<a href="group_view.php?id='.$invitation['id'].'">'.$img.'</a>';
-        $invitation['name'] = '<a href="group_view.php?id='.$invitation['id'].'">'.cut($invitation['name'],120,true).'</a>';
-        $invitation['description'] = cut($invitation['description'],220,true);
-        $new_invitation[]=$invitation;
-
-        $waitingInvitation .= '<div class="well"><div class="row">';
+        $invitation['name'] = '<a href="group_view.php?id='.$invitation['id'].'">'.cut($invitation['name'], 120, true).'</a>';
+        $invitation['description'] = cut($invitation['description'], 220, true);
+        $new_invitation[] = $invitation;
+        $waitingInvitation .= '<div class="panel-invitations"><div class="row">';
         $waitingInvitation .= '<div class="col-md-3">'.$invitation['picture_uri'].'</div>';
         $waitingInvitation .= '<div class="col-md-9">';
         $waitingInvitation .= '<h4 class="tittle-profile">'.$invitation['name'].'</h4>';
@@ -208,27 +214,28 @@ if (count($pending_invitations) > 0) {
         $waitingInvitation .= '<div class="btn-group" role="group">';
         $waitingInvitation .= Display::toolbarButton(
             get_lang('AcceptInvitation'),
-            api_get_path(WEB_CODE_PATH) . 'social/invitations.php?' . http_build_query(['accept' => $invitation['id']]),
+            api_get_path(WEB_CODE_PATH).'social/invitations.php?'.http_build_query(['accept' => $invitation['id']]),
             'check',
             'success',
-            ['id' => 'accept-invitation-' . $invitation['id']]
+            ['id' => 'accept-invitation-'.$invitation['id']]
         );
         $waitingInvitation .= Display::toolbarButton(
             get_lang('DenyInvitation'),
-            api_get_path(WEB_CODE_PATH) . 'social/invitations.php?' . http_build_query(['deny' => $invitation['id']]),
+            api_get_path(WEB_CODE_PATH).'social/invitations.php?'.http_build_query(['deny' => $invitation['id']]),
             'times',
             'danger',
-            ['id' => 'deny-invitation-' . $invitation['id']]
+            ['id' => 'deny-invitation-'.$invitation['id']]
         );
-        $waitingInvitation .='</div>';
+        $waitingInvitation .= '</div>';
         $waitingInvitation .= '</div></div>';
     }
     $socialInvitationsBlock .= Display::panel($waitingInvitation, get_lang('GroupsWaitingApproval'));
 }
 
-$tpl = \Chamilo\CoreBundle\Framework\Container::getTwig();
+$tpl = new Template(null);
 SocialManager::setSocialUserBlock($tpl, api_get_user_id(), 'invitations');
-$tpl->addGlobal('social_menu_block', $social_menu_block);
-$tpl->addGlobal('social_invitations_block', $socialInvitationsBlock);
-$tpl->addGlobal('content', $content);
-echo $tpl->render('@template_style/social/invitations.html.twig');
+$tpl->assign('social_menu_block', $social_menu_block);
+$tpl->assign('social_invitations_block', $socialInvitationsBlock);
+$tpl->assign('content', $content);
+$social_layout = $tpl->get_template('social/invitations.tpl');
+$tpl->display($social_layout);

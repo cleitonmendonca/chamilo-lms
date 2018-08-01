@@ -1,11 +1,10 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use \Chamilo\CoreBundle\Component\Editor\CkEditor\CkEditor;
-use Chamilo\CoreBundle\Framework\Container;
+use Chamilo\CoreBundle\Component\Editor\CkEditor\CkEditor;
 
 /**
- * A html editor field to use with QuickForm
+ * A html editor field to use with QuickForm.
  */
 class HtmlEditor extends HTML_QuickForm_textarea
 {
@@ -13,17 +12,17 @@ class HtmlEditor extends HTML_QuickForm_textarea
     public $editor;
 
     /**
-     * Full page
+     * Full page.
      */
     public $fullPage;
 
     /**
-     * Class Constructor
+     * Class Constructor.
+     *
      * @param string $name
      * @param string $elementLabel HTML editor  label
-     * @param array  $attributes Attributes for the textarea
-     * @param array  $config Optional configuration settings for the online editor.
-     *
+     * @param array  $attributes   Attributes for the textarea
+     * @param array  $config       optional configuration settings for the online editor
      */
     public function __construct(
         $name = null,
@@ -32,7 +31,6 @@ class HtmlEditor extends HTML_QuickForm_textarea
         $config = []
     ) {
         if (empty($name)) {
-
             return false;
         }
 
@@ -40,8 +38,8 @@ class HtmlEditor extends HTML_QuickForm_textarea
         $this->_persistantFreeze = true;
         $this->_type = 'html_editor';
 
-        $editor = Container::getHtmlEditor();
-
+        //$editor = Container::getHtmlEditor();
+        $editor = new CkEditor();
         if ($editor) {
             $this->editor = $editor;
             $this->editor->setName($name);
@@ -50,7 +48,8 @@ class HtmlEditor extends HTML_QuickForm_textarea
     }
 
     /**
-     * Return the HTML editor in HTML
+     * Return the HTML editor in HTML.
+     *
      * @return string
      */
     public function toHtml()
@@ -59,7 +58,6 @@ class HtmlEditor extends HTML_QuickForm_textarea
 
         if ($this->editor) {
             if ($this->editor->getConfigAttribute('fullPage')) {
-
                 if (strlen(trim($value)) == 0) {
                     // TODO: To be considered whether here to be added DOCTYPE,
                     // language and character set declarations.
@@ -73,11 +71,10 @@ class HtmlEditor extends HTML_QuickForm_textarea
             return $this->getFrozenHtml();
         } else {
             $styleCss = $this->editor->getConfigAttribute('style');
-
             if ($styleCss) {
-               $style = true;
+                $style = true;
             } else {
-               $style = false;
+                $style = false;
             }
 
             return $this->buildEditor($style);
@@ -85,7 +82,8 @@ class HtmlEditor extends HTML_QuickForm_textarea
     }
 
     /**
-     * Returns the html area content in HTML
+     * Returns the html area content in HTML.
+     *
      * @return string
      */
     public function getFrozenHtml()
@@ -104,13 +102,11 @@ class HtmlEditor extends HTML_QuickForm_textarea
         if ($this->editor) {
             $this->editor->value = $this->getValue();
             $this->editor->setName($this->getName());
-
-            if ($style === true) {
+            if ($style == true) {
                 $result = $this->editor->createHtmlStyle();
             } else {
                 $result = $this->editor->createHtml();
             }
-
         }
 
         return $result;

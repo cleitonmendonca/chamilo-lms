@@ -3,29 +3,33 @@
 
 /**
  * @package chamilo.social
+ *
  * @author Julio Montoya <gugli100@gmail.com>
  */
 $cidReset = true;
 
+require_once __DIR__.'/../inc/global.inc.php';
 $ajax_url = api_get_path(WEB_AJAX_PATH).'message.ajax.php';
 api_block_anonymous_users();
 
-if (api_get_setting('social.allow_social_tool') != 'true') {
+if (api_get_setting('allow_social_tool') != 'true') {
     api_not_allowed();
 }
 
 $this_section = SECTION_SOCIAL;
 $tool_name = get_lang('Search');
-$user_id = api_get_user_id();
-$interbreadcrumb[] = array('url' => 'profile.php', 'name' => get_lang('SocialNetwork'));
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'social/profile.php',
+    'name' => get_lang('SocialNetwork'),
+];
 
-$query = isset($_GET['q']) ? Security::remove_XSS($_GET['q']): null;
-$query_search_type = isset($_GET['search_type']) && in_array($_GET['search_type'], array('0','1','2')) ? $_GET['search_type'] : null;
-$extra_fields = UserManager::get_extra_filtrable_fields();
-$query_vars = array('q' => $query, 'search_type' => $query_search_type);
+$query = isset($_GET['q']) ? Security::remove_XSS($_GET['q']) : null;
+$query_search_type = isset($_GET['search_type']) && in_array($_GET['search_type'], ['0', '1', '2']) ? $_GET['search_type'] : null;
+$extra_fields = UserManager::getExtraFilterableFields();
+$query_vars = ['q' => $query, 'search_type' => $query_search_type];
 if (!empty($extra_fields)) {
     foreach ($extra_fields as $extra_field) {
-        $field_name = 'field_' . $extra_field['variable'];
+        $field_name = 'field_'.$extra_field['variable'];
         if (isset($_GET[$field_name]) && $_GET[$field_name] != '0') {
             $query_vars[$field_name] = $_GET[$field_name];
         }
@@ -37,27 +41,32 @@ $social_menu_block = SocialManager::show_social_menu('search');
 $block_search = '';
 $searchForm = UserManager::get_search_form($query);
 
-$groups = array();
-$totalGroups = array();
-$users = array();
-$totalUsers = array();
-
+$groups = [];
+$totalGroups = [];
+$users = [];
+$totalUsers = [];
 $usergroup = new UserGroup();
 
 // I'm searching something
-if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) {
-    $itemPerPage = 8;
+if ($query != '' || ($query_vars['search_type'] == '1' && count($query_vars) > 2)) {
+    $itemPerPage = 6;
 
-    if ($_GET['search_type']=='0' || $_GET['search_type']=='1') {
+    if ($_GET['search_type'] == '0' || $_GET['search_type'] == '1') {
         $page = isset($_GET['users_page_nr']) ? intval($_GET['users_page_nr']) : 1;
-        $totalUsers = UserManager::get_all_user_tags($_GET['q'], 0, 0, $itemPerPage, true);
+        $totalUsers = UserManager::get_all_user_tags(
+            $_GET['q'],
+            0,
+            0,
+            $itemPerPage,
+            true
+        );
 
         $from = intval(($page - 1) * $itemPerPage);
         // Get users from tags
         $users = UserManager::get_all_user_tags($_GET['q'], 0, $from, $itemPerPage);
     }
 
-    if ($_GET['search_type']=='0' || $_GET['search_type']=='2') {
+    if ($_GET['search_type'] == '0' || $_GET['search_type'] == '2') {
         $pageGroup = isset($_GET['groups_page_nr']) ? intval($_GET['groups_page_nr']) : 1;
         // Groups
         $fromGroups = intval(($pageGroup - 1) * $itemPerPage);
@@ -72,41 +81,37 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
 
     $results = '<div id="whoisonline">';
     if (is_array($users) && count($users) > 0) {
-
         $results .= '<div class="row">';
         $buttonClass = 'btn btn-default btn-sm';
         foreach ($users as $user) {
             $user_info = api_get_user_info($user['id'], true);
-            $send_inv = '<button class="'.$buttonClass.' disabled "><em class="fa fa-user"></em> '.get_lang('SendInvitation').'</button>';
-            $relation_type = intval(SocialManager::get_relation_between_contacts(api_get_user_id(), $user_info['user_id']));
+            $sendInvitation = '<button class="'.$buttonClass.' disabled ">
+                <em class="fa fa-user"></em> '.get_lang('SendInvitation').'</button>';
+            $relation_type = SocialManager::get_relation_between_contacts(api_get_user_id(), $user_info['user_id']);
             $url = api_get_path(WEB_PATH).'main/social/profile.php?u='.$user_info['user_id'];
 
             // Show send invitation icon if they are not friends yet
             if ($relation_type != 3 && $relation_type != 4 && $user_info['user_id'] != api_get_user_id()) {
-                $send_inv = '<a href="#" class="'.$buttonClass.' btn-to-send-invitation" data-send-to="' . $user_info['user_id'] . '">
+                $sendInvitation = '<a href="#" class="'.$buttonClass.' btn-to-send-invitation" data-send-to="'.$user_info['user_id'].'">
                              <em class="fa fa-user"></em> '.get_lang('SendInvitation').'</a>';
             }
 
-            $sendMesssageUrl = api_get_path(WEB_AJAX_PATH)
-                . 'user_manager.ajax.php?'
-                . http_build_query([
-                    'a' => 'get_user_popup',
-                    'user_id' => $user_info['user_id']
-                ]);
-            $send_msg = Display::toolbarButton(
+            $sendMessageUrl = api_get_path(WEB_AJAX_PATH).'user_manager.ajax.php?'.http_build_query([
+                'a' => 'get_user_popup',
+                'user_id' => $user_info['user_id'],
+            ]);
+            $sendMessage = Display::toolbarButton(
                 get_lang('SendMessage'),
-                $sendMesssageUrl,
+                $sendMessageUrl,
                 'envelope',
                 'default',
                 [
                     'class' => 'ajax btn-sm',
-                    'data-title' => get_lang('SendMessage')
+                    'data-title' => get_lang('SendMessage'),
                 ]
             );
 
-            $img = '<img src="'.$user_info['avatar'].'" class="img-responsive img-circle" width="100" height="100">';
-
-            if ($user_info['user_is_online']) {
+            if (!empty($user_info['user_is_online'])) {
                 $status_icon = Display::return_icon('online.png', get_lang('OnLine'), null, ICON_SIZE_TINY);
             } else {
                 $status_icon = Display::return_icon('offline.png', get_lang('Disconnected'), null, ICON_SIZE_TINY);
@@ -120,38 +125,29 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
 
             $tag = isset($user['tag']) ? ' <br /><br />'.$user['tag'] : null;
             $user_info['complete_name'] = Display::url($user_info['complete_name'], $url);
-            $invitations = $user['tag'].$send_inv.$send_msg;
+            $invitations = $user['tag'].$sendInvitation.$sendMessage;
 
-            $results .= '<div class="col-md-3">
-                            <div class="items-user">
-                                <div class="items-user-avatar">
-                                '.$img.'
-                                </div>
-                                <div class="user-info">
-                                   <p>'.$user_info['complete_name'].'</p>
-                                   <div class="items-user-status">'.$status_icon.$user_icon.'</div>
-                                   <div class="toolbar">
-                                    '.$invitations.'
-                                   </div>
-                                </div>
-                            </div>
-                      </div>';
+            $results .= Display::getUserCard(
+                $user_info,
+                $status_icon.$user_icon,
+                $invitations
+            );
         }
         $results .= '</div>';
     }
     $results .= '</div>';
 
-    $visibility = array(true, true, true, true, true);
+    $visibility = [true, true, true, true, true];
     $results .= Display::return_sortable_grid(
         'users',
         null,
         null,
-        array('hide_navigation' => false, 'per_page' => $itemPerPage),
+        ['hide_navigation' => false, 'per_page' => $itemPerPage],
         $query_vars,
         false,
         $visibility,
         true,
-        array(),
+        [],
         $totalUsers
     );
 
@@ -160,11 +156,11 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
         $results,
         'search-friends',
         null,
-        'friends-acorderon',
+        'friends-accordion',
         'friends-collapse'
     );
 
-    $grid_groups = array();
+    $grid_groups = [];
     $block_groups = '<div id="whoisonline">';
     if (is_array($groups) && count($groups) > 0) {
         $block_groups .= '<div class="row">';
@@ -181,13 +177,17 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
             } else {
                 $count_users_group = $count_users_group;
             }
-            $picture = $usergroup->get_picture_group($group['id'], $group['picture'], GROUP_IMAGE_SIZE_ORIGINAL);
-            //$tags = $usergroup->get_group_tags($group['id']);
+            $picture = $usergroup->get_picture_group(
+                $group['id'],
+                $group['picture'],
+                GROUP_IMAGE_SIZE_ORIGINAL
+            );
+
             $tags = null;
             $group['picture'] = '<img class="img-responsive img-circle" src="'.$picture['file'].'" />';
 
-            $members = Display::returnFontAwesomeIcon('user') . '( ' .$count_users_group . ' )';
-            $item_1  = Display::tag('p', $url_open.$name.$url_close);
+            $members = Display::returnFontAwesomeIcon('user').'( '.$count_users_group.' )';
+            $item_1 = Display::tag('p', $url_open.$name.$url_close);
 
             $block_groups .= '
                 <div class="col-md-4">
@@ -197,10 +197,10 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
                         </div>
                         <div class="user-info">
                             '.$item_1.'
-                            <p>'.$members.'</p>
-                            <p>' . $group['description'] . '</p>
-                            <p>' . $tags . '</p>
-                            <p>' . $url_open.get_lang('SeeMore') . $url_close . '</p>
+                            <p>'.$members.'</p>    
+                            <p>'.$group['description'].'</p>
+                            <p>'.$tags.'</p>
+                            <p>'.$url_open.get_lang('SeeMore').$url_close.'</p>
                         </div>
                     </div>
                 </div>';
@@ -209,17 +209,17 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
     }
     $block_groups .= '</div>';
 
-    $visibility = array(true, true, true, true, true);
+    $visibility = [true, true, true, true, true];
     $block_groups .= Display::return_sortable_grid(
         'groups',
         null,
         $grid_groups,
-        array('hide_navigation' => false, 'per_page' => $itemPerPage),
+        ['hide_navigation' => false, 'per_page' => $itemPerPage],
         $query_vars,
         false,
         $visibility,
         true,
-        array(),
+        [],
         $totalGroups
     );
 
@@ -228,21 +228,24 @@ if ($query != '' || ($query_vars['search_type']=='1' && count($query_vars)>2) ) 
         $block_groups,
         'search-groups',
         null,
-        'groups-acorderon',
+        'groups-accordion',
         'groups-collapse'
     );
 }
 
-$tpl = \Chamilo\CoreBundle\Framework\Container::getTwig();
+$tpl = new Template($tool_name);
 // Block Social Avatar
 SocialManager::setSocialUserBlock($tpl, api_get_user_id(), 'search');
-$tpl->addGlobal('social_menu_block', $social_menu_block);
-$tpl->addGlobal('social_search', $block_search);
-$tpl->addGlobal('search_form', $searchForm);
-$tpl->addGlobal(
-    'invitation_form',
-    MessageManager::generate_invitation_form('send_invitation')
-);
+$tpl->assign('social_menu_block', $social_menu_block);
+$tpl->assign('social_search', $block_search);
+$tpl->assign('search_form', $searchForm);
 
-echo $tpl->render('@template_style/social/search.html.twig');
+$formModalTpl = new Template();
+$formModalTpl->assign('invitation_form', MessageManager::generate_invitation_form('send_invitation'));
+$template = $formModalTpl->get_template('social/form_modals.tpl');
+$formModals = $formModalTpl->fetch($template);
 
+$tpl->assign('form_modals', $formModals);
+
+$social_layout = $tpl->get_template('social/search.tpl');
+$tpl->display($social_layout);

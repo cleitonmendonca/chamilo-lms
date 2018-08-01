@@ -126,7 +126,7 @@ class PGTStorage
   /**
    * This method returns an error message set by PGTStorage::setErrorMessage().
    *
-   * @return an error message when set by PGTStorage::setErrorMessage(), FALSE
+   * @return boolean error message when set by PGTStorage::setErrorMessage(), FALSE
    * otherwise.
    *
    * @public
@@ -153,7 +153,7 @@ class PGTStorage
   /**
    * This method tells if the storage has already been intialized.
    *
-   * @return a boolean
+   * @return boolean boolean
    *
    * @protected
    */
@@ -209,7 +209,7 @@ class PGTStorage
 } 
 
 // include specific PGT storage classes
-include_once(dirname(__FILE__).'/pgt-file.php'); 
-include_once(dirname(__FILE__).'/pgt-db.php');
+include_once __DIR__.'/pgt-file.php';
+include_once __DIR__.'/pgt-db.php';
   
 ?>

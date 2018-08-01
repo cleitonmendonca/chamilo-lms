@@ -1,6 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+
 /*
  This script is included by local.inc.php to redirect users to some url if some conditions are satisfied.
  * Please populate the $login_conditions array with a conditional function and an url.
@@ -11,17 +13,18 @@
 */
 /**
  * Please implements the functions of the $login_conditions array.
- * Each of these function will take a user array (user_id, username, password (crypted), auth_source, active, expiration_date)
+ * Each of these function will take a user array
+ * (user_id, username, password (crypted), auth_source, active, expiration_date).
  */
-$login_conditions = array();
+$login_conditions = [];
 
-//"Term and conditions" condition
+// "Terms and conditions" condition
 array_push(
     $login_conditions,
-    array(
+    [
         'conditional_function' => 'check_platform_legal_conditions',
         'url' => api_get_path(WEB_CODE_PATH).'auth/inscription.php',
-    )
+    ]
 );
 
 //array_push($login_conditions, array(
@@ -40,33 +43,30 @@ function dc_check_phone_number($user)
 }
 
 /**
- * Checks if the user accepted or not the legal conditions
+ * Checks if the user accepted or not the legal conditions.
  *
  * @param array $user
- * @return boolean true if user pass, false otherwise
+ *
+ * @return bool true if user pass, false otherwise
  */
 function check_platform_legal_conditions($user)
 {
-    if (api_get_setting('registration.allow_terms_conditions') == 'true') {
-        $term_and_condition_status = api_check_term_condition($user['user_id']);
+    if (api_get_setting('allow_terms_conditions') === 'true' &&
+        api_get_setting('load_term_conditions_section') === 'login'
+    ) {
+        $termAndConditionStatus = api_check_term_condition($user['user_id']);
         // @todo not sure why we need the login password and update_term_status
-        if ($term_and_condition_status == false) {
-            $_SESSION['term_and_condition'] = array(
-                'user_id' => $user['user_id'],
-                //'login'             => $user['username'],
-                //'password'          => $user['password'],
-                //'update_term_status' => true,
-            );
+        if ($termAndConditionStatus === false) {
+            Session::write('term_and_condition', ['user_id' => $user['user_id']]);
 
             return false;
         } else {
-            unset($_SESSION['term_and_condition']);
+            Session::erase('term_and_condition');
 
             return true;
         }
     } else {
-
-        //No validation user can pass
+        // No validation user can pass
         return true;
     }
 }

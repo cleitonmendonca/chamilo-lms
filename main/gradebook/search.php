@@ -1,20 +1,22 @@
 <?php
-
 /* For licensing terms, see /license.txt */
+
 /**
- * Search user certificates if them are publics
+ * Search user certificates if them are publics.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.gradebook
  */
-use \ChamiloSession as Session;
-
 $cidReset = true;
 
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
-if (api_get_setting('course.allow_public_certificates') != 'true') {
-    Display::return_message(get_lang('CertificatesNotPublic'), 'warning');
-    api_not_allowed();
+if (api_get_setting('allow_public_certificates') != 'true') {
+    api_not_allowed(
+        true,
+        Display::return_message(get_lang('CertificatesNotPublic'), 'warning')
+    );
 }
 
 $userId = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -29,8 +31,7 @@ $searchForm->addButtonSearch();
 if ($searchForm->validate()) {
     $firstname = $searchForm->getSubmitValue('firstname');
     $lastname = $searchForm->getSubmitValue('lastname');
-
-    $userList = UserManager::getUserByName($firstname, $lastname);
+    $userList = UserManager::getUsersByName($firstname, $lastname);
 
     if (empty($userList)) {
         Display::addFlash(
@@ -53,12 +54,18 @@ if ($searchForm->validate()) {
     }
 
     $courseList = GradebookUtils::getUserCertificatesInCourses($userId, false);
-    $sessionList = GradebookUtils::getUserCertificatesInSessions($userId, false);
+    $sessionList = GradebookUtils::getUserCertificatesInSessions(
+        $userId,
+        false
+    );
 
     if (empty($courseList) && empty($sessionList)) {
         Display::addFlash(
             Display::return_message(
-                sprintf(get_lang('TheUserXNotYetAchievedCertificates'), $userInfo['complete_name']),
+                sprintf(
+                    get_lang('TheUserXNotYetAchievedCertificates'),
+                    $userInfo['complete_name']
+                ),
                 'warning'
             )
         );
@@ -68,15 +75,17 @@ if ($searchForm->validate()) {
     }
 }
 
-//$template = new Template(get_lang('SearchCertificates'));
-$template = \Chamilo\CoreBundle\Framework\Container::getTwig();
+$template = new Template(get_lang('SearchCertificates'));
 
-$template->addGlobal('search_form', $searchForm->returnForm());
-$template->addGlobal('user_list', $userList);
-$template->addGlobal('user_info', $userInfo);
-$template->addGlobal('course_list', $courseList);
-$template->addGlobal('session_list', $sessionList);
-$template->addGlobal('header', get_lang('SearchCertificates'));
+$template->assign('search_form', $searchForm->returnForm());
+$template->assign('user_list', $userList);
+$template->assign('user_info', $userInfo);
+$template->assign('course_list', $courseList);
+$template->assign('session_list', $sessionList);
+$templateName = $template->get_template('gradebook/search.tpl');
+$content = $template->fetch($templateName);
 
-echo $template->render('@template_style/gradebook/search.html.twig');
+$template->assign('header', get_lang('SearchCertificates'));
+$template->assign('content', $content);
 
+$template->display_one_col_template();

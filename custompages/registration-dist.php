@@ -4,14 +4,14 @@
  * This script allows for specific registration rules (see CustomPages feature of Chamilo)
  * Please contact CBlue regarding any licences issues.
  * Author: noel@cblue.be
- * Copyright: CBlue SPRL, 20XX (GNU/GPLv3)
+ * Copyright: CBlue SPRL, 20XX (GNU/GPLv3).
+ *
  * @package chamilo.custompages
- **/
-
-require_once('language.php');
-require_once('../inc/global.inc.php');
+ */
+require_once api_get_path(SYS_PATH).'main/inc/global.inc.php';
+require_once __DIR__.'/language.php';
 /**
- * Removes some unwanted elementend of the form object
+ * Removes some unwanted elementend of the form object.
  */
 $content['form']->removeElement('extra_mail_notify_invitation');
 $content['form']->removeElement('extra_mail_notify_message');
@@ -27,7 +27,7 @@ $rootWeb = api_get_path('WEB_PATH');
 
 // Deprecated since 2015-03-26
 /**
- * Code to change the way QuickForm render html
+ * Code to change the way QuickForm render html.
  */
 /*
 $renderer = & $content['form']->defaultRenderer();
@@ -81,23 +81,10 @@ EOT;
 ?>
 <html>
 <head>
-    <title><?php echo custompages_get_lang('Registration');?></title>
+    <title><?php echo custompages_get_lang('Registration'); ?></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/custompages/css/vendor/bootstrap.min.css" rel="stylesheet">
-    <!--[if !IE 6]><!-->
-    <link rel="stylesheet" type="text/css" href="/custompages/style.css" />
-    <!--<![endif]-->
-    <!--[if IE 6]>
-    <link rel="stylesheet" type="text/css" href="/custompages/style-ie6.css" />
-    <![endif]-->
-    <!-- HTML5 shim, for IE6-8 support of HTML5 elements. All other JS at the end of file. -->
-    <!--[if lt IE 9]>
-    <script src="js/vendor/html5shiv.js"></script>
-    <script src="js/vendor/respond.min.js"></script>
-    <![endif]-->
-    <script type="text/javascript" src="<?php echo $rootWeb ?>web/assets/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="<?php echo $rootWeb; ?>web/assets/jquery/dist/jquery.min.js"></script>
 </head>
 <body>
 <img id="backgroundimage" src="/custompages/images/page-background.png"">
@@ -110,8 +97,8 @@ EOT;
                         <img src="/custompages/images/header.png">
                     </div>
                     <?php if (isset($content['error']) && !empty($content['error'])) {
-                        echo '<div id="registration-form-error" class="alert alert-danger">'.$content['error'].'</div>';
-                    }?>
+    echo '<div id="registration-form-error" class="alert alert-danger">'.$content['error'].'</div>';
+}?>
                     <div id="registration-form-box" class="form-box">
                         <div class="block-form-login">
                             <?php
@@ -119,7 +106,7 @@ EOT;
                             ?>
                         </div>
                         <div id="links">
-                            <!--<a href="mailto: support@cblue.be"><?php echo custompages_get_lang('NeedContactAdmin')?></a><br />-->
+                            <!--<a href="mailto: support@cblue.be"><?php echo custompages_get_lang('NeedContactAdmin'); ?></a><br />-->
                         </div>
                     </div>
                     <div id="footer">

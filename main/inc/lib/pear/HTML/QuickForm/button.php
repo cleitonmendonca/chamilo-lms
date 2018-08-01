@@ -38,7 +38,6 @@ class HTML_QuickForm_button extends HTML_QuickForm_input
     private $style;
     private $size;
     private $class;
-    private $columnsSize;
 
     /**
      * @param string $name input name example 'submit'
@@ -164,21 +163,7 @@ class HTML_QuickForm_button extends HTML_QuickForm_input
     {
         return $this->size;
     }
-    /**
-     * @return null
-     */
-    public function getColumnsSize()
-    {
-        return $this->columnsSize;
-    }
 
-    /**
-     * @param null $columnsSize
-     */
-    public function setColumnsSize($columnsSize)
-    {
-        $this->columnsSize = $columnsSize;
-    }
     /**
      * @param mixed $size
      */
@@ -260,7 +245,7 @@ class HTML_QuickForm_button extends HTML_QuickForm_input
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">

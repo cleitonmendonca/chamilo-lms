@@ -1,10 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use ChamiloSession as Session;
-
-//require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_STUDENTPUBLICATION;
+require_once __DIR__.'/../inc/global.inc.php';
+$current_course_tool = TOOL_STUDENTPUBLICATION;
 
 api_protect_course_script(true);
 
@@ -53,9 +51,9 @@ if (!empty($workInfo) && !empty($workInfo['qualification'])) {
     if ($count >= 1) {
         Display::display_header();
         if (api_get_course_setting('student_delete_own_publication') == '1') {
-            Display::display_warning_message(get_lang('CantUploadDeleteYourPaperFirst'));
+            echo Display::return_message(get_lang('CantUploadDeleteYourPaperFirst'), 'warning');
         } else {
-            Display::display_warning_message(get_lang('YouAlreadySentAPaperYouCantUpload'));
+            echo Display::return_message(get_lang('YouAlreadySentAPaperYouCantUpload'), 'warning');
         }
         Display::display_footer();
         exit;
@@ -65,34 +63,56 @@ if (!empty($workInfo) && !empty($workInfo['qualification'])) {
 $homework = get_work_assignment_by_id($workInfo['id']);
 $validationStatus = getWorkDateValidationStatus($homework);
 
-$interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(), 'name' => get_lang('StudentPublications'));
-$interbreadcrumb[] = array('url' => api_get_path(WEB_CODE_PATH).'work/work_list.php?'.api_get_cidreq().'&id='.$work_id, 'name' =>  $workInfo['title']);
-$interbreadcrumb[] = array('url' => '#', 'name'  => get_lang('UploadADocument'));
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(),
+    'name' => get_lang('StudentPublications'),
+];
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'work/work_list.php?'.api_get_cidreq().'&id='.$work_id,
+    'name' => $workInfo['title'],
+];
+$interbreadcrumb[] = ['url' => '#', 'name' => get_lang('UploadADocument')];
 
 $form = new FormValidator(
-    'form',
+    'form-work',
     'POST',
-    api_get_self()."?".api_get_cidreq()."&id=".$work_id, '',
-    array('enctype' => "multipart/form-data")
+    api_get_self()."?".api_get_cidreq()."&id=".$work_id,
+    '',
+    ['enctype' => "multipart/form-data"]
 );
+
 setWorkUploadForm($form, $workInfo['allow_text_assignment']);
-$form->addElement('hidden', 'id', $work_id);
-$form->addElement('hidden', 'sec_token', $token);
+
+$form->addHidden('id', $work_id);
+$form->addHidden('sec_token', $token);
+
+$allowRedirect = api_get_configuration_value('allow_redirect_to_main_page_after_work_upload');
+$urlToRedirect = '';
+if ($allowRedirect) {
+    $urlToRedirect = api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq();
+}
 
 $succeed = false;
 if ($form->validate()) {
-
     if ($student_can_edit_in_session && $check) {
         $values = $form->getSubmitValues();
         // Process work
-        processWorkForm(
+        $result = processWorkForm(
             $workInfo,
             $values,
             $course_info,
             $session_id,
             $group_id,
-            $user_id
+            $user_id,
+            $_FILES['file'],
+            api_get_configuration_value('assignment_prevent_duplicate_upload')
         );
+
+        if ($allowRedirect) {
+            header('Location: '.$urlToRedirect);
+            exit;
+        }
+
         $script = 'work_list.php';
         if ($is_allowed_to_edit) {
             $script = 'work_list_all.php';
@@ -102,32 +122,41 @@ if ($form->validate()) {
     } else {
         // Bad token or can't add works
         Display::addFlash(
-            Display::return_message(get_lang('IsNotPosibleSaveTheDocument'), 'error')
+            Display::return_message(get_lang('ImpossibleToSaveTheDocument'), 'error')
         );
     }
 }
 
 $url = api_get_path(WEB_AJAX_PATH).'work.ajax.php?'.api_get_cidreq().'&a=upload_file&id='.$work_id;
 
-
+$htmlHeadXtra[] = api_get_jquery_libraries_js(['jquery-ui', 'jquery-upload']);
 $htmlHeadXtra[] = to_javascript_work();
-Display :: display_header(null);
+Display::display_header(null);
 
-$headers = array(
-    get_lang('Upload'),
-    get_lang('Upload').' ('.get_lang('Simple').')',
-);
+// Only text
+if ($workInfo['allow_text_assignment'] == 1) {
+    $tabs = $form->returnForm();
+} else {
+    $headers = [
+        get_lang('Upload'),
+        get_lang('Upload').' ('.get_lang('Simple').')',
+    ];
 
-$multipleForm = new FormValidator('post');
-$multipleForm->addMultipleUpload($url);
+    $multipleForm = new FormValidator('post');
+    $multipleForm->addMultipleUpload($url, $urlToRedirect);
 
-$tabs = Display::tabs($headers, array($multipleForm->returnForm(), $form->returnForm()), 'tabs');
+    $tabs = Display::tabs(
+        $headers,
+        [$multipleForm->returnForm(), $form->returnForm()],
+        'tabs'
+    );
+}
 
 if (!empty($work_id)) {
     echo $validationStatus['message'];
     if ($is_allowed_to_edit) {
         if (api_resource_is_locked_by_gradebook($work_id, LINK_STUDENTPUBLICATION)) {
-            echo Display::display_warning_message(get_lang('ResourceLockedByGradebook'));
+            echo Display::return_message(get_lang('ResourceLockedByGradebook'), 'warning');
         } else {
             echo $tabs;
         }

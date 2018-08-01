@@ -1,16 +1,15 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- *	@author jmontoya
+ * @author jmontoya
  *
- *	@package chamilo.document
+ * @package chamilo.document
  */
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 // Protection
-api_protect_course_script();
+api_protect_course_script(true);
 
-$noPHP_SELF = true;
 $header_file = isset($_GET['file']) ? Security::remove_XSS($_GET['file']) : null;
 $document_id = intval($_GET['id']);
 
@@ -27,16 +26,25 @@ if (empty($course_info)) {
 if (!$document_id) {
     $document_id = DocumentManager::get_document_id($course_info, $header_file);
 }
-$document_data = DocumentManager::get_document_data_by_id($document_id, $course_code, true, $session_id);
-if ($session_id != 0 and !$document_data) {
-    $document_data = DocumentManager::get_document_data_by_id($document_id, $course_code, true, 0);
+$document_data = DocumentManager::get_document_data_by_id(
+    $document_id,
+    $course_code,
+    true,
+    $session_id
+);
+if ($session_id != 0 && !$document_data) {
+    $document_data = DocumentManager::get_document_data_by_id(
+        $document_id,
+        $course_code,
+        true,
+        0
+    );
 }
-
 if (empty($document_data)) {
     api_not_allowed(true);
 }
 
-$header_file  = $document_data['path'];
+$header_file = $document_data['path'];
 $name_to_show = cut($header_file, 80);
 
 $path_array = explode('/', str_replace('\\', '/', $header_file));
@@ -64,8 +72,7 @@ if ($is_allowed_in_course == false) {
     api_not_allowed(true);
 }
 
-//Check user visibility
-//$is_visible = DocumentManager::is_visible_by_id($document_id, $course_info, api_get_session_id(), api_get_user_id());
+// Check user visibility
 $is_visible = DocumentManager::check_visibility_tree(
     $document_id,
     api_get_course_id(),
@@ -90,21 +97,12 @@ $browser_display_title = 'Documents - '.Security::remove_XSS($_GET['cidReq']).' 
 $file_url_web = api_get_path(WEB_COURSE_PATH).$_course['path'].'/document'.$header_file.'?'.api_get_cidreq();
 $pathinfo = pathinfo($header_file);
 
-if ($pathinfo['extension'] == 'wav' && preg_match(
-				'/_chnano_.wav/i',
-				$file_url_web
-		) && api_get_setting('document.enable_nanogong') == 'true'
-) {
-	echo '<div align="center">';
-		echo '<br/>';
-		echo '<applet id="applet" archive="../inc/lib/nanogong/nanogong.jar" code="gong.NanoGong" width="160" height="95" >';
-			echo '<param name="SoundFileURL" value="'.$file_url_web.'" />';
-			echo '<param name="ShowSaveButton" value="false" />';
-			echo '<param name="ShowTime" value="true" />';
-			echo '<param name="ShowRecordButton" value="false" />';
-		echo '</applet>';
-	echo '</div>';
+if ($pathinfo['extension'] == 'swf') {
+    $width = '83%';
+    $height = '83%';
 } else {
-	if ($pathinfo['extension']=='swf') { $width='83%'; $height='83%';} else {$width='100%'; $height='100%';}
-	echo '<iframe border="0" frameborder="0" scrolling="no" style="width:'.$width.'; height:'.$height.';background-color:#ffffff;" id="mainFrame" name="mainFrame" src="'.$file_url_web.'?'.api_get_cidreq().'&amp;rand='.mt_rand(1, 1000).'"></iframe>';
+    $width = '100%';
+    $height = '100%';
 }
+
+echo '<iframe border="0" frameborder="0" scrolling="no" style="width:'.$width.'; height:'.$height.';background-color:#ffffff;" id="mainFrame" name="mainFrame" src="'.$file_url_web.'?'.api_get_cidreq().'&amp;rand='.mt_rand(1, 1000).'"></iframe>';

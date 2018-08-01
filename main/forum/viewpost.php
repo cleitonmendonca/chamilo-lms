@@ -1,10 +1,11 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
+ * @deprecated?
+ *
  * @package chamilo.forum
  */
-
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 // The section (tabs).
 $this_section = SECTION_COURSES;
@@ -26,10 +27,7 @@ $(document).ready(function(){ $(\'.hide-me\').slideUp() });
 </script>';
 
 // Are we in a lp ?
-$origin = '';
-if (isset($_GET['origin'])) {
-    $origin =  Security::remove_XSS($_GET['origin']);
-}
+$origin = api_get_origin();
 
 /* MAIN DISPLAY SECTION */
 
@@ -38,35 +36,33 @@ if (isset($_GET['origin'])) {
 // We are getting all the information about the current forum and forum category.
 // Note pcool: I tried to use only one sql statement (and function) for this,
 // but the problem is that the visibility of the forum AND forum category are stored in the item_property table.
-$current_thread = get_thread_information($_GET['thread']); // Note: This has to be validated that it is an existing thread.
-$current_forum = get_forum_information($current_thread['forum_id']); // Note: This has to be validated that it is an existing forum.
+$current_thread = get_thread_information($_GET['forum'], $_GET['thread']);
+$current_forum = get_forum_information($current_thread['forum_id']);
 $current_forum_category = get_forumcategory_information($current_forum['forum_category']);
 $whatsnew_post_info = $_SESSION['whatsnew_post_info'];
 
-/* Header and Breadcrumbs */
-
 if (api_is_in_gradebook()) {
-    $interbreadcrumb[]= array(
-        'url' => api_get_path(WEB_CODE_PATH).'gradebook/index.php?'.api_get_cidreq(),
-        'name' => get_lang('ToolGradebook')
-    );
+    $interbreadcrumb[] = [
+        'url' => Category::getUrl(),
+        'name' => get_lang('ToolGradebook'),
+    ];
 }
 
 if ($origin == 'learnpath') {
     Display::display_reduced_header();
 } else {
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         'url' => 'index.php?'.api_get_cidreq().'&search='.Security::remove_XSS(urlencode($_GET['search'])),
         'name' => $nameTools,
-    );
-    $interbreadcrumb[] = array(
+    ];
+    $interbreadcrumb[] = [
         'url' => 'viewforumcategory.php?'.api_get_cidreq().'&forumcategory='.$current_forum_category['cat_id'].'&search='.Security::remove_XSS(urlencode($_GET['search'])),
         'name' => prepare4display($current_forum_category['cat_title']),
-    );
-    $interbreadcrumb[] = array(
-        'url' => 'viewforum.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&origin='.$origin.'&search='.Security::remove_XSS(urlencode($_GET['search'])),
+    ];
+    $interbreadcrumb[] = [
+        'url' => 'viewforum.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&search='.Security::remove_XSS(urlencode($_GET['search'])),
         'name' => prepare4display($current_forum['forum_title']),
-    );
+    ];
 
     // the last element of the breadcrumb navigation is already set in interbreadcrumb, so give empty string
     Display :: display_header('');
@@ -80,10 +76,7 @@ if ($origin == 'learnpath') {
 if (!api_is_allowed_to_edit(false, true) &&
     ($current_forum['visibility'] == 0 || $current_thread['visibility'] == 0)
 ) {
-    $forum_allow = forum_not_allowed_here();
-    if ($forum_allow === false) {
-        exit;
-    }
+    api_not_allowed(false);
 }
 
 /* Actions */
@@ -106,7 +99,7 @@ if ($_GET['action'] == 'move' && isset($_GET['post'])) {
 /* Display the action messages */
 
 if (!empty($message)) {
-    Display :: display_confirmation_message(get_lang($message));
+    echo Display::return_message(get_lang($message), 'confirm');
 }
 
 // In this case the first and only post of the thread is removed.
@@ -115,12 +108,11 @@ if ($message != 'PostDeletedSpecial') {
     increase_thread_view($_GET['thread']);
 
     /* Action Links */
-
     echo '<div style="float:right;">';
-    $my_url = '<a href="viewthread.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&thread='.intval($_GET['thread']).'&origin='.$origin.'&search='.Security::remove_XSS(urlencode($_GET['search']));
-    echo $my_url.'&view=flat&origin='.$origin.'">'.get_lang('FlatView').'</a> | ';
-    echo $my_url.'&view=threaded&origin='.$origin.'">'.get_lang('ThreadedView').'</a> | ';
-    echo $my_url.'&view=nested&origin='.$origin.'">'.get_lang('NestedView').'</a>';
+    $my_url = '<a href="viewthread.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&thread='.intval($_GET['thread']).'&search='.Security::remove_XSS(urlencode($_GET['search']));
+    echo $my_url.'&view=flat">'.get_lang('FlatView').'</a> | ';
+    echo $my_url.'&view=threaded">'.get_lang('ThreadedView').'</a> | ';
+    echo $my_url.'&view=nested">'.get_lang('NestedView').'</a>';
     $my_url = null;
     echo '</div>';
     // The reply to thread link should only appear when the forum_category is
@@ -132,17 +124,16 @@ if ($message != 'PostDeletedSpecial') {
         // The link should only appear when the user is logged in or when anonymous posts are allowed.
         if ($_user['user_id'] || ($current_forum['allow_anonymous'] == 1 && !$_user['user_id'])) {
             // reply link
-            echo '<a href="reply.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&thread='.intval($_GET['thread']).'&action=replythread&origin='.$origin.'">'.
-                get_lang('ReplyToThread').'</a>';
+            echo '<a href="reply.php?'.api_get_cidreq().'&forum='.intval($_GET['forum']).'&thread='.intval($_GET['thread']).'&action=replythread">'.get_lang('ReplyToThread').'</a>';
 
             // new thread link
             if (api_is_allowed_to_edit(false, true) ||
                 ($current_forum['allow_new_threads'] == 1 && isset($_user['user_id'])) ||
                 ($current_forum['allow_new_threads'] == 1 && !isset($_user['user_id']) && $current_forum['allow_anonymous'] == 1)
             ) {
-                if ($current_forum['locked'] <> 1 && $current_forum['locked'] <> 1) {
+                if ($current_forum['locked'] != 1 && $current_forum['locked'] != 1) {
                     echo '&nbsp;&nbsp;';
-                    /*echo '<a href="newthread.php?'.api_get_cidreq().'&forum='.Security::remove_XSS($_GET['forum']).$origin_string.'">'.Display::return_icon('new_thread.png','','',ICON_SIZE_MEDIUM).'</a>';*/
+                /*echo '<a href="newthread.php?'.api_get_cidreq().'&forum='.Security::remove_XSS($_GET['forum']).$origin_string.'">'.Display::return_icon('new_thread.png','','',ICON_SIZE_MEDIUM).'</a>';*/
                 } else {
                     echo get_lang('ForumLocked');
                 }
@@ -151,16 +142,14 @@ if ($message != 'PostDeletedSpecial') {
     }
     // Note: This is to prevent that some browsers display the links over the table (FF does it but Opera doesn't).
     echo '&nbsp;';
-
     /* Display Forum Category and the Forum information */
-
     if (!$_SESSION['view']) {
         $viewmode = $current_forum['default_view'];
     } else {
         $viewmode = $_SESSION['view'];
     }
 
-    $viewmode_whitelist = array('flat', 'threaded', 'nested');
+    $viewmode_whitelist = ['flat', 'threaded', 'nested'];
     if (isset($_GET['view']) && in_array($_GET['view'], $viewmode_whitelist)) {
         $viewmode = Database::escape_string($_GET['view']);
         $_SESSION['view'] = $viewmode;
@@ -180,7 +169,7 @@ if ($message != 'PostDeletedSpecial') {
     echo "\t<tr>\n\t\t<th style=\"padding-left:5px;\" align=\"left\" colspan=\"6\">";
     echo '<span class="forum_title">'.prepare4display($current_thread['thread_title']).'</span><br />';
 
-    if ($origin!='learnpath') {
+    if ($origin != 'learnpath') {
         echo '<span class="forum_low_description">'.prepare4display($current_forum_category['cat_title']).' - ';
     }
 
@@ -190,7 +179,7 @@ if ($message != 'PostDeletedSpecial') {
     echo '<span>'.prepare4display($current_thread['thread_comment']).'</span>';
     echo "</table>";
 
-    include_once('viewpost.inc.php');
+    include_once 'viewpost.inc.php';
 }
 
 if ($origin != 'learnpath') {

@@ -1,4 +1,4 @@
-<?php //$id$
+<?php
 /**
  * This script contains the data to fill (or empty) the database with using
  * the fillers in this directory.
@@ -7,9 +7,7 @@
  * @author Yannick Warnier <yannick.warnier@dokeos.com>
  *
  */
-/**
- * Initialisation section
- */
+
 $users = array();
 $users[] = array(
     'username' => 'ywarnier',
@@ -119,7 +117,7 @@ $users[] = array(
 
 $users[] = array(
     'username' => 'bbaggins',
-    'pass' => 'bbagins',
+    'pass' => 'bbaggins',
     'firstname' => 'Bilbo',
     'lastname' => 'Baggins',
     'status' => 5,

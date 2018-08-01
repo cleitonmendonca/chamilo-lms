@@ -1,5 +1,4 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
  * HTML class for a file upload field
@@ -36,16 +35,11 @@
  */
 class HTML_QuickForm_file extends HTML_QuickForm_input
 {
-    // {{{ properties
-
    /**
     * Uploaded file data, from $_FILES
     * @var array
     */
     var $_value = null;
-
-    // }}}
-    // {{{ constructor
 
     /**
      * Class constructor
@@ -61,10 +55,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     {
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->setType('file');
-    } //end constructor
-
-    // }}}
-    // {{{ setSize()
+    }
 
     /**
      * Sets size of file element
@@ -76,10 +67,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function setSize($size)
     {
         $this->updateAttributes(array('size' => $size));
-    } //end func setSize
-
-    // }}}
-    // {{{ getSize()
+    }
 
     /**
      * Returns size of file element
@@ -91,10 +79,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function getSize()
     {
         return $this->getAttribute('size');
-    } //end func getSize
-
-    // }}}
-    // {{{ freeze()
+    }
 
     /**
      * Freeze the element so that only its value is returned
@@ -105,10 +90,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function freeze()
     {
         return false;
-    } //end func freeze
-
-    // }}}
-    // {{{ setValue()
+    }
 
     /**
      * Sets value for file element.
@@ -126,10 +108,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function setValue($value)
     {
         return null;
-    } //end func setValue
-
-    // }}}
-    // {{{ getValue()
+    }
 
     /**
      * Returns information about the uploaded file
@@ -161,7 +140,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
         switch ($event) {
             case 'updateValue':
                 if ($caller->getAttribute('method') == 'get') {
-                    return PEAR::raiseError('Cannot add a file upload field to a GET method form');
+                    throw new \Exception('Cannot add a file upload field to a GET method form');
                 }
                 $this->_value = $this->_findValue();
                 $caller->updateAttributes(array('enctype' => 'multipart/form-data'));
@@ -264,6 +243,131 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
             return eval($code . "    return \$value;\n}\n");
         } else {
             return null;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getElementJS($param)
+    {
+        $id = $this->getAttribute('id');
+        $ratio = 'aspectRatio: 16 / 9';
+        if (!empty($param['ratio'])) {
+            $ratio = 'aspectRatio: '.$param['ratio'].',';
+        }
+        $scalable = 'false';
+        if (!empty($param['scalable']) && $param['scalable'] != 'false') {
+            $ratio = '';
+            $scalable = $param['scalable'];
+        }
+        
+        return '<script>
+        $(document).ready(function() {
+            var $inputFile = $(\'#'.$id.'\'),
+                $image = $(\'#'.$id.'_preview_image\'),
+                $input = $(\'[name="'.$id.'_crop_result"]\'),
+                $cropButton = $(\'#'.$id.'_crop_button\'),
+                $formGroup = $(\'#'.$id.'-form-group\');
+
+            function isValidType(file) {
+                var fileTypes = [\'image/jpg\', \'image/jpeg\', \'image/gif\', \'image/png\'];
+        
+                for(var i = 0; i < fileTypes.length; i++) {
+                    if(file.type === fileTypes[i]) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            
+            function imageCropper() {
+                $formGroup.show();
+                $cropButton.show();
+
+                $image
+                    .cropper(\'destroy\')
+                    .cropper({
+                        '.$ratio.'
+                        responsive : true,
+                        center : false,
+                        guides : false,
+                        movable: false,
+                        zoomable: false,
+                        rotatable: false,
+                        scalable: '.$scalable.',
+                        crop: function(e) {
+                            // Output the result data for cropping image.
+                            $input.val(e.x + \',\' + e.y + \',\' + e.width + \',\' + e.height);
+                        }
+                    });
+            }
+
+            $inputFile.on(\'change\', function () {
+                var inputFile = this,
+                    file = inputFile.files[0],
+                    fileReader = new FileReader();
+
+                if (!isValidType(file)) {
+                    $formGroup.hide();
+                    $cropButton.hide();
+
+                    if (inputFile.setCustomValidity) {
+                        inputFile.setCustomValidity(
+                            inputFile.title ? inputFile.title : \''.get_lang('OnlyImagesAllowed').'\'
+                        );
+                    }
+
+                    return;
+                }
+
+                if (inputFile.setCustomValidity) {
+                    inputFile.setCustomValidity(\'\');
+                }
+
+                fileReader.readAsDataURL(file);
+                fileReader.onload = function () {
+                    $image
+                        .attr(\'src\', this.result)
+                        .on(\'load\', imageCropper);
+                };
+            });
+
+            $cropButton.on(\'click\', function () {
+                var canvas = $image.cropper(\'getCroppedCanvas\'),
+                    dataUrl = canvas.toDataURL();
+
+                $image.attr(\'src\', dataUrl).cropper(\'destroy\').off(\'load\', imageCropper);
+                $(\'[name="'.$id.'_crop_image_base_64"]\').val(dataUrl);
+                $cropButton.hide();
+            });
+        });
+        </script>';
+    }
+
+    /**
+     * @return string
+     */
+    public function toHtml()
+    {
+        $js = '';
+        if (isset($this->_attributes['crop_image'])) {
+            $ratio = '16 / 9';
+            if (!empty($this->_attributes['crop_ratio'])) {
+                $ratio = $this->_attributes['crop_ratio'];
+            }
+            $scalable = 'false';
+            if (!empty($this->_attributes['crop_scalable'])) {
+                $scalable = $this->_attributes['crop_scalable'];
+            }
+            $js = $this->getElementJS(array('ratio' => $ratio, 'scalable' => $scalable));
+        }
+
+        if ($this->_flagFrozen) {
+            return $this->getFrozenHtml();
+        } else {
+            return $js.$this->_getTabs() . '<input' . $this->_getAttrString($this->_attributes) . ' />';
         }
     }
 }

@@ -1,15 +1,14 @@
 <?php
 /* For license terms, see /license.txt */
+
 /**
- * Configuration page for payment methods for the Buy Courses plugin
+ * Configuration page for payment methods for the Buy Courses plugin.
+ *
  * @package chamilo.plugin.buycourses
- */
-/**
- * Initialization
  */
 $cidReset = true;
 
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
 api_protect_admin_script(true);
 
@@ -18,6 +17,7 @@ $plugin = BuyCoursesPlugin::create();
 $paypalEnable = $plugin->get('paypal_enable');
 $transferEnable = $plugin->get('transfer_enable');
 $commissionsEnable = $plugin->get('commissions_enable');
+$culqiEnable = $plugin->get('culqi_enable');
 
 if (isset($_GET['action'], $_GET['id'])) {
     if ($_GET['action'] == 'delete_taccount') {
@@ -27,7 +27,7 @@ if (isset($_GET['action'], $_GET['id'])) {
             Display::return_message(get_lang('ItemRemoved'), 'success')
         );
 
-        header('Location: ' . api_get_self());
+        header('Location: '.api_get_self());
         exit;
     }
 }
@@ -38,12 +38,14 @@ if ($currencyForm->validate()) {
     $currencyFormValues = $currencyForm->getSubmitValues();
 
     $plugin->selectCurrency($currencyFormValues['currency']);
+    unset($currencyFormValues['currency']);
+    $plugin->saveGlobalParameters($currencyFormValues);
 
     Display::addFlash(
         Display::return_message(get_lang('Saved'), 'success')
     );
 
-    header('Location:' . api_get_self());
+    header('Location:'.api_get_self());
     exit;
 }
 
@@ -53,7 +55,7 @@ $currencySelect = $currencyForm->addSelect(
     'currency',
     [
         $plugin->get_lang('CurrencyType'),
-        $plugin->get_lang('InfoCurrency')
+        $plugin->get_lang('InfoCurrency'),
     ],
     [get_lang('Select')]
 );
@@ -63,7 +65,7 @@ foreach ($currencies as $currency) {
         ' => ',
         [
             $currency['country_name'],
-            $currency['iso_code']
+            $currency['iso_code'],
         ]
     );
     $currencyValue = $currency['id'];
@@ -75,7 +77,16 @@ foreach ($currencies as $currency) {
     }
 }
 
+$currencyForm->addTextarea(
+    'terms_and_conditions',
+    [get_lang('TermsAndConditions'),
+     $plugin->get_lang('WriteHereTheTermsAndConditionsOfYourECommerce'), ],
+    []
+);
 $currencyForm->addButtonSave(get_lang('Save'));
+$currencyForm->setDefaults($plugin->getGlobalParameters());
+
+$termsAndConditionsForm = new FormValidator('termsconditions');
 
 $paypalForm = new FormValidator('paypal');
 
@@ -88,7 +99,7 @@ if ($paypalForm->validate()) {
         Display::return_message(get_lang('Saved'), 'success')
     );
 
-    header('Location:' . api_get_self());
+    header('Location:'.api_get_self());
     exit;
 }
 
@@ -127,7 +138,7 @@ if ($commissionForm->validate()) {
         Display::return_message(get_lang('Saved'), 'success')
     );
 
-    header('Location:' . api_get_self());
+    header('Location:'.api_get_self());
     exit;
 }
 
@@ -137,7 +148,6 @@ $commissionForm->addElement(
     [$plugin->get_lang('Commission'), null, '%'],
     ['step' => 1, 'cols-size' => [3, 7, 1], 'min' => 0, 'max' => 100]
 );
-
 
 $commissionForm->addButtonSave(get_lang('Save'));
 $commissionForm->setDefaults($plugin->getPlatformCommission());
@@ -153,7 +163,7 @@ if ($transferForm->validate()) {
         Display::return_message(get_lang('Saved'), 'success')
     );
 
-    header('Location:' . api_get_self());
+    header('Location:'.api_get_self());
     exit;
 }
 
@@ -179,27 +189,58 @@ $transferForm->addButtonCreate(get_lang('Add'));
 
 $transferAccounts = $plugin->getTransferAccounts();
 
-//view
+// Culqi main configuration
+
+$culqiForm = new FormValidator('culqi_config');
+
+if ($culqiForm->validate()) {
+    $culqiFormValues = $culqiForm->getSubmitValues();
+
+    $plugin->saveCulqiParameters($culqiFormValues);
+
+    Display::addFlash(
+        Display::return_message(get_lang('Saved'), 'success')
+    );
+
+    header('Location:'.api_get_self());
+    exit;
+}
+
+$culqiForm->addText(
+    'commerce_code',
+    $plugin->get_lang('CommerceCode'),
+    false,
+    ['cols-size' => [3, 8, 1]]
+);
+$culqiForm->addText(
+    'api_key',
+    $plugin->get_lang('ApiPassword'),
+    false,
+    ['cols-size' => [3, 8, 1]]
+);
+$culqiForm->addCheckBox('integration', null, $plugin->get_lang('Sandbox'));
+$culqiForm->addButtonSave(get_lang('Save'));
+$culqiForm->setDefaults($plugin->getCulqiParams());
+
+// breadcrumbs
 $interbreadcrumb[] = [
-    'url' => 'course_catalog.php',
-    'name' => $plugin->get_lang('CourseListOnSale')
-];
-$interbreadcrumb[] = [
-    'url' => 'configuration.php',
-    'name' => $plugin->get_lang('AvailableCoursesConfiguration')
+    'url' => api_get_path(WEB_PLUGIN_PATH).'buycourses/index.php',
+    'name' => $plugin->get_lang('plugin_title'),
 ];
 
 $templateName = $plugin->get_lang('PaymentsConfiguration');
 $tpl = new Template($templateName);
 $tpl->assign('header', $templateName);
-$tpl->assign('curency_form', $currencyForm->returnForm());
+$tpl->assign('global_config_form', $currencyForm->returnForm());
 $tpl->assign('paypal_form', $paypalForm->returnForm());
 $tpl->assign('commission_form', $commissionForm->returnForm());
 $tpl->assign('transfer_form', $transferForm->returnForm());
+$tpl->assign('culqi_form', $culqiForm->returnForm());
 $tpl->assign('transfer_accounts', $transferAccounts);
 $tpl->assign('paypal_enable', $paypalEnable);
 $tpl->assign('commissions_enable', $commissionsEnable);
 $tpl->assign('transfer_enable', $transferEnable);
+$tpl->assign('culqi_enable', $culqiEnable);
 
 $content = $tpl->fetch('buycourses/view/paymentsetup.tpl');
 

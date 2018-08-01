@@ -6,9 +6,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Statement;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
+use Symfony\Component\Debug\ExceptionHandler;
 
 /**
- * Class Database
+ * Class Database.
  */
 class Database
 {
@@ -17,12 +18,56 @@ class Database
      */
     private static $em;
     private static $connection;
-    public static $utcDateTimeClass;
+
+    /**
+     * Only used by the installer.
+     *
+     * @param array  $params
+     * @param string $entityRootPath
+     *
+     * @throws \Doctrine\ORM\ORMException
+     */
+    public function connect(
+        $params = [],
+        $entityRootPath = ''
+    ) {
+        $config = self::getDoctrineConfig($entityRootPath);
+        $config->setAutoGenerateProxyClasses(true);
+
+        $config->setEntityNamespaces(
+            [
+                'ChamiloUserBundle' => 'Chamilo\UserBundle\Entity',
+                'ChamiloCoreBundle' => 'Chamilo\CoreBundle\Entity',
+                'ChamiloCourseBundle' => 'Chamilo\CourseBundle\Entity',
+                'ChamiloSkillBundle' => 'Chamilo\SkillBundle\Entity',
+                'ChamiloTicketBundle' => 'Chamilo\TicketBundle\Entity',
+                'ChamiloPluginBundle' => 'Chamilo\PluginBundle\Entity',
+            ]
+        );
+
+        $params['charset'] = 'utf8';
+        $entityManager = EntityManager::create($params, $config);
+        $connection = $entityManager->getConnection();
+
+        $sysPath = !empty($sysPath) ? $sysPath : api_get_path(SYS_PATH);
+        AnnotationRegistry::registerFile(
+            $sysPath."vendor/symfony/doctrine-bridge/Validator/Constraints/UniqueEntity.php"
+        );
+
+        // Registering gedmo extensions
+        AnnotationRegistry::registerAutoloadNamespace(
+            'Gedmo\Mapping\Annotation',
+            $sysPath."vendor/gedmo/doctrine-extensions/lib"
+        );
+
+        $this->setConnection($connection);
+        $this->setManager($entityManager);
+    }
 
     /**
      * @param EntityManager $em
      */
-    public function setManager($em)
+    public static function setManager($em)
     {
         self::$em = $em;
     }
@@ -30,7 +75,7 @@ class Database
     /**
      * @param Connection $connection
      */
-    public function setConnection(Connection $connection)
+    public static function setConnection(Connection $connection)
     {
         self::$connection = $connection;
     }
@@ -38,7 +83,7 @@ class Database
     /**
      * @return Connection
      */
-    public function getConnection()
+    public static function getConnection()
     {
         return self::$connection;
     }
@@ -62,11 +107,11 @@ class Database
     }
 
     /**
-     * Get main table
+     * Get main table.
      *
      * @param string $table
      *
-     * @return mixed
+     * @return string
      */
     public static function get_main_table($table)
     {
@@ -74,7 +119,7 @@ class Database
     }
 
     /**
-     * Get course table
+     * Get course table.
      *
      * @param string $table
      *
@@ -86,10 +131,12 @@ class Database
     }
 
     /**
-     * Counts the number of rows in a table
+     * Counts the number of rows in a table.
+     *
      * @param string $table The table of which the rows should be counted
      *
-     * @return int The number of rows in the given table.
+     * @return int the number of rows in the given table
+     *
      * @deprecated
      */
     public static function count_rows($table)
@@ -101,6 +148,7 @@ class Database
 
     /**
      * Returns the number of affected rows in the last database operation.
+     *
      * @param Statement $result
      *
      * @return int
@@ -111,86 +159,11 @@ class Database
     }
 
     /**
-     * @return string
-     */
-    public static function getUTCDateTimeTypeClass()
-    {
-        return isset(self::$utcDateTimeClass) ? self::$utcDateTimeClass :
-        'Application\DoctrineExtensions\DBAL\Types\UTCDateTimeType';
-    }
-
-    /**
-     * Connect to the database sets the entity manager.
+     * Escape MySQL wildchars _ and % in LIKE search.
      *
-     * @param array  $params
-     * @param string $sysPath
-     * @param string $entityRootPath
+     * @param string $text The string to escape
      *
-     * @throws \Doctrine\ORM\ORMException
-     * 
-     * @return 
-     */
-    public function connect($params = array(), $sysPath = '', $entityRootPath = '', $returnConnection = false)
-    {
-        $config = self::getDoctrineConfig($entityRootPath);
-        $config->setAutoGenerateProxyClasses(true);
-
-        $config->setEntityNamespaces(
-            array(
-                'ChamiloUserBundle' => 'Chamilo\UserBundle\Entity',
-                'ChamiloCoreBundle' => 'Chamilo\CoreBundle\Entity',
-                'ChamiloCourseBundle' => 'Chamilo\CourseBundle\Entity',
-            )
-        );
-
-        $params['charset'] = 'utf8';
-        $entityManager = EntityManager::create($params, $config);
-        $sysPath = !empty($sysPath) ? $sysPath : api_get_path(SYS_PATH);
-
-        // Registering Constraints
-        AnnotationRegistry::registerAutoloadNamespace(
-            'Symfony\Component\Validator\Constraint',
-            $sysPath."vendor/symfony/symfony/src"
-        );
-
-        AnnotationRegistry::registerFile(
-            $sysPath."vendor/symfony/symfony/src/Symfony/Bridge/Doctrine/Validator/Constraints/UniqueEntity.php"
-        );
-
-        // Registering gedmo extensions
-        AnnotationRegistry::registerAutoloadNamespace(
-            'Gedmo\Mapping\Annotation',
-            $sysPath."vendor/gedmo/doctrine-extensions/lib"
-        );
-
-        Type::overrideType(
-            Type::DATETIME,
-            self::getUTCDateTimeTypeClass()
-        );
-
-        $listener = new \Gedmo\Timestampable\TimestampableListener();
-        $entityManager->getEventManager()->addEventSubscriber($listener);
-
-        $listener = new \Gedmo\Tree\TreeListener();
-        $entityManager->getEventManager()->addEventSubscriber($listener);
-
-        $listener = new \Gedmo\Sortable\SortableListener();
-        $entityManager->getEventManager()->addEventSubscriber($listener);
-        $connection = $entityManager->getConnection();
-        
-        if ($returnConnection) {
-            return $connection;
-        }
-
-        $this->setConnection($connection);
-        $this->setManager($entityManager);
-    }
-
-    /**
-     * Escape MySQL wildchars _ and % in LIKE search
-     * @param string $text            The string to escape
-     *
-     * @return string           The escaped string
+     * @return string The escaped string
      */
     public static function escape_sql_wildcards($text)
     {
@@ -201,7 +174,7 @@ class Database
     }
 
     /**
-     * Escapes a string to insert into the database as text
+     * Escapes a string to insert into the database as text.
      *
      * @param string $string
      *
@@ -210,12 +183,16 @@ class Database
     public static function escape_string($string)
     {
         $string = self::getManager()->getConnection()->quote($string);
-
-        return trim($string, "'");
+        // The quote method from PDO also adds quotes around the string, which
+        // is not how the legacy mysql_real_escape_string() was used in
+        // Chamilo, so we need to remove the quotes around. Using trim will
+        // remove more than one quote if they are sequenced, generating
+        // broken queries and SQL injection risks
+        return substr($string, 1, -1);
     }
 
     /**
-     * Gets the array from a SQL result (as returned by Database::query)
+     * Gets the array from a SQL result (as returned by Database::query).
      *
      * @param Statement $result
      * @param string    $option Optional: "ASSOC","NUM" or "BOTH"
@@ -225,7 +202,7 @@ class Database
     public static function fetch_array(Statement $result, $option = 'BOTH')
     {
         if ($result === false) {
-            return array();
+            return [];
         }
 
         return $result->fetch(self::customOptionToDoctrineOption($option));
@@ -245,7 +222,7 @@ class Database
 
     /**
      * Gets the next row of the result of the SQL query
-     * (as returned by Database::query) in an object form
+     * (as returned by Database::query) in an object form.
      *
      * @param Statement $result
      *
@@ -258,7 +235,7 @@ class Database
 
     /**
      * Gets the array from a SQL result (as returned by Database::query)
-     * help achieving database independence
+     * help achieving database independence.
      *
      * @param Statement $result
      *
@@ -266,14 +243,20 @@ class Database
      */
     public static function fetch_row(Statement $result)
     {
+        if ($result === false) {
+            return [];
+        }
+
         return $result->fetch(PDO::FETCH_NUM);
     }
 
     /**
      * Frees all the memory associated with the provided result identifier.
-     * @return bool     Returns TRUE on success or FALSE on failure.
-     * Notes: Use this method if you are concerned about how much memory is being used for queries that return large result sets.
-     * Anyway, all associated result memory is automatically freed at the end of the script's execution.
+     *
+     * @return bool|null Returns TRUE on success or FALSE on failure.
+     *                   Notes: Use this method if you are concerned about how much memory is being
+     *                   used for queries that return large result sets.
+     *                   Anyway, all associated result memory is automatically freed at the end of the script's execution.
      */
     public static function free_result(Statement $result)
     {
@@ -281,7 +264,7 @@ class Database
     }
 
     /**
-     * Gets the ID of the last item inserted into the database
+     * Gets the ID of the last item inserted into the database.
      *
      * @return string
      */
@@ -297,12 +280,16 @@ class Database
      */
     public static function num_rows(Statement $result)
     {
+        if ($result === false) {
+            return 0;
+        }
+
         return $result->rowCount();
     }
 
     /**
      * Acts as the relative *_result() function of most DB drivers and fetches a
-     * specific line and a field
+     * specific line and a field.
      *
      * @param Statement $resource
      * @param int       $row
@@ -323,27 +310,36 @@ class Database
      * @param string $query
      *
      * @return Statement
-     *
-     * @throws \Doctrine\DBAL\DBALException
      */
     public static function query($query)
     {
         $connection = self::getManager()->getConnection();
-
-        if (api_get_setting('server_type') == 'test') {
+        $result = null;
+        try {
             $result = $connection->executeQuery($query);
-        } else {
-            try {
-                $result = $connection->executeQuery($query);
-            } catch (Exception $e) {
-                error_log($e->getMessage());
-                api_not_allowed(false, get_lang('GeneralError'));
-
-                exit;
-            }
+        } catch (Exception $e) {
+            self::handleError($e);
         }
 
         return $result;
+    }
+
+    /**
+     * @param Exception $e
+     */
+    public static function handleError($e)
+    {
+        $debug = api_get_setting('server_type') == 'test';
+        if ($debug) {
+            // We use Symfony exception handler for better error information
+            $handler = new ExceptionHandler();
+            $handler->handle($e);
+            exit;
+        } else {
+            error_log($e->getMessage());
+            api_not_allowed(false, get_lang('GeneralError'));
+            exit;
+        }
     }
 
     /**
@@ -371,8 +367,9 @@ class Database
      * Stores a query result into an array.
      *
      * @author Olivier Brouckaert
-     * @param  Statement $result - the return value of the query
-     * @param  string $option BOTH, ASSOC, or NUM
+     *
+     * @param Statement $result - the return value of the query
+     * @param string    $option BOTH, ASSOC, or NUM
      *
      * @return array - the value returned by the query
      */
@@ -382,12 +379,13 @@ class Database
     }
 
     /**
-     * Database insert
-     * @param string    $table_name
-     * @param array     $attributes
-     * @param bool      $show_query
+     * Database insert.
      *
-     * @return bool|int
+     * @param string $table_name
+     * @param array  $attributes
+     * @param bool   $show_query
+     *
+     * @return false|int
      */
     public static function insert($table_name, $attributes, $show_query = false)
     {
@@ -399,18 +397,23 @@ class Database
 
         if (!empty($params)) {
             $sql = 'INSERT INTO '.$table_name.' ('.implode(',', $params).')
-                    VALUES (:'.implode(', :' ,$params).')';
-
-            $statement = self::getManager()->getConnection()->prepare($sql);
-            $result = $statement->execute($attributes);
+                    VALUES (:'.implode(', :', $params).')';
 
             if ($show_query) {
                 var_dump($sql);
                 error_log($sql);
             }
 
+            $result = false;
+            try {
+                $statement = self::getConnection()->prepare($sql);
+                $result = $statement->execute($attributes);
+            } catch (Exception $e) {
+                self::handleError($e);
+            }
+
             if ($result) {
-                return self::getManager()->getConnection()->lastInsertId();
+                return (int) self::getManager()->getConnection()->lastInsertId();
             }
         }
 
@@ -418,48 +421,54 @@ class Database
     }
 
     /**
-     * @param string $table_name use Database::get_main_table
-     * @param array $attributes Values to updates
-     * Example: $params['name'] = 'Julio'; $params['lastname'] = 'Montoya';
-     * @param array $where_conditions where conditions i.e array('id = ?' =>'4')
-     * @param bool $show_query
+     * @param string $tableName       use Database::get_main_table
+     * @param array  $attributes      Values to updates
+     *                                Example: $params['name'] = 'Julio'; $params['lastname'] = 'Montoya';
+     * @param array  $whereConditions where conditions i.e array('id = ?' =>'4')
+     * @param bool   $showQuery
      *
      * @return bool|int
      */
     public static function update(
-        $table_name,
+        $tableName,
         $attributes,
-        $where_conditions = array(),
-        $show_query = false
+        $whereConditions = [],
+        $showQuery = false
     ) {
-        if (!empty($table_name) && !empty($attributes)) {
-            $update_sql = '';
-            //Cleaning attributes
+        if (!empty($tableName) && !empty($attributes)) {
+            $updateSql = '';
             $count = 1;
 
             foreach ($attributes as $key => $value) {
-                $update_sql .= "$key = :$key ";
+                if ($showQuery) {
+                    echo $key.': '.$value.PHP_EOL;
+                }
+                $updateSql .= "$key = :$key ";
                 if ($count < count($attributes)) {
-                    $update_sql.=', ';
+                    $updateSql .= ', ';
                 }
                 $count++;
             }
 
-            if (!empty($update_sql)) {
-                //Parsing and cleaning the where conditions
-                $where_return = self::parse_where_conditions($where_conditions);
+            if (!empty($updateSql)) {
+                // Parsing and cleaning the where conditions
+                $whereReturn = self::parse_where_conditions($whereConditions);
+                $sql = "UPDATE $tableName SET $updateSql $whereReturn ";
 
-                $sql = "UPDATE $table_name SET $update_sql $where_return ";
-
-                $statement = self::getManager()->getConnection()->prepare($sql);
-                $result = $statement->execute($attributes);
-
-                if ($show_query) {
-                    var_dump($sql);
+                try {
+                    $statement = self::getManager()->getConnection()->prepare($sql);
+                    $result = $statement->execute($attributes);
+                } catch (Exception $e) {
+                    self::handleError($e);
                 }
 
-                if ($result) {
+                if ($showQuery) {
+                    var_dump($sql);
+                    var_dump($attributes);
+                    var_dump($whereConditions);
+                }
 
+                if ($result && $statement) {
                     return $statement->rowCount();
                 }
             }
@@ -469,15 +478,32 @@ class Database
     }
 
     /**
-     * Experimental useful database finder
+     * Experimental useful database finder.
+     *
      * @todo lot of stuff to do here
      * @todo known issues, it doesn't work when using LIKE conditions
+     *
      * @example array('where'=> array('course_code LIKE "?%"'))
      * @example array('where'=> array('type = ? AND category = ?' => array('setting', 'Plugins'))
      * @example array('where'=> array('name = "Julio" AND lastname = "montoya"'))
+     *
+     * @param array  $columns
+     * @param string $table_name
+     * @param array  $conditions
+     * @param string $type_result
+     * @param string $option
+     * @param bool   $debug
+     *
+     * @return array
      */
-    public static function select($columns, $table_name, $conditions = array(), $type_result = 'all', $option = 'ASSOC')
-    {
+    public static function select(
+        $columns,
+        $table_name,
+        $conditions = [],
+        $type_result = 'all',
+        $option = 'ASSOC',
+        $debug = false
+    ) {
         $conditions = self::parse_conditions($conditions);
 
         //@todo we could do a describe here to check the columns ...
@@ -487,15 +513,18 @@ class Database
             if ($columns == '*') {
                 $clean_columns = '*';
             } else {
-                $clean_columns = (string)$columns;
+                $clean_columns = (string) $columns;
             }
         }
 
-        $sql    = "SELECT $clean_columns FROM $table_name $conditions";
+        $sql = "SELECT $clean_columns FROM $table_name $conditions";
+        if ($debug) {
+            var_dump($sql);
+        }
         $result = self::query($sql);
-        $array = array();
+        $array = [];
 
-        if ($type_result == 'all') {
+        if ($type_result === 'all') {
             while ($row = self::fetch_array($result, $option)) {
                 if (isset($row['id'])) {
                     $array[$row['id']] = $row;
@@ -511,10 +540,14 @@ class Database
     }
 
     /**
-     * Parses WHERE/ORDER conditions i.e array('where'=>array('id = ?' =>'4'), 'order'=>'id DESC'))
+     * Parses WHERE/ORDER conditions i.e array('where'=>array('id = ?' =>'4'), 'order'=>'id DESC').
+     *
      * @todo known issues, it doesn't work when using
      * LIKE conditions example: array('where'=>array('course_code LIKE "?%"'))
-     * @param   array $conditions
+     *
+     * @param array $conditions
+     *
+     * @return string Partial SQL string to add to longer query
      */
     public static function parse_conditions($conditions)
     {
@@ -529,37 +562,36 @@ class Database
             $type_condition = strtolower($type_condition);
             switch ($type_condition) {
                 case 'where':
-
                     foreach ($condition_data as $condition => $value_array) {
                         if (is_array($value_array)) {
-                            $clean_values = array();
-                            foreach($value_array as $item) {
-                                $item = Database::escape_string($item);
-                                $clean_values[]= $item;
+                            $clean_values = [];
+                            foreach ($value_array as $item) {
+                                $item = self::escape_string($item);
+                                $clean_values[] = $item;
                             }
                         } else {
-                            $value_array = Database::escape_string($value_array);
+                            $value_array = self::escape_string($value_array);
                             $clean_values = $value_array;
                         }
 
                         if (!empty($condition) && $clean_values != '') {
-                            $condition = str_replace('%',"'@percentage@'", $condition); //replace "%"
-                            $condition = str_replace("'?'","%s", $condition);
-                            $condition = str_replace("?","%s", $condition);
+                            $condition = str_replace('%', "'@percentage@'", $condition); //replace "%"
+                            $condition = str_replace("'?'", "%s", $condition);
+                            $condition = str_replace("?", "%s", $condition);
 
-                            $condition = str_replace("@%s@","@-@", $condition);
-                            $condition = str_replace("%s","'%s'", $condition);
-                            $condition = str_replace("@-@","@%s@", $condition);
+                            $condition = str_replace("@%s@", "@-@", $condition);
+                            $condition = str_replace("%s", "'%s'", $condition);
+                            $condition = str_replace("@-@", "@%s@", $condition);
 
                             // Treat conditions as string
                             $condition = vsprintf($condition, $clean_values);
-                            $condition = str_replace('@percentage@','%', $condition); //replace "%"
+                            $condition = str_replace('@percentage@', '%', $condition); //replace "%"
                             $where_return .= $condition;
                         }
                     }
 
                     if (!empty($where_return)) {
-                        $return_value = " WHERE $where_return" ;
+                        $return_value = " WHERE $where_return";
                     }
                     break;
                 case 'order':
@@ -569,9 +601,9 @@ class Database
                         // 'order' => 'id desc, name desc'
                         $order_array = self::escape_string($order_array, null, false);
                         $new_order_array = explode(',', $order_array);
-                        $temp_value = array();
+                        $temp_value = [];
 
-                        foreach($new_order_array as $element) {
+                        foreach ($new_order_array as $element) {
                             $element = explode(' ', $element);
                             $element = array_filter($element);
                             $element = array_values($element);
@@ -579,19 +611,17 @@ class Database
                             if (!empty($element[1])) {
                                 $element[1] = strtolower($element[1]);
                                 $order = 'DESC';
-                                if (in_array($element[1], array('desc', 'asc'))) {
+                                if (in_array($element[1], ['desc', 'asc'])) {
                                     $order = $element[1];
                                 }
-                                $temp_value[]= $element[0].' '.$order.' ';
+                                $temp_value[] = $element[0].' '.$order.' ';
                             } else {
                                 //by default DESC
-                                $temp_value[]= $element[0].' DESC ';
+                                $temp_value[] = $element[0].' DESC ';
                             }
                         }
                         if (!empty($temp_value)) {
                             $return_value .= ' ORDER BY '.implode(', ', $temp_value);
-                        } else {
-                            //$return_value .= '';
                         }
                     }
                     break;
@@ -600,7 +630,7 @@ class Database
                     if (!empty($limit_array)) {
                         if (count($limit_array) > 1) {
                             $return_value .= ' LIMIT '.intval($limit_array[0]).' , '.intval($limit_array[1]);
-                        }  else {
+                        } else {
                             $return_value .= ' LIMIT '.intval($limit_array[0]);
                         }
                     }
@@ -618,7 +648,7 @@ class Database
      */
     public static function parse_where_conditions($conditions)
     {
-        return self::parse_conditions(array('where' => $conditions));
+        return self::parse_conditions(['where' => $conditions]);
     }
 
     /**
@@ -631,8 +661,11 @@ class Database
     public static function delete($table_name, $where_conditions, $show_query = false)
     {
         $where_return = self::parse_where_conditions($where_conditions);
-        $sql    = "DELETE FROM $table_name $where_return ";
-        if ($show_query) { echo $sql; echo '<br />'; }
+        $sql = "DELETE FROM $table_name $where_return ";
+        if ($show_query) {
+            echo $sql;
+            echo '<br />';
+        }
         $result = self::query($sql);
         $affected_rows = self::affected_rows($result);
         //@todo should return affected_rows for
@@ -640,31 +673,35 @@ class Database
     }
 
     /**
-     * Get Doctrine configuration
+     * Get Doctrine configuration.
+     *
      * @param string $path
      *
      * @return \Doctrine\ORM\Configuration
      */
     public static function getDoctrineConfig($path)
     {
-        $isDevMode = false;
+        $isDevMode = true; // Forces doctrine to use ArrayCache instead of apc/xcache/memcache/redis
         $isSimpleMode = false; // related to annotations @Entity
         $cache = null;
         $path = !empty($path) ? $path : api_get_path(SYS_PATH);
 
-        $paths = array(
+        $paths = [
             //$path.'src/Chamilo/ClassificationBundle/Entity',
             //$path.'src/Chamilo/MediaBundle/Entity',
             //$path.'src/Chamilo/PageBundle/Entity',
             $path.'src/Chamilo/CoreBundle/Entity',
             $path.'src/Chamilo/UserBundle/Entity',
             $path.'src/Chamilo/CourseBundle/Entity',
+            $path.'src/Chamilo/TicketBundle/Entity',
+            $path.'src/Chamilo/SkillBundle/Entity',
+            $path.'src/Chamilo/PluginBundle/Entity',
             //$path.'vendor/sonata-project/user-bundle/Entity',
             //$path.'vendor/sonata-project/user-bundle/Model',
             //$path.'vendor/friendsofsymfony/user-bundle/FOS/UserBundle/Entity',
-        );
+        ];
 
-        $proxyDir = $path.'app/cache/';
+        $proxyDir = $path.'var/cache/';
 
         $config = \Doctrine\ORM\Tools\Setup::createAnnotationMetadataConfiguration(
             $paths,
@@ -675,5 +712,25 @@ class Database
         );
 
         return $config;
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return bool
+     */
+    public static function tableExists($table)
+    {
+        return self::getManager()->getConnection()->getSchemaManager()->tablesExist($table);
+    }
+
+    /**
+     * @param string $table
+     *
+     * @return \Doctrine\DBAL\Schema\Column[]
+     */
+    public static function listTableColumns($table)
+    {
+        return self::getManager()->getConnection()->getSchemaManager()->listTableColumns($table);
     }
 }

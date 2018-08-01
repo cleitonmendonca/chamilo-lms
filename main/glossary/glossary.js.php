@@ -1,18 +1,29 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use Chamilo\CoreBundle\Framework\Container;
+require_once __DIR__.'/../inc/global.inc.php';
 
-$tpl = \Chamilo\CoreBundle\Framework\Container::getTwig();
+$origin = api_get_origin();
 
-$templateName = 'glossary/glossary_auto.js.twig';
-if (api_get_setting('document.show_glossary_in_documents') == 'ismanual') {
-    $templateName = 'glossary/glossary_manual.js.twig';
+$tpl = new Template();
+
+$glossaryExtraTools = api_get_setting('show_glossary_in_extra_tools');
+
+if ($origin == 'learnpath') {
+    $showGlossary = in_array($glossaryExtraTools, ['lp', 'exercise_and_lp']);
+} else {
+    $showGlossary = in_array($glossaryExtraTools, ['true', 'lp', 'exercise_and_lp']);
 }
 
-$addReady = isset($_GET['add_ready']) ? true : false;
-$tpl->addGlobal('add_ready', $addReady);
-echo $tpl->render('@template_style/'.$templateName);
+if ($showGlossary) {
+    $templateName = 'glossary/glossary_auto.js.tpl';
+    if (api_get_setting('show_glossary_in_documents') == 'ismanual') {
+        $templateName = 'glossary/glossary_manual.js.tpl';
+    }
 
-// Hide headers
-Container::$legacyTemplate = 'layout_empty.html.twig';
+    $addReady = isset($_GET['add_ready']) ? true : false;
+    $tpl->assign('add_ready', $addReady);
+    $contentTemplate = $tpl->get_template($templateName);
+    header('Content-type: application/x-javascript');
+    $tpl->display($contentTemplate);
+}

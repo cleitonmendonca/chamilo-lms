@@ -1,11 +1,11 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use \ChamiloSession as Session;
+use ChamiloSession as Session;
 
 $cidReset = true;
 
-////require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $this_section = SECTION_COURSES;
 
 $course_code = isset($_REQUEST['course_code']) ? $_REQUEST['course_code'] : null;
@@ -87,7 +87,7 @@ if ($form->validate()) {
         }
 
         if ($pluginLegal) {
-            header('Location:' .$url);
+            header('Location:'.$url);
             exit;
         }
     }
@@ -120,7 +120,7 @@ if (empty($session_id)) {
         header('Location: '.$url);
     }
 
-    $userStatus = SessionManager::get_user_status_in_session($user_id, $course_info['real_id'], $session_id);
+    $userStatus = SessionManager::get_user_status_in_course_session($user_id, $course_info['real_id'], $session_id);
 
     if (isset($userStatus) || api_check_user_access_to_legal($course_info['visibility'])) {
         $user_accepted_legal = CourseManager::is_user_accepted_legal(

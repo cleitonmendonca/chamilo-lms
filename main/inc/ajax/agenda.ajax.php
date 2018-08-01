@@ -1,14 +1,15 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Responses to AJAX calls
+ * Responses to AJAX calls.
  */
-
-$type = isset($_REQUEST['type']) && in_array($_REQUEST['type'], array('personal', 'course', 'admin')) ? $_REQUEST['type'] : 'personal';
+$type = isset($_REQUEST['type']) && in_array($_REQUEST['type'], ['personal', 'course', 'admin']) ? $_REQUEST['type'] : 'personal';
 
 if ($type == 'personal') {
     $cidReset = true; // fixes #5162
 }
+
+require_once __DIR__.'/../global.inc.php';
 
 $action = isset($_REQUEST['a']) ? $_REQUEST['a'] : null;
 $group_id = api_get_group_id();
@@ -17,21 +18,17 @@ if ($type == 'course') {
     api_protect_course_script(true);
 }
 
-$group_id = api_get_group_id();
-
-$is_group_tutor = GroupManager::is_tutor_of_group(api_get_user_id(), $group_id);
-
-$agenda = new Agenda();
-$agenda->setType($type);
+$agenda = new Agenda($type);
 
 switch ($action) {
     case 'add_event':
-        if ((!api_is_allowed_to_edit(null, true) && !$is_group_tutor) && $type == 'course') {
+        if (!$agenda->getIsAllowedToEdit()) {
             break;
         }
         $add_as_announcement = isset($_REQUEST['add_as_annonuncement']) ? $_REQUEST['add_as_annonuncement'] : null;
         $comment = isset($_REQUEST['comment']) ? $_REQUEST['comment'] : null;
-        $userToSend = isset($_REQUEST['users_to_send']) ? $_REQUEST['users_to_send'] : array();
+        $userToSend = isset($_REQUEST['users_to_send']) ? $_REQUEST['users_to_send'] : [];
+
         echo $agenda->addEvent(
             $_REQUEST['start'],
             $_REQUEST['end'],
@@ -41,13 +38,13 @@ switch ($action) {
             $userToSend,
             $add_as_announcement,
             null, //$parentEventId = null,
-            array(), //$attachmentArray = array(),
+            [], //$attachmentArray = array(),
             null, //$attachmentComment = null,
             $comment
         );
         break;
     case 'edit_event':
-        if (!api_is_allowed_to_edit(null, true) && $type == 'course') {
+        if (!$agenda->getIsAllowedToEdit()) {
             break;
         }
         $id_list = explode('_', $_REQUEST['id']);
@@ -62,7 +59,7 @@ switch ($action) {
         );
         break;
     case 'delete_event':
-        if (!api_is_allowed_to_edit(null, true) && $type == 'course') {
+        if (!$agenda->getIsAllowedToEdit()) {
             break;
         }
         $id_list = explode('_', $_REQUEST['id']);
@@ -71,24 +68,23 @@ switch ($action) {
         $agenda->deleteEvent($id, $deleteAllEventsFromSerie);
         break;
     case 'resize_event':
-        if (!api_is_allowed_to_edit(null, true) && $type == 'course') {
+        if (!$agenda->getIsAllowedToEdit()) {
             break;
         }
-        $day_delta = $_REQUEST['day_delta'];
         $minute_delta = $_REQUEST['minute_delta'];
         $id = explode('_', $_REQUEST['id']);
         $id = $id[1];
-        $agenda->resizeEvent($id, $day_delta, $minute_delta);
+        $agenda->resizeEvent($id, $minute_delta);
         break;
     case 'move_event':
-        if (!api_is_allowed_to_edit(null, true) && $type == 'course') {
+        if (!$agenda->getIsAllowedToEdit()) {
             break;
         }
-        $day_delta = $_REQUEST['day_delta'];
         $minute_delta = $_REQUEST['minute_delta'];
+        $allDay = $_REQUEST['all_day'];
         $id = explode('_', $_REQUEST['id']);
         $id = $id[1];
-        $agenda->move_event($id, $day_delta, $minute_delta);
+        $agenda->move_event($id, $minute_delta, $allDay);
         break;
     case 'get_events':
         $filter = isset($_REQUEST['user_id']) ? $_REQUEST['user_id'] : null;
@@ -112,7 +108,7 @@ switch ($action) {
             $groupId,
             $userId
         );
-
+        header('Content-Type: application/json');
         echo $events;
         break;
     case 'get_user_agenda':
@@ -128,7 +124,7 @@ switch ($action) {
             $my_course_list = CourseManager::get_courses_list_by_user_id($user_id, true);
             if (!is_array($my_course_list)) {
                 // this is for the special case if the user has no courses (otherwise you get an error)
-                $my_course_list = array();
+                $my_course_list = [];
             }
             $today = getdate();
             $year = (!empty($_GET['year']) ? (int) $_GET['year'] : null);
@@ -161,7 +157,7 @@ switch ($action) {
                 "month_view"
             );
 
-            if (api_get_setting('agenda.allow_personal_agenda') == 'true') {
+            if (api_get_setting('allow_personal_agenda') == 'true') {
                 $agendaitems = Agenda::get_personal_agenda_items(
                     $user_id,
                     $agendaitems,
@@ -177,7 +173,7 @@ switch ($action) {
                 $agendaitems,
                 $month,
                 $year,
-                array(),
+                [],
                 $monthName,
                 false
             );

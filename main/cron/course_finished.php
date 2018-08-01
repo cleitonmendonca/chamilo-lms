@@ -2,11 +2,13 @@
 
 /* For licensing terms, see /license.txt */
 /**
- * Cron for send a email when the course are finished
+ * Cron for send a email when the course are finished.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.cron
  */
-require_once __DIR__ . '/../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 if (php_sapi_name() != 'cli') {
     exit; //do not run from browser
@@ -32,25 +34,25 @@ $sessions = $sessionRepo->createQueryBuilder('s')
     ->getResult();
 
 if (empty($sessions)) {
-    echo "No sessions finishing today $endDate" . PHP_EOL;
+    echo "No sessions finishing today $endDate".PHP_EOL;
     exit;
 }
 
 $administrator = [
     'complete_name' => api_get_person_name(
-        api_get_setting('admin.administrator_name'),
-        api_get_setting('admin.administrator_surname'),
+        api_get_setting('administratorName'),
+        api_get_setting('administratorSurname'),
         null,
         PERSON_NAME_EMAIL_ADDRESS
     ),
-    'email' => api_get_setting('admin.administrator_email'),
+    'email' => api_get_setting('emailAdministrator'),
 ];
 
 foreach ($sessions as $session) {
     $sessionUsers = $session->getUsers();
 
     if (empty($sessionUsers)) {
-        echo 'No users to send mail' . PHP_EOL;
+        echo 'No users to send mail'.PHP_EOL;
         exit;
     }
 
@@ -81,9 +83,9 @@ foreach ($sessions as $session) {
             $administrator['email']
         );
 
-        echo '============' . PHP_EOL;
-        echo "Email sent to: {$user->getCompleteName()} ({$user->getEmail()})" . PHP_EOL;
-        echo "Session: {$session->getName()}" . PHP_EOL;
-        echo "End date: {$session->getAccessEndDate()->format('Y-m-d h:i')}" . PHP_EOL;
+        echo '============'.PHP_EOL;
+        echo "Email sent to: {$user->getCompleteName()} ({$user->getEmail()})".PHP_EOL;
+        echo "Session: {$session->getName()}".PHP_EOL;
+        echo "End date: {$session->getAccessEndDate()->format('Y-m-d h:i')}".PHP_EOL;
     }
 }

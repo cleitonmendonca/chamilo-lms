@@ -2,47 +2,46 @@
 /* For licensing terms, see /license.txt */
 
 use Chamilo\CoreBundle\Entity\ExtraField;
-use Chamilo\CourseBundle\Entity\CCourseDescription;
 use Chamilo\CoreBundle\Entity\SequenceResource;
-use Chamilo\CoreBundle\Framework\Container;
+use Chamilo\CourseBundle\Entity\CCourseDescription;
+use Chamilo\UserBundle\Entity\Repository\UserRepository;
+use Chamilo\UserBundle\Entity\User;
+use ChamiloSession as Session;
 
 /**
  * Session about page
- * Show information about a session and its courses
+ * Show information about a session and its courses.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ * @author Julio Montoya
+ *
  * @package chamilo.session
  */
-
 $cidReset = true;
 
-//require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $sessionId = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
-$entityManager = Database::getManager();
+$em = Database::getManager();
 
-$session = $entityManager->find('ChamiloCoreBundle:Session', $sessionId);
+$session = $em->find('ChamiloCoreBundle:Session', $sessionId);
 
 if (!$session) {
     api_not_allowed(true);
 }
 
-$sessionCourses = $entityManager->getRepository('ChamiloCoreBundle:Session')
-    ->getCoursesOrderedByPosition($session);
-
 $courses = [];
-
-$entityManager = Database::getManager();
-$fieldsRepo = $entityManager->getRepository('ChamiloCoreBundle:ExtraField');
-$fieldTagsRepo = $entityManager->getRepository('ChamiloCoreBundle:ExtraFieldRelTag');
-$userRepo = $entityManager->getRepository('ChamiloUserBundle:User');
-$sequenceResourceRepo = $entityManager->getRepository(
-    'ChamiloCoreBundle:SequenceResource'
-);
+$sessionCourses = $em->getRepository('ChamiloCoreBundle:Session')->getCoursesOrderedByPosition($session);
+$fieldsRepo = $em->getRepository('ChamiloCoreBundle:ExtraField');
+$fieldTagsRepo = $em->getRepository('ChamiloCoreBundle:ExtraFieldRelTag');
+/** @var UserRepository $userRepo */
+$userRepo = $em->getRepository('ChamiloUserBundle:User');
+$sequenceResourceRepo = $em->getRepository('ChamiloCoreBundle:SequenceResource');
 
 $tagField = $fieldsRepo->findOneBy([
     'extraFieldType' => ExtraField::COURSE_FIELD_TYPE,
-    'variable' => 'tags'
+    'variable' => 'tags',
 ]);
 
 $courseValues = new ExtraFieldValue('course');
@@ -58,31 +57,40 @@ foreach ($sessionCourses as $sessionCourse) {
 
     $courseCoaches = $userRepo->getCoachesForSessionCourse($session, $sessionCourse);
     $coachesData = [];
-
+    /** @var User $courseCoach */
     foreach ($courseCoaches as $courseCoach) {
         $coachData = [
             'complete_name' => $courseCoach->getCompleteName(),
-            'image' => UserManager::getUserPicture($courseCoach->getId(), USER_IMAGE_SIZE_ORIGINAL),
-            'extra_fields' => $userValues->getAllValuesForAnItem($courseCoach->getId(), true)
+            'image' => UserManager::getUserPicture(
+                $courseCoach->getId(),
+                USER_IMAGE_SIZE_ORIGINAL
+            ),
+            'diploma' => $courseCoach->getDiplomas(),
+            'openarea' => $courseCoach->getOpenarea(),
+            'extra_fields' => $userValues->getAllValuesForAnItem(
+                $courseCoach->getId(),
+                null,
+                true
+            ),
         ];
 
         $coachesData[] = $coachData;
     }
 
-    $courseDescriptionTools = $entityManager->getRepository('ChamiloCourseBundle:CCourseDescription')
+    $courseDescriptionTools = $em->getRepository('ChamiloCourseBundle:CCourseDescription')
         ->findBy(
             [
                 'cId' => $sessionCourse->getId(),
-                'sessionId' => 0
+                'sessionId' => 0,
             ],
             [
                 'id' => 'DESC',
-                'descriptionType' => 'ASC'
+                'descriptionType' => 'ASC',
             ]
         );
 
-    $courseDescription = $courseObjectives = $courseTopics = null;
-
+    $courseDescription = $courseObjectives = $courseTopics = $courseMethodology = $courseMaterial = $courseResources = $courseAssessment = '';
+    $courseCustom = [];
     foreach ($courseDescriptionTools as $descriptionTool) {
         switch ($descriptionTool->getDescriptionType()) {
             case CCourseDescription::TYPE_DESCRIPTION:
@@ -94,28 +102,56 @@ foreach ($sessionCourses as $sessionCourse) {
             case CCourseDescription::TYPE_TOPICS:
                 $courseTopics = $descriptionTool;
                 break;
+            case CCourseDescription::TYPE_METHODOLOGY:
+                $courseMethodology = $descriptionTool;
+                break;
+            case CCourseDescription::TYPE_COURSE_MATERIAL:
+                $courseMaterial = $descriptionTool;
+                break;
+            case CCourseDescription::TYPE_RESOURCES:
+                $courseResources = $descriptionTool;
+                break;
+            case CCourseDescription::TYPE_ASSESSMENT:
+                $courseAssessment = $descriptionTool;
+                break;
+            case CCourseDescription::TYPE_CUSTOM:
+                $courseCustom[] = $descriptionTool;
+                break;
         }
     }
 
     $courses[] = [
         'course' => $sessionCourse,
         'description' => $courseDescription,
+        'image' => $sessionCourse->getPicturePath(true),
         'tags' => $courseTags,
         'objectives' => $courseObjectives,
         'topics' => $courseTopics,
+        'methodology' => $courseMethodology,
+        'material' => $courseMaterial,
+        'resources' => $courseResources,
+        'assessment' => $courseAssessment,
+        'custom' => array_reverse($courseCustom),
         'coaches' => $coachesData,
-        'extra_fields' => $courseValues->getAllValuesForAnItem($sessionCourse->getId())
+        'extra_fields' => $courseValues->getAllValuesForAnItem(
+            $sessionCourse->getId(),
+            null,
+            true
+        ),
     ];
 }
 
-$sessionDates = SessionManager::parseSessionDates([
-    'display_start_date' => $session->getDisplayStartDate(),
-    'display_end_date' => $session->getDisplayEndDate(),
-    'access_start_date' => $session->getAccessStartDate(),
-    'access_end_date' => $session->getAccessEndDate(),
-    'coach_access_start_date' => $session->getCoachAccessStartDate(),
-    'coach_access_end_date' => $session->getCoachAccessEndDate()
-]);
+$sessionDates = SessionManager::parseSessionDates(
+    [
+        'display_start_date' => $session->getDisplayStartDate(),
+        'display_end_date' => $session->getDisplayEndDate(),
+        'access_start_date' => $session->getAccessStartDate(),
+        'access_end_date' => $session->getAccessEndDate(),
+        'coach_access_start_date' => $session->getCoachAccessStartDate(),
+        'coach_access_end_date' => $session->getCoachAccessEndDate(),
+    ],
+    true
+);
 
 $sessionRequirements = $sequenceResourceRepo->getRequirements(
     $session->getId(),
@@ -123,7 +159,6 @@ $sessionRequirements = $sequenceResourceRepo->getRequirements(
 );
 
 $hasRequirements = false;
-
 foreach ($sessionRequirements as $sequence) {
     if (!empty($sequence['requirements'])) {
         $hasRequirements = true;
@@ -134,50 +169,70 @@ foreach ($sessionRequirements as $sequence) {
 $courseController = new CoursesController();
 
 /* View */
-//$template = new Template($session->getName(), true, true, false, true, false);
-$template = \Chamilo\CoreBundle\Framework\Container::getTwig();
-
-$template->addGlobal(
-    'show_tutor',
-    (api_get_setting('session.show_session_coach') === 'true' ? true : false)
-);
-$template->addGlobal(
-    'pageUrl',
-    api_get_path(WEB_PATH)."session/{$session->getId()}/about/"
-);
-$template->addGlobal('session', $session);
-$template->addGlobal('session_date', $sessionDates);
-$template->addGlobal(
+$template = new Template($session->getName(), true, true, false, true, false);
+$template->assign('show_tutor', (api_get_setting('show_session_coach') === 'true' ? true : false));
+$template->assign('page_url', api_get_path(WEB_PATH)."session/{$session->getId()}/about/");
+$template->assign('session', $session);
+$template->assign('session_date', $sessionDates);
+$template->assign(
     'is_subscribed',
     SessionManager::isUserSubscribedAsStudent(
         $session->getId(),
         api_get_user_id()
     )
 );
-$template->addGlobal(
+$template->assign(
     'subscribe_button',
     $courseController->getRegisteredInSessionButton(
         $session->getId(),
         $session->getName(),
-        $hasRequirements
+        $hasRequirements,
+        true,
+        true
+    )
+);
+$template->assign(
+    'user_session_time',
+    SessionManager::getDayLeftInSession(
+        ['id' => $session->getId(), 'duration' => $session->getDuration()],
+        api_get_user_id()
     )
 );
 
-$template->addGlobal('courses', $courses);
-$template->addGlobal('essence', \Essence\Essence::instance());
-$template->addGlobal(
+$plugin = BuyCoursesPlugin::create();
+$checker = $plugin->isEnabled();
+$sessionIsPremium = null;
+if ($checker) {
+    $sessionIsPremium = $plugin->getItemByProduct(
+        $sessionId,
+        BuyCoursesPlugin::PRODUCT_TYPE_SESSION
+    );
+    if ($sessionIsPremium) {
+        Session::write('SessionIsPremium', true);
+        Session::write('sessionId', $sessionId);
+    }
+}
+
+$redirectToSession = api_get_configuration_value('allow_redirect_to_session_after_inscription_about');
+$redirectToSession = $redirectToSession ? '?s='.$sessionId : false;
+
+$coursesInThisSession = SessionManager::get_course_list_by_session_id($sessionId);
+$coursesCount = count($coursesInThisSession);
+$redirectToSession = $coursesCount == 1 && $redirectToSession ? $redirectToSession.'&cr='.array_values($coursesInThisSession)[0]['directory'] : $redirectToSession;
+
+$template->assign('redirect_to_session', $redirectToSession);
+$template->assign('courses', $courses);
+$essence = Essence\Essence::instance();
+$template->assign('essence', $essence);
+$template->assign(
     'session_extra_fields',
-    $sessionValues->getAllValuesForAnItem($session->getId(), true)
+    $sessionValues->getAllValuesForAnItem($session->getId(), null, true)
 );
-$template->addGlobal('has_requirements', $hasRequirements);
-$template->addGlobal('sequences', $sessionRequirements);
-
-//$templateFolder = api_get_configuration_value('default_template');
-
-echo $template->render('@template_style/session/about.html.twig');
-
-
-
+$template->assign('has_requirements', $hasRequirements);
+$template->assign('sequences', $sessionRequirements);
+$template->assign('is_premiun', $sessionIsPremium);
+$layout = $template->get_template('session/about.tpl');
+$content = $template->fetch($layout);
 //$template->assign('header', $session->getName());
-
-
+$template->assign('content', $content);
+$template->display_one_col_template();

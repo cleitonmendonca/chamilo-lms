@@ -5,7 +5,9 @@
  * Class ScoreDisplay
  * Display scores according to the settings made by the platform admin.
  * This class works as a singleton: call instance() to retrieve an object.
+ *
  * @author Bert Steppé
+ *
  * @package chamilo.gradebook
  */
 class ScoreDisplay
@@ -18,42 +20,7 @@ class ScoreDisplay
     private $custom_display_conv;
 
     /**
-     * Get the instance of this class
-     * @param int $category_id
-     */
-    public static function instance($category_id = 0)
-    {
-        static $instance;
-        if (!isset ($instance)) {
-            $instance = new ScoreDisplay($category_id);
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Compare the custom display of 2 scores, can be useful in sorting
-     */
-    public static function compare_scores_by_custom_display ($score1, $score2)
-    {
-        if (!isset($score1)) {
-            return (isset($score2) ? 1 : 0);
-        } elseif (!isset($score2)) {
-            return -1;
-        } else {
-            $scoredisplay = ScoreDisplay :: instance();
-            $custom1 = $scoredisplay->display_custom($score1);
-            $custom2 = $scoredisplay->display_custom($score2);
-            if ($custom1 == $custom2) {
-                return 0;
-            } else {
-                return (($score1[0]/$score1[1]) < ($score2[0]/$score2[1]) ? -1 : 1);
-            }
-        }
-    }
-
-    /**
-     * Protected constructor - call instance() to instantiate
+     * Protected constructor - call instance() to instantiate.
      */
     public function __construct($category_id = 0)
     {
@@ -62,8 +29,8 @@ class ScoreDisplay
         }
 
         // Loading portal settings + using standard functions.
-
-        $value = api_get_setting('gradebook.my_display_coloring');
+        $value = api_get_setting('gradebook_score_display_coloring');
+        $value = $value['my_display_coloring'];
 
         // Setting coloring.
         $this->coloring_enabled = $value == 'true' ? true : false;
@@ -76,48 +43,87 @@ class ScoreDisplay
         }
 
         // Setting custom enabled
-        $value = api_get_setting('gradebook.gradebook_score_display_custom');
-        $this->custom_enabled  = $value == 'true' ? true : false;
+        $value = api_get_setting('gradebook_score_display_custom');
+        $value = $value['my_display_custom'];
+        $this->custom_enabled = $value == 'true' ? true : false;
 
         if ($this->custom_enabled) {
-            $params = array('category = ?' =>  array('Gradebook'));
+            $params = ['category = ?' => ['Gradebook']];
             $displays = api_get_settings_params($params);
-            $portal_displays = array();
+            $portal_displays = [];
             if (!empty($displays)) {
                 foreach ($displays as $display) {
                     $data = explode('::', $display['selected_value']);
                     if (empty($data[1])) {
                         $data[1] = "";
                     }
-                    $portal_displays[$data[0]] = array('score' => $data[0], 'display' => $data[1]);
+                    $portal_displays[$data[0]] = [
+                        'score' => $data[0],
+                        'display' => $data[1],
+                    ];
                 }
                 sort($portal_displays);
             }
             $this->custom_display = $portal_displays;
-            if (count($this->custom_display)>0) {
+            if (count($this->custom_display) > 0) {
                 $value = api_get_setting('gradebook_score_display_upperlimit');
                 $value = $value['my_display_upperlimit'];
-                $this->upperlimit_included  = $value == 'true' ? true : false;
+                $this->upperlimit_included = $value == 'true' ? true : false;
                 $this->custom_display_conv = $this->convert_displays($this->custom_display);
             }
         }
 
         //If teachers can override the portal parameters
 
-        if (api_get_setting(
-                'gradebook.teachers_can_change_score_settings'
-            ) == 'true'
-        ) {
+        if (api_get_setting('teachers_can_change_score_settings') == 'true') {
             //Load course settings
             if ($this->custom_enabled) {
                 $this->custom_display = $this->get_custom_displays();
-                if (count($this->custom_display)> 0) {
+                if (count($this->custom_display) > 0) {
                     $this->custom_display_conv = $this->convert_displays($this->custom_display);
                 }
             }
 
             if ($this->coloring_enabled) {
                 $this->color_split_value = $this->get_score_color_percent();
+            }
+        }
+    }
+
+    /**
+     * Get the instance of this class.
+     *
+     * @param int $category_id
+     *
+     * @return ScoreDisplay
+     */
+    public static function instance($category_id = 0)
+    {
+        static $instance;
+        if (!isset($instance)) {
+            $instance = new ScoreDisplay($category_id);
+        }
+
+        return $instance;
+    }
+
+    /**
+     * Compare the custom display of 2 scores, can be useful in sorting.
+     */
+    public static function compare_scores_by_custom_display($score1, $score2)
+    {
+        if (!isset($score1)) {
+            return isset($score2) ? 1 : 0;
+        } elseif (!isset($score2)) {
+            return -1;
+        } else {
+            $scoreDisplay = self::instance();
+            $custom1 = $scoreDisplay->display_custom($score1);
+            $custom2 = $scoreDisplay->display_custom($score2);
+            if ($custom1 == $custom2) {
+                return 0;
+            } else {
+                return ($score1[0] / $score1[1]) < ($score2[0] / $score2[1]) ? -1 : 1;
             }
         }
     }
@@ -148,7 +154,8 @@ class ScoreDisplay
 
     /**
      * If custom score display is enabled, this will return the current settings.
-     * See also update_custom_score_display_settings
+     * See also update_custom_score_display_settings.
+     *
      * @return array current settings (or null if feature not enabled)
      */
     public function get_custom_score_display_settings()
@@ -158,6 +165,7 @@ class ScoreDisplay
 
     /**
      * If coloring is enabled, scores below this value will be displayed in red.
+     *
      * @return int color split value, in percent (or null if feature not enabled)
      */
     public function get_color_split_value()
@@ -166,51 +174,17 @@ class ScoreDisplay
     }
 
     /**
-     * Get current gradebook category id
-     * @return int  Category id
-     */
-    private function get_current_gradebook_category_id()
-    {
-        $curr_course_id = api_get_course_int_id();
-        $curr_session_id = api_get_session_id();
-
-        $em = Database::getManager();
-        $qb = $em->createQueryBuilder();
-        $qb
-            ->select('gc')
-            ->from('ChamiloCoreBundle:GradebookCategory')
-            ->where(
-                Criteria::expr()->eq('course', $curr_course_id)
-            );
-
-        if (empty($curr_session_id)) {
-            $qb->andWhere(
-                $qb->expr()->isNull('sessionId')
-            );
-        } else {
-            $qb->andWhere(
-                $qb->expr()->eq('sessionId', $curr_session_id)
-            );
-        }
-
-        $rs = $qb->getQuery()->getResult();
-        $category_id = 0;
-        if (count($rs) > 0) {
-            $row = current($rs);
-            $category_id = $row->getId();
-        }
-
-        return $category_id;
-    }
-
-    /**
-     * Update custom score display settings
+     * Update custom score display settings.
+     *
      * @param array $displays 2-dimensional array - every sub array must have keys (score, display)
      * @param int   score color percent (optional)
      * @param int   gradebook category id (optional)
      */
-    public function update_custom_score_display_settings($displays, $scorecolpercent = 0, $category_id = null)
-    {
+    public function update_custom_score_display_settings(
+        $displays,
+        $scorecolpercent = 0,
+        $category_id = null
+    ) {
         $this->custom_display = $displays;
         $this->custom_display_conv = $this->convert_displays($this->custom_display);
 
@@ -221,7 +195,7 @@ class ScoreDisplay
         }
 
         // remove previous settings
-        $table = Database :: get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
+        $table = Database::get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
         $sql = 'DELETE FROM '.$table.' WHERE category_id = '.$category_id;
         Database::query($sql);
 
@@ -242,7 +216,8 @@ class ScoreDisplay
 
     /**
      * @param int $category_id
-     * @return bool
+     *
+     * @return false|null
      */
     public function insert_defaults($category_id)
     {
@@ -251,35 +226,33 @@ class ScoreDisplay
         }
 
         //Get this from DB settings
-        $display = array(
+        $display = [
             50 => get_lang('GradebookFailed'),
             60 => get_lang('GradebookPoor'),
             70 => get_lang('GradebookFair'),
             80 => get_lang('GradebookGood'),
             90 => get_lang('GradebookOutstanding'),
-            100 => get_lang('GradebookExcellent')
-        );
+            100 => get_lang('GradebookExcellent'),
+        ];
 
-        $tbl_display = Database :: get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
-        foreach($display as $value => $text) {
-            $params = array(
+        $table = Database::get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
+        foreach ($display as $value => $text) {
+            $params = [
                 'score' => $value,
                 'display' => $text,
                 'category_id' => $category_id,
                 'score_color_percent' => 0,
-            );
-            Database::insert($tbl_display, $params);
+            ];
+            Database::insert($table, $params);
         }
     }
 
     /**
-     * @return int|null|string
+     * @return int
      */
     public function get_number_decimals()
     {
-        $number_decimals = api_get_setting(
-            'gradebook.gradebook_number_decimals'
-        );
+        $number_decimals = api_get_setting('gradebook_number_decimals');
         if (!isset($number_decimals)) {
             $number_decimals = 0;
         }
@@ -288,25 +261,37 @@ class ScoreDisplay
     }
 
     /**
-     * Formats a number depending of the number of decimals
+     * Formats a number depending of the number of decimals.
      *
-     * @param float $score
+     * @param float  $score
+     * @param bool   $ignoreDecimals
+     * @param string $decimalSeparator
+     * @param string $thousandSeparator
+     *
      * @return float the score formatted
      */
-    public function format_score($score)
+    public function format_score($score, $ignoreDecimals = false, $decimalSeparator = '.', $thousandSeparator = ',')
     {
-        return floatval(number_format($score, $this->get_number_decimals()));
+        $decimals = $this->get_number_decimals();
+        if ($ignoreDecimals) {
+            $decimals = 0;
+        }
+
+        return api_number_format($score, $decimals, $decimalSeparator, $thousandSeparator);
     }
 
     /**
-     * Display a score according to the current settings
-     * @param array $score data structure, as returned by the calc_score functions
-     * @param int $type one of the following constants:
-     * SCORE_DIV, SCORE_PERCENT, SCORE_DIV_PERCENT, SCORE_AVERAGE
-     * (ignored for student's view if custom score display is enabled)
-     * @param int $what one of the following constants:
-     * SCORE_BOTH, SCORE_ONLY_DEFAULT, SCORE_ONLY_CUSTOM (default: SCORE_BOTH)
-     * (only taken into account if custom score display is enabled and for course/platform admin)
+     * Display a score according to the current settings.
+     *
+     * @param array $score          data structure, as returned by the calc_score functions
+     * @param int   $type           one of the following constants:
+     *                              SCORE_DIV, SCORE_PERCENT, SCORE_DIV_PERCENT, SCORE_AVERAGE
+     *                              (ignored for student's view if custom score display is enabled)
+     * @param int   $what           one of the following constants:
+     *                              SCORE_BOTH, SCORE_ONLY_DEFAULT, SCORE_ONLY_CUSTOM (default: SCORE_BOTH)
+     *                              (only taken into account if custom score display is enabled and for course/platform admin)
+     * @param bool  $disableColor
+     * @param bool  $ignoreDecimals
      *
      * @return string
      */
@@ -314,33 +299,38 @@ class ScoreDisplay
         $score,
         $type = SCORE_DIV_PERCENT,
         $what = SCORE_BOTH,
-        $no_color = false
+        $disableColor = false,
+        $ignoreDecimals = false
     ) {
         $my_score = $score == 0 ? 1 : $score;
 
         if ($type == SCORE_BAR) {
-            $percentage = $my_score[0]/$my_score[1]*100;
+            $percentage = $my_score[0] / $my_score[1] * 100;
 
             return Display::bar_progress($percentage);
         }
 
         if ($type == SCORE_SIMPLE) {
-            $simple_score = $this->format_score($my_score[0]);
-            return $simple_score;
+            $simpleScore = $this->format_score($my_score[0], $ignoreDecimals);
+
+            return $simpleScore;
         }
 
         if ($this->custom_enabled && isset($this->custom_display_conv)) {
-            $display = $this->display_default($my_score, $type);
+            $display = $this->display_default($my_score, $type, $ignoreDecimals);
         } else {
             // if no custom display set, use default display
-            $display = $this->display_default($my_score, $type);
+            $display = $this->display_default($my_score, $type, $ignoreDecimals);
         }
-
-        if ($this->coloring_enabled && $no_color == false) {
-            $my_score_denom = isset($score[1]) && !empty($score[1]) ? $score[1] : 1;
+        if ($this->coloring_enabled && $disableColor == false) {
+            $my_score_denom = isset($score[1]) && !empty($score[1]) && $score[1] > 0 ? $score[1] : 1;
             $scoreCleaned = isset($score[0]) ? $score[0] : 0;
             if (($scoreCleaned / $my_score_denom) < ($this->color_split_value / 100)) {
-                $display = Display::tag('font', $display, array('color'=>'red'));
+                $display = Display::tag(
+                    'font',
+                    $display,
+                    ['color' => 'red']
+                );
             }
         }
 
@@ -348,30 +338,62 @@ class ScoreDisplay
     }
 
     /**
-     * @param $score
-     * @param $type
-     * @return float|string
+     * Get current gradebook category id.
+     *
+     * @return int Category id
      */
-    private function display_default($score, $type)
+    private function get_current_gradebook_category_id()
+    {
+        $table = Database::get_main_table(TABLE_MAIN_GRADEBOOK_CATEGORY);
+        $courseId = api_get_course_int_id();
+        $curr_session_id = api_get_session_id();
+
+        if (empty($curr_session_id)) {
+            $session_condition = ' AND session_id is null ';
+        } else {
+            $session_condition = ' AND session_id = '.$curr_session_id;
+        }
+
+        $sql = 'SELECT id FROM '.$table.'
+                WHERE c_id = "'.$courseId.'" '.$session_condition;
+        $rs = Database::query($sql);
+        $category_id = 0;
+        if (Database::num_rows($rs) > 0) {
+            $row = Database::fetch_row($rs);
+            $category_id = $row[0];
+        }
+
+        return $category_id;
+    }
+
+    /**
+     * @param $score
+     * @param int  $type
+     * @param bool $ignoreDecimals
+     *
+     * @return string
+     */
+    private function display_default($score, $type, $ignoreDecimals = false)
     {
         switch ($type) {
-            case SCORE_DIV :                            // X / Y
-                return $this->display_as_div($score);
-            case SCORE_PERCENT :                        // XX %
+            case SCORE_DIV:                            // X / Y
+                return $this->display_as_div($score, $ignoreDecimals);
+            case SCORE_PERCENT:                        // XX %
                 return $this->display_as_percent($score);
-            case SCORE_DIV_PERCENT :                    // X / Y (XX %)
-                return $this->display_as_div($score).' (' . $this->display_as_percent($score) . ')';
-            case SCORE_AVERAGE :                        // XX %
+            case SCORE_DIV_PERCENT:                    // X / Y (XX %)
+                return $this->display_as_div($score).' ('.$this->display_as_percent($score).')';
+            case SCORE_AVERAGE:                        // XX %
                 return $this->display_as_percent($score);
-            case SCORE_DECIMAL :                        // 0.50  (X/Y)
+            case SCORE_DECIMAL:                        // 0.50  (X/Y)
                 return $this->display_as_decimal($score);
-            case SCORE_DIV_PERCENT_WITH_CUSTOM :        // X / Y (XX %) - Good!
+            case SCORE_DIV_PERCENT_WITH_CUSTOM:        // X / Y (XX %) - Good!
                 $custom = $this->display_custom($score);
                 if (!empty($custom)) {
                     $custom = ' - '.$custom;
                 }
-                return $this->display_as_div($score).' (' . $this->display_as_percent($score) . ')'.$custom;
-            case SCORE_DIV_SIMPLE_WITH_CUSTOM :         // X - Good!
+
+                return $this->display_as_div($score).' ('.$this->display_as_percent($score).')'.$custom;
+            case SCORE_DIV_SIMPLE_WITH_CUSTOM:         // X - Good!
                 $custom = $this->display_custom($score);
 
                 if (!empty($custom)) {
@@ -405,6 +427,7 @@ class ScoreDisplay
 
     /**
      * @param array $score
+     *
      * @return float|string
      */
     private function display_simple_score($score)
@@ -412,56 +435,66 @@ class ScoreDisplay
         if (isset($score[0])) {
             return $this->format_score($score[0]);
         }
+
         return '';
     }
 
     /**
-     * Returns "1" for array("100", "100");
+     * Returns "1" for array("100", "100");.
+     *
      * @param array $score
+     *
      * @return float
      */
     private function display_as_decimal($score)
     {
-        $score_denom = ($score[1]==0) ? 1 : $score[1];
+        $score_denom = ($score[1] == 0) ? 1 : $score[1];
 
-        return $this->format_score($score[0]/$score_denom);
+        return $this->format_score($score[0] / $score_denom);
     }
 
     /**
-     * Returns "100 %" for array("100", "100");
+     * Returns "100 %" for array("100", "100");.
      */
     private function display_as_percent($score)
     {
-        $score_denom = ($score[1]==0) ? 1 : $score[1];
+        $score_denom = ($score[1] == 0) ? 1 : $score[1];
 
-        return $this->format_score($score[0]/$score_denom*100) . ' %';
+        return $this->format_score($score[0] / $score_denom * 100).' %';
     }
 
     /**
-     * Returns 10.00 / 10.00 for array("100", "100");
+     * Returns 10.00 / 10.00 for array("100", "100");.
+     *
      * @param array $score
+     * @param bool  $ignoreDecimals
      *
      * @return string
      */
-    private function display_as_div($score)
+    private function display_as_div($score, $ignoreDecimals = false)
     {
         if ($score == 1) {
             return '0 / 0';
         } else {
-            $score[0] = isset($score[0]) ? $this->format_score($score[0]) : 0;
-            $score[1] = isset($score[1]) ? $this->format_score($score[1]) : 0;
-            return  $score[0] . ' / ' . $score[1];
+            $score[0] = isset($score[0]) ? $this->format_score($score[0], $ignoreDecimals) : 0;
+            $score[1] = isset($score[1]) ? $this->format_score($score[1], $ignoreDecimals) : 0;
+
+            return  $score[0].' / '.$score[1];
         }
     }
 
     /**
-     * Depends on the teacher's configuration of thresholds. i.e. [0 50] "Bad", [50:100] "Good"
+     * Depends on the teacher's configuration of thresholds. i.e. [0 50] "Bad", [50:100] "Good".
+     *
      * @param array $score
+     *
+     * @return string
      */
     private function display_custom($score)
     {
-        $my_score_denom= ($score[1]==0) ? 1 : $score[1];
+        $my_score_denom = $score[1] == 0 ? 1 : $score[1];
         $scaledscore = $score[0] / $my_score_denom;
+
         if ($this->upperlimit_included) {
             foreach ($this->custom_display_conv as $displayitem) {
                 if ($scaledscore <= $displayitem['score']) {
@@ -480,13 +513,15 @@ class ScoreDisplay
     }
 
     /**
-     * Get score color percent by category
+     * Get score color percent by category.
+     *
      * @param   int Gradebook category id
-     * @return  int Score
+     *
+     * @return int Score
      */
     private function get_score_color_percent($category_id = null)
     {
-        $tbl_display = Database :: get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
+        $tbl_display = Database::get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
         if (isset($category_id)) {
             $category_id = intval($category_id);
         } else {
@@ -507,13 +542,15 @@ class ScoreDisplay
     }
 
     /**
-     * Get current custom score display settings
+     * Get current custom score display settings.
+     *
      * @param   int     Gradebook category id
-     * @return  array   2-dimensional array every element contains 3 subelements (id, score, display)
+     *
+     * @return array 2-dimensional array every element contains 3 subelements (id, score, display)
      */
     private function get_custom_displays($category_id = null)
     {
-        $tbl_display = Database :: get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
+        $tbl_display = Database::get_main_table(TABLE_MAIN_GRADEBOOK_SCORE_DISPLAY);
         if (isset($category_id)) {
             $category_id = intval($category_id);
         } else {
@@ -524,17 +561,17 @@ class ScoreDisplay
                 ORDER BY score';
         $result = Database::query($sql);
 
-        return Database::store_result($result,'ASSOC');
+        return Database::store_result($result, 'ASSOC');
     }
 
     /**
-     * Convert display settings to internally used values
+     * Convert display settings to internally used values.
      */
     private function convert_displays($custom_display)
     {
         if (isset($custom_display)) {
             // get highest score entry, and copy each element to a new array
-            $converted = array();
+            $converted = [];
             $highest = 0;
             foreach ($custom_display as $element) {
                 if ($element['score'] > $highest) {
@@ -543,14 +580,14 @@ class ScoreDisplay
                 $converted[] = $element;
             }
             // sort the new array (ascending)
-            usort($converted, array('ScoreDisplay', 'sort_display'));
+            usort($converted, ['ScoreDisplay', 'sort_display']);
 
             // adjust each score in such a way that
             // each score is scaled between 0 and 1
             // the highest score in this array will be equal to 1
-            $converted2 = array();
+            $converted2 = [];
             foreach ($converted as $element) {
-                $newelement = array();
+                $newelement = [];
                 if (isset($highest) && !empty($highest) && $highest > 0) {
                     $newelement['score'] = $element['score'] / $highest;
                 } else {
@@ -559,6 +596,7 @@ class ScoreDisplay
                 $newelement['display'] = $element['display'];
                 $converted2[] = $newelement;
             }
+
             return $converted2;
         } else {
             return null;
@@ -568,15 +606,15 @@ class ScoreDisplay
     /**
      * @param array $item1
      * @param array $item2
+     *
      * @return int
      */
     private function sort_display($item1, $item2)
     {
         if ($item1['score'] === $item2['score']) {
-
             return 0;
         } else {
-            return ($item1['score'] < $item2['score'] ? -1 : 1);
+            return $item1['score'] < $item2['score'] ? -1 : 1;
         }
     }
 }
