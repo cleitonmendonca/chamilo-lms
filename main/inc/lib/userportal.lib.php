@@ -160,14 +160,18 @@ class IndexManager
             $show_create_link = false;
             $show_course_link = false;
 
-            if (api_is_platform_admin() || api_is_course_admin() || api_is_allowed_to_create_course()) {
+            if (api_is_allowed_to_create_course()) {
                 $show_menu = true;
                 $show_course_link = true;
                 $show_create_link = true;
             } else {
-                if (api_get_setting('allow_students_to_browse_courses') == 'true') {
+                if (api_get_setting('allow_students_to_browse_courses') === 'true') {
                     $show_menu = true;
                     $show_course_link = true;
+                }
+
+                if (api_get_setting('allow_users_to_create_courses') === 'true') {
+                    $show_create_link = true;
                 }
             }
 
@@ -327,20 +331,27 @@ class IndexManager
          * Generate the block for show a panel with links to My Certificates and Certificates Search pages
          * @return string The HTML code for the panel
          */
-        $certificatesItem = null;
-
+        $certificatesItem = '';
         if (!api_is_anonymous()) {
-            $certificatesItem = Display::tag(
-                'li',
-                Display::url(Display::return_icon('graduation.png',get_lang('MyCertificates'),null,ICON_SIZE_SMALL).
-                    get_lang('MyCertificates'),
-                    api_get_path(WEB_CODE_PATH) . "gradebook/my_certificates.php"
-                )
-            );
+            $allow = api_get_configuration_value('hide_my_certificate_link');
+            if ($allow === false) {
+                $certificatesItem = Display::tag(
+                    'li',
+                    Display::url(
+                        Display::return_icon(
+                            'graduation.png',
+                            get_lang('MyCertificates'),
+                            null,
+                            ICON_SIZE_SMALL
+                        ).
+                        get_lang('MyCertificates'),
+                        api_get_path(WEB_CODE_PATH)."gradebook/my_certificates.php"
+                    )
+                );
+            }
         }
 
-        $searchItem = null;
-
+        $searchItem = '';
         if (api_get_setting('allow_public_certificates') == 'true') {
             $searchItem = Display::tag(
                 'li',
@@ -352,8 +363,8 @@ class IndexManager
         }
 
         if (empty($certificatesItem) && empty($searchItem)) {
-            return null;
-        }else{
+            return '';
+        } else {
             $content.= $certificatesItem;
             $content.= $searchItem;
         }
@@ -942,28 +953,15 @@ class IndexManager
     public function return_course_block()
     {
         $html = '';
-
         $show_create_link = false;
         $show_course_link = false;
 
-        if ((api_get_setting('allow_users_to_create_courses') == 'false' &&
-            !api_is_platform_admin()) || api_is_student()
-        ) {
-            $display_add_course_link = false;
-        } else {
-            $display_add_course_link = true;
-        }
-
-        if ($display_add_course_link) {
+        if (api_is_allowed_to_create_course()) {
             $show_create_link = true;
         }
 
-        if (api_is_platform_admin() || api_is_course_admin() || api_is_allowed_to_create_course()) {
+        if (api_get_setting('allow_students_to_browse_courses') === 'true') {
             $show_course_link = true;
-        } else {
-            if (api_get_setting('allow_students_to_browse_courses') == 'true') {
-                $show_course_link = true;
-            }
         }
 
         // My account section
@@ -1119,11 +1117,8 @@ class IndexManager
                         foreach ($session['courses'] as $course) {
                             $is_coach_course = api_is_coach($session_id, $course['real_id']);
                             $allowed_time = 0;
-                            $dif_time_after = 0;
-
-                            if (!empty($date_session_start) &&
-                                $date_session_start != '0000-00-00 00:00:00'
-                            ) {
+                            $allowedEndTime = true;
+                            if (!empty($date_session_start) && $date_session_start != '0000-00-00 00:00:00') {
                                 if ($is_coach_course) {
                                     $allowed_time = api_strtotime($coachAccessStartDate);
                                 } else {
@@ -1131,22 +1126,15 @@ class IndexManager
                                 }
 
                                 if (!isset($_GET['history'])) {
-                                    if (!empty($date_session_end) &&
-                                        $date_session_end != '0000-00-00 00:00:00'
-                                    ) {
+                                    if (!empty($date_session_end) && $date_session_end != '0000-00-00 00:00:00') {
                                         $endSessionToTms = api_strtotime($date_session_end);
                                         if ($session_now > $endSessionToTms) {
-                                            $dif_time_after = $session_now - $endSessionToTms;
-                                            $dif_time_after = round($dif_time_after / 86400);
+                                            $allowedEndTime = false;
                                         }
                                     }
                                 }
                             }
-
-                            if (
-                                $session_now >= $allowed_time
-                                //($coachAccessEndDate > $dif_time_after - 1)
-                            ) {
+                            if ($session_now >= $allowed_time && $allowedEndTime) {
                                 // Read only and accessible.
                                 $atLeastOneCourseIsVisible = true;
 
@@ -1256,23 +1244,17 @@ class IndexManager
                                     $course['real_id']
                                 );
 
-                                $dif_time_after = 0;
-                                $allowed_time = 0;
+                                $allowedEndTime = true;
+
                                 if ($is_coach_course) {
-                                    // 24 hours = 86400
                                     if ($date_session_start != '0000-00-00 00:00:00') {
                                         $allowed_time = api_strtotime($coachAccessStartDate);
                                     }
                                     if (!isset($_GET['history'])) {
                                         if ($date_session_end != '0000-00-00 00:00:00') {
-                                            $endSessionToTms = api_strtotime(
-                                                $date_session_end
-                                            );
+                                            $endSessionToTms = api_strtotime($date_session_end);
                                             if ($session_now > $endSessionToTms) {
-                                                $dif_time_after = $session_now - $endSessionToTms;
-                                                $dif_time_after = round(
-                                                    $dif_time_after / 86400
-                                                );
+                                                $allowedEndTime = false;
                                             }
                                         }
                                     }
@@ -1282,10 +1264,7 @@ class IndexManager
                                     );
                                 }
 
-                                if (
-                                    $session_now >= $allowed_time //&&
-                                    //$coachAccessEndDate > $dif_time_after - 1
-                                ) {
+                                if ($session_now >= $allowed_time && $allowedEndTime) {
                                     if (api_get_setting('hide_courses_in_sessions') == 'false') {
                                         $c = CourseManager:: get_logged_user_course_html(
                                             $course,

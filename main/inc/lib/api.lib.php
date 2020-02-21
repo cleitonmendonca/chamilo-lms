@@ -250,6 +250,10 @@ define('LOG_EXERCISE_AND_USER_ID', 'exercise_and_user_id');
 define('LOG_LP_ID', 'lp_id');
 define('LOG_EXERCISE_ATTEMPT_QUESTION_ID', 'exercise_a_q_id');
 
+define('LOG_WORK_DIR_DELETE', 'work_dir_delete');
+define('LOG_WORK_FILE_DELETE', 'work_file_delete');
+define('LOG_WORK_DATA', 'work_data_array');
+
 define('LOG_MY_FOLDER_PATH', 'path');
 define('LOG_MY_FOLDER_NEW_PATH', 'new_path');
 
@@ -581,6 +585,72 @@ define('SHORTCUTS_VERTICAL', 1);
 
 // Image class
 define('IMAGE_PROCESSOR', 'gd'); // 'imagick' or 'gd' strings
+
+// Course copy
+define('FILE_SKIP', 1);
+define('FILE_RENAME', 2);
+define('FILE_OVERWRITE', 3);
+define('UTF8_CONVERT', false); //false by default
+
+define('DOCUMENT', 'file');
+define('FOLDER', 'folder');
+
+define('RESOURCE_ASSET', 'asset');
+define('RESOURCE_DOCUMENT', 'document');
+define('RESOURCE_GLOSSARY', 'glossary');
+define('RESOURCE_EVENT', 'calendar_event');
+define('RESOURCE_LINK', 'link');
+define('RESOURCE_COURSEDESCRIPTION', 'course_description');
+define('RESOURCE_LEARNPATH', 'learnpath');
+define('RESOURCE_ANNOUNCEMENT', 'announcement');
+define('RESOURCE_FORUM', 'forum');
+define('RESOURCE_FORUMTOPIC', 'thread');
+define('RESOURCE_FORUMPOST', 'post');
+define('RESOURCE_QUIZ', 'quiz');
+define('RESOURCE_TEST_CATEGORY', 'test_category');
+define('RESOURCE_QUIZQUESTION', 'Exercise_Question');
+define('RESOURCE_TOOL_INTRO', 'Tool introduction');
+define('RESOURCE_LINKCATEGORY', 'Link_Category');
+define('RESOURCE_FORUMCATEGORY', 'Forum_Category');
+define('RESOURCE_SCORM', 'Scorm');
+define('RESOURCE_SURVEY', 'survey');
+define('RESOURCE_SURVEYQUESTION', 'survey_question');
+define('RESOURCE_SURVEYINVITATION', 'survey_invitation');
+define('RESOURCE_WIKI', 'wiki');
+define('RESOURCE_THEMATIC', 'thematic');
+define('RESOURCE_ATTENDANCE', 'attendance');
+define('RESOURCE_WORK', 'work');
+define('RESOURCE_SESSION_COURSE', 'session_course');
+define('RESOURCE_GRADEBOOK', 'gradebook');
+define('ADD_THEMATIC_PLAN', 6);
+
+// Max online users to show per page (whoisonline)
+define('MAX_ONLINE_USERS', 12);
+
+// Number of characters maximum to show in preview of course blog posts
+define('BLOG_MAX_PREVIEW_CHARS', 800);
+// HTML string to replace with a 'Read more...' link
+define('BLOG_PAGE_BREAK', '<div style="page-break-after: always"><span style="display: none;">&nbsp;</span></div>');
+
+// Make sure the CHAMILO_LOAD_WYSIWYG constant is defined
+// To remove CKeditor libs from HTML, set this constant to true before loading
+if (!defined('CHAMILO_LOAD_WYSIWYG')) {
+    define('CHAMILO_LOAD_WYSIWYG', true);
+}
+
+/* Constants for course home */
+define('TOOL_PUBLIC', 'Public');
+define('TOOL_PUBLIC_BUT_HIDDEN', 'PublicButHide');
+define('TOOL_COURSE_ADMIN', 'courseAdmin');
+define('TOOL_PLATFORM_ADMIN', 'platformAdmin');
+define('TOOL_AUTHORING', 'toolauthoring');
+define('TOOL_INTERACTION', 'toolinteraction');
+define('TOOL_COURSE_PLUGIN', 'toolcourseplugin'); //all plugins that can be enabled in courses
+define('TOOL_ADMIN', 'tooladmin');
+define('TOOL_ADMIN_PLATFORM', 'tooladminplatform');
+define('TOOL_DRH', 'tool_drh');
+define('TOOL_STUDENT_VIEW', 'toolstudentview');
+define('TOOL_ADMIN_VISIBLE', 'tooladminvisible');
 
 /**
  * Inclusion of internationalization libraries
@@ -2666,7 +2736,21 @@ function api_get_user_status($user_id = null)
  * @return boolean True if the user has course creation rights,
  * false otherwise.
  */
-function api_is_allowed_to_create_course() {
+function api_is_allowed_to_create_course()
+{
+    if (api_is_platform_admin()) {
+        return true;
+    }
+
+    // Teachers can only create courses
+    if (api_is_teacher()) {
+        if (api_get_setting('allow_users_to_create_courses') === 'true') {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     return Session::read('is_allowedCreateCourse');
 }
 
@@ -3177,6 +3261,75 @@ function api_is_allowed_to_edit($tutor = false, $coach = false, $session_coach =
 }
 
 /**
+ * @param int $sessionId
+ * @return bool
+ */
+function api_is_coach_of_course_in_session($sessionId)
+{
+    if (api_is_platform_admin()) {
+        return true;
+    }
+
+    $userId = api_get_user_id();
+    $courseList = UserManager::get_courses_list_by_session(
+        $userId,
+        $sessionId
+    );
+
+    // Session visibility.
+    $visibility = api_get_session_visibility(
+        $sessionId,
+        null,
+        false
+    );
+
+    if ($visibility != SESSION_VISIBLE && !empty($courseList)) {
+        // Course Coach session visibility.
+        $blockedCourseCount = 0;
+        $closedVisibilityList = array(
+            COURSE_VISIBILITY_CLOSED,
+            COURSE_VISIBILITY_HIDDEN
+        );
+
+        foreach ($courseList as $course) {
+            // Checking session visibility
+            $sessionCourseVisibility = api_get_session_visibility(
+                $sessionId,
+                $course['real_id'],
+                $ignore_visibility_for_admins
+            );
+
+            $courseIsVisible = !in_array(
+                $course['visibility'],
+                $closedVisibilityList
+            );
+            if ($courseIsVisible === false || $sessionCourseVisibility == SESSION_INVISIBLE) {
+                $blockedCourseCount++;
+            }
+        }
+
+        // If all courses are blocked then no show in the list.
+        if ($blockedCourseCount === count($courseList)) {
+            $visibility = SESSION_INVISIBLE;
+        } else {
+            $visibility = SESSION_VISIBLE;
+        }
+    }
+
+    switch ($visibility) {
+        case SESSION_VISIBLE_READ_ONLY:
+        case SESSION_VISIBLE:
+        case SESSION_AVAILABLE:
+            return true;
+            break;
+        case SESSION_INVISIBLE:
+            return false;
+    }
+
+    return false;
+}
+
+/**
 * Checks if a student can edit contents in a session depending
 * on the session visibility
 * @param bool $tutor  Whether to check if the user has the tutor role
@@ -3198,11 +3351,6 @@ function api_is_allowed_to_session_edit($tutor = false, $coach = false)
 
             // Get the session visibility
             $session_visibility = api_get_session_visibility($session_id);
-            // if 5 the session is still available
-
-            //@todo We could load the session_rel_course_rel_user permission to increase the level of detail.
-            //echo api_get_user_id();
-            //echo api_get_course_id();
 
             switch ($session_visibility) {
                 case SESSION_VISIBLE_READ_ONLY: // 1
@@ -7808,6 +7956,12 @@ function api_format_time($time, $originFormat = 'php')
     $mins = ($time % 3600) / 60;
     $secs = ($time % 60);
 
+    if ($time < 0) {
+        $hours = 0;
+        $mins = 0;
+        $secs = 0;
+    }
+
     if ($originFormat == 'js') {
         $formattedTime = trim(sprintf("%02d : %02d : %02d", $hours, $mins, $secs));
     } else {
@@ -7927,7 +8081,7 @@ function api_mail_html(
         unset($extra_headers['reply_to']);
     }
     //If the SMTP configuration only accept one sender
-    if ($platform_email['SMTP_UNIQUE_SENDER']) {
+    if (isset($platform_email['SMTP_UNIQUE_SENDER']) && $platform_email['SMTP_UNIQUE_SENDER']) {
         $senderName = $platform_email['SMTP_FROM_NAME'];
         $senderEmail = $platform_email['SMTP_FROM_EMAIL'];
     }
@@ -7987,21 +8141,21 @@ function api_mail_html(
     // Attachment ...
     if (!empty($data_file)) {
         $o = 0;
-        foreach ($data_file as $file_attach) {  
+        foreach ($data_file as $file_attach) {
             if (!empty($file_attach['path']) && !empty($file_attach['filename'])) {
                 $mail->AddAttachment($file_attach['path'], $file_attach['filename']);
             }
             $o++;
         }
-    } elseif (is_array($_FILES)) {
-        $data_file = $_FILES;
-        $o = 0;
-        foreach ($data_file as $file_attach) {
-            if (!empty($file_attach['tmp_name']) && !empty($file_attach['name'])) {
-                $mail->AddAttachment($file_attach['tmp_name'], $file_attach['name']);
-            }
-            $o++;
-        }
+//    } elseif (is_array($_FILES)) {
+//        $data_file = $_FILES;
+//        $o = 0;
+//        foreach ($data_file as $file_attach) {
+//            if (!empty($file_attach['tmp_name']) && !empty($file_attach['name'])) {
+//                $mail->AddAttachment($file_attach['tmp_name'], $file_attach['name']);
+//            }
+//            $o++;
+//        }
     }
 
     // Only valid addresses are accepted.
@@ -8148,4 +8302,40 @@ function stripGivenTags($string, $tags) {
         }
     }
     return $string;
+}
+
+/**
+ * Converts string value to float value
+ *
+ * 3.141516 => 3.141516
+ * 3,141516 => 3.141516
+ * @todo WIP
+ *
+ * @param string $number
+ * @return float
+ */
+function api_float_val($number)
+{
+    $number = (float) str_replace(',', '.', trim($number));
+    return $number;
+}
+
+/**
+ * Converts float values
+ * Example if $decimals = 2
+ *
+ * 3.141516 => 3.14
+ * 3,141516 => 3,14
+ *
+ * @todo WIP
+ *
+ * @param string $number number in iso code
+ * @param int $decimals
+ * @return bool|string
+ */
+function api_number_format($number, $decimals = 0)
+{
+    $number = api_float_val($number);
+
+    return number_format($number, $decimals);
 }

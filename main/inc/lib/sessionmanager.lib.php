@@ -2906,7 +2906,7 @@ class SessionManager
         // Deleting assigned sessions to hrm_id.
         if ($removeOldConnections) {
             if (api_is_multiple_url_enabled()) {
-                $sql = "SELECT session_id
+                $sql = "SELECT s.session_id
                         FROM $tbl_session_rel_user s
                         INNER JOIN $tbl_session_rel_access_url a ON (a.session_id = s.session_id)
                         WHERE
@@ -3287,7 +3287,22 @@ class SessionManager
         $getCount = false,
         $keyword = null
     ) {
+        $platformCourses = null;
+
         if (empty($sessionId)) {
+            $platformCourses = CourseManager::getCoursesFollowedByUser(
+                $userId,
+                DRH,
+                null,
+                null,
+                null,
+                null,
+                $getCount,
+                null,
+                null,
+                true
+            );
+
             $sessionsSQL = SessionManager::get_sessions_followed_by_drh(
                 $userId,
                 null,
@@ -3327,7 +3342,7 @@ class SessionManager
         if ($getCount) {
             $result = Database::query($sql);
             $row = Database::fetch_array($result,'ASSOC');
-            return $row['count'];
+            return $row['count'] + (int) $platformCourses;
         }
 
         if (isset($from) && isset($limit)) {
@@ -3343,6 +3358,12 @@ class SessionManager
         if ($num_rows > 0) {
             while ($row = Database::fetch_array($result,'ASSOC'))	{
                 $courses[$row['id']] = $row;
+            }
+        }
+
+        if (!empty($platformCourses)) {
+              foreach ($platformCourses as $course) {
+                $courses[$course['real_id']] = $course;
             }
         }
 
@@ -4953,6 +4974,7 @@ class SessionManager
         $tbl_session = Database::get_main_table(TABLE_MAIN_SESSION);
         $tbl_course = Database::get_main_table(TABLE_MAIN_COURSE);
         $tbl_course_user = Database::get_main_table(TABLE_MAIN_COURSE_USER);
+        $tbl_user_rel_access_url = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
         $tbl_course_rel_access_url = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_COURSE);
         $tbl_session_rel_course_rel_user = Database::get_main_table(TABLE_MAIN_SESSION_COURSE_USER);
         $tbl_session_rel_access_url = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_SESSION);
@@ -4980,25 +5002,35 @@ class SessionManager
             $userConditions .= " AND active = $active";
         }
 
+        $courseList = CourseManager::get_courses_followed_by_drh($userId, DRH);
+        $courseConditions = ' AND 1 <> 1';
+        if (!empty($courseList)) {
+            $courseIdList = array_column($courseList, 'id');
+            $courseConditions = ' AND c.id IN ("'.implode('","', $courseIdList).'")';
+        }
+
+        $userConditionsFromDrh = '';
+
+        // Classic DRH
+        if (empty($studentIdList)) {
+            $studentListSql = UserManager::get_users_followed_by_drh(
+                $userId,
+                $filterByStatus,
+                true,
+                false
+            );
+            $studentIdList = array_keys($studentListSql);
+            $studentListSql = "'".implode("','", $studentIdList)."'";
+        } else {
+            $studentIdList = array_map('intval', $studentIdList);
+            $studentListSql = "'".implode("','", $studentIdList)."'";
+        }
+        if (!empty($studentListSql)) {
+            $userConditionsFromDrh = " AND u.user_id IN (".$studentListSql.") ";
+        }
+
         switch ($status) {
             case 'drh':
-                // Classic DRH
-                if (empty($studentIdList)) {
-                    $studentListSql = UserManager::get_users_followed_by_drh(
-                        $userId,
-                        $filterByStatus,
-                        true,
-                        false
-                    );
-                    $studentIdList = array_keys($studentListSql);
-                    $studentListSql = "'".implode("','", $studentIdList)."'";
-                } else {
-                    $studentIdList = array_map('intval', $studentIdList);
-                    $studentListSql = "'".implode("','", $studentIdList)."'";
-                }
-                if (!empty($studentListSql)) {
-                    $userConditions = " AND u.user_id IN (".$studentListSql.") ";
-                }
                 break;
             case 'drh_all':
                 // Show all by DRH
@@ -5019,13 +5051,15 @@ class SessionManager
                     $sessionConditions = " AND s.id IN (".$sessionsListSql.") ";
                 }
                 break;
-            case 'session_admin';
+            case 'session_admin':
                 $sessionConditions = " AND s.id_coach = $userId ";
+                $userConditionsFromDrh = '';
                 break;
             case 'admin':
                 break;
             case 'teacher':
                 $sessionConditions = " AND s.id_coach = $userId ";
+                $userConditionsFromDrh = '';
                 break;
         }
 
@@ -5062,6 +5096,18 @@ class SessionManager
                    $userConditions
         ";
 
+        $userUnion = '';
+        if (!empty($userConditionsFromDrh)) {
+            $userUnion = "
+            UNION (
+                $select                    
+                FROM $tbl_user u
+                INNER JOIN $tbl_user_rel_access_url url ON (url.user_id = u.id)
+                $where
+                $userConditionsFromDrh
+            )";
+        }
+
         $sql = "$masterSelect (
                 ($select
                 FROM $tbl_session s
@@ -5070,8 +5116,7 @@ class SessionManager
                     INNER JOIN $tbl_session_rel_access_url url ON (url.session_id = s.id)
                     $where
                     $sessionConditions
-                )
-                UNION (
+                ) UNION (
                     $select
                     FROM $tbl_course c
                     INNER JOIN $tbl_course_user cu ON (cu.c_id = c.id)
@@ -5079,7 +5124,7 @@ class SessionManager
                     INNER JOIN $tbl_course_rel_access_url url ON (url.c_id = c.id)
                     $where
                     $courseConditions
-                )
+                ) $userUnion
                 ) as t1
                 ";
 

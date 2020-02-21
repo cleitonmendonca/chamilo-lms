@@ -9,6 +9,12 @@ require_once __DIR__.'/config.php';
 
 $plugin = BBBPlugin::create();
 $tool_name = $plugin->get_lang('Videoconference');
+
+$htmlHeadXtra[] = api_get_js_simple(
+    api_get_path(WEB_PLUGIN_PATH) . 'bbb/resources/utils.js'
+);
+$htmlHeadXtra[] = "<script>var _p = {web_plugin: '" . api_get_path(WEB_PLUGIN_PATH). "'}</script>";
+
 $tpl = new Template($tool_name);
 
 $isGlobal = isset($_GET['global']) ? true : false;
@@ -107,7 +113,11 @@ if ($conferenceManager) {
 }
     
 
-$meetings = $bbb->getMeetings();
+$meetings = $bbb->getMeetings(
+    api_get_course_int_id(),
+    api_get_session_id(),
+    api_get_group_id()
+);
 if (!empty($meetings)) {
     $meetings = array_reverse($meetings);
 }
@@ -130,4 +140,19 @@ $tpl->assign('show_join_button', $showJoinButton);
 $tpl->assign('message', $message);
 $listing_tpl = 'bbb/listing.tpl';
 $content = $tpl->fetch($listing_tpl);
-$tpl->assign('content', $content);$tpl->display_one_col_template();
+
+if (api_is_platform_admin()) {
+    $actionLinks = [
+        Display::toolbarButton(
+            $plugin->get_lang('AdminView'),
+            api_get_path(WEB_PLUGIN_PATH) . 'bbb/admin.php',
+            'list',
+            'primary'
+        )
+    ];
+
+    $tpl->assign('actions', implode(PHP_EOL, $actionLinks));
+}
+
+$tpl->assign('content', $content);
+$tpl->display_one_col_template();

@@ -3,6 +3,8 @@
 
 use Chamilo\CourseBundle\Entity\CLpCategory;
 use ChamiloSession as Session;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Class learnpath
@@ -2789,7 +2791,7 @@ class learnpath
                 }
             }
             $subchildren = $item_temp->childNodes;
-            if ($subchildren->length > 0) {
+            if ($subchildren && $subchildren->length > 0) {
                 $val = $this->get_scorm_xml_node($subchildren, $id);
                 if (is_object($val)) {
 
@@ -8672,7 +8674,7 @@ class learnpath
         $row = Database :: fetch_array($result);
         $prerequisiteId = $row['prerequisite'];
         $session_id = api_get_session_id();
-        $session_condition = api_get_session_condition($session_id);
+        $session_condition = api_get_session_condition($session_id, true, true);
         $sql = "SELECT * FROM $tbl_lp
                 WHERE c_id = $course_id $session_condition
                 ORDER BY display_order ";
@@ -8725,14 +8727,14 @@ class learnpath
     public function get_exercises()
     {
         $course_id = api_get_course_int_id();
+        $session_id = api_get_session_id();
+        $userInfo = api_get_user_info();
 
         // New for hotpotatoes.
         $uploadPath = DIR_HOTPOTATOES; //defined in main_api
         $tbl_doc = Database :: get_course_table(TABLE_DOCUMENT);
         $tbl_quiz = Database :: get_course_table(TABLE_QUIZ_TEST);
-
-        $session_id = api_get_session_id();
-        $condition_session = api_get_session_condition($session_id);
+        $condition_session = api_get_session_condition($session_id, true, true);
 
         $setting = api_get_configuration_value('show_invisible_exercise_in_lp_list');
 
@@ -8779,8 +8781,9 @@ class learnpath
             $return .= Display::return_icon('move_everywhere.png', get_lang('Move'), array(), ICON_SIZE_TINY);
             $return .= '</a> ';
             $return .= Display::return_icon('quizz_small.gif', '', array(), ICON_SIZE_TINY);
+            $sessionStar = api_get_session_image($row_quiz['session_id'], $userInfo['status']);
             $return .= '<a href="' . api_get_self() . '?'.api_get_cidreq().'&action=add_item&type=' . TOOL_QUIZ . '&file=' . $row_quiz['id'] . '&lp_id=' . $this->lp_id . '">' .
-                Security :: remove_XSS(cut($row_quiz['title'], 80)).
+                Security :: remove_XSS(cut($row_quiz['title'], 80)).$sessionStar.
                 '</a>';
             $return .= '</li>';
         }
@@ -8799,21 +8802,29 @@ class learnpath
         $selfUrl = api_get_self();
         $courseIdReq = api_get_cidreq();
         $course = api_get_course_info();
+        $userInfo = api_get_user_info();
+        
         $course_id = $course['real_id'];
         $tbl_link = Database::get_course_table(TABLE_LINK);
         $linkCategoryTable = Database::get_course_table(TABLE_LINK_CATEGORY);
         $moveEverywhereIcon = Display::return_icon('move_everywhere.png', get_lang('Move'), array(), ICON_SIZE_TINY);
 
         $session_id = api_get_session_id();
-        $condition_session = api_get_session_condition($session_id, true, null, "link.session_id");
+        $condition_session = api_get_session_condition(
+            $session_id,
+            true,
+            true,
+            "link.session_id"
+        );
 
         $sql = "SELECT link.id as link_id,
                     link.title as link_title,
+                    link.session_id as link_session_id,
                     link.category_id as category_id,
                     link_category.category_title as category_title
                 FROM $tbl_link as link
                 LEFT JOIN $linkCategoryTable as link_category
-                ON link.category_id = link_category.id
+                ON (link.category_id = link_category.id AND link.c_id = link_category.c_id)
                 WHERE link.c_id = ".$course_id." $condition_session
                 ORDER BY link_category.category_title ASC, link.title ASC";
         $links = Database::query($sql);
@@ -8826,7 +8837,7 @@ class learnpath
                 $link['category_title'] = get_lang('Uncategorized');
             }
             $categories[$link['category_id']] = $link['category_title'];
-            $categorizedLinks[$link['category_id']][$link['link_id']] = $link['link_title'];
+            $categorizedLinks[$link['category_id']][$link['link_id']] = $link;
         }
 
         $linksHtmlCode =
@@ -8852,8 +8863,11 @@ class learnpath
 
         foreach ($categorizedLinks as $categoryId => $links) {
             $linkNodes = null;
-            foreach ($links as $key => $title) {
+            foreach ($links as $key => $linkInfo) {
+                $title = $linkInfo['link_title'];
+                $linkSessionId = $linkInfo['link_session_id'];
                 if (api_get_item_visibility($course, TOOL_LINK, $key, $session_id) != 2)  {
+                    $sessionStar = api_get_session_image($linkSessionId, $userInfo['status']);
                     $linkNodes .=
                         '<li class="lp_resource_element" data_id="'.$key.'" data_type="'.TOOL_LINK.'" title="'.$title.'" >
                         <a class="moved" href="#">'.
@@ -8862,7 +8876,7 @@ class learnpath
                         '.Display::return_icon('lp_link.png').'
                         <a href="'.$selfUrl.'?'.$courseIdReq.'&action=add_item&type='.
                         TOOL_LINK.'&file='.$key.'&lp_id='.$this->lp_id.'">'.
-                        Security::remove_XSS($title).
+                        Security::remove_XSS($title).$sessionStar.
                         '</a>
                     </li>';
                 }
@@ -8906,7 +8920,36 @@ class learnpath
         require_once '../forum/forumfunction.inc.php';
         require_once '../forum/forumconfig.inc.php';
 
-        $a_forums = get_forums();
+        $forumCategories = get_forum_categories();
+        $forumsInNoCategory = get_forums_in_category(0);
+        if (!empty($forumsInNoCategory)) {
+            $forumCategories = array_merge(
+                $forumCategories,
+                array(
+                    array(
+                        'cat_id' => 0,
+                        'session_id' => 0,
+                        'visibility' => 1,
+                        'cat_comment' => null,
+                    ),
+                )
+            );
+        }
+
+        $forumList = get_forums();
+        $a_forums = [];
+        foreach ($forumCategories as $forumCategory) {
+            // The forums in this category.
+            $forumsInCategory = get_forums_in_category($forumCategory['cat_id']);
+            if (!empty($forumsInCategory)) {
+                foreach ($forumList as $forum) {
+                    if (isset($forum['forum_category']) && $forum['forum_category'] == $forumCategory['cat_id']) {
+                        $a_forums[] = $forum;
+                    }
+                }
+            }
+        }
+
         $return = '<ul class="lp_resource">';
 
         //First add link
@@ -9083,7 +9126,7 @@ class learnpath
         // Removes the learning_path/scorm_folder path when exporting see #4841
         $path_to_remove = null;
         $result = $this->generate_lp_folder($_course);
-
+        $path_to_replace = '';
         if (isset($result['dir']) && strpos($result['dir'], 'learning_path')) {
             $path_to_remove = 'document'.$result['dir'];
             $path_to_replace = $folder_name.'/';
@@ -9135,7 +9178,7 @@ class learnpath
                 // Attach this item to the organization element or hits parent if there is one.
                 if (!empty($item->parent) && $item->parent != 0) {
                     $children = $organization->childNodes;
-                    $possible_parent = &$this->get_scorm_xml_node($children, 'ITEM_'.$item->parent);
+                    $possible_parent = $this->get_scorm_xml_node($children, 'ITEM_'.$item->parent);
                     if (is_object($possible_parent)) {
                         $possible_parent->appendChild($my_item);
                     } else {
@@ -9265,10 +9308,32 @@ class learnpath
                                     $orig_file_path = dirname($cur_path.$my_file_path).'/';
                                     $orig_file_path = str_replace('\\', '/', $orig_file_path);
                                     $relative_path = '';
+                                    // Image/src file is inside a course
+                                    $fixDirRelative = '';
+                                    // image file is inside a course
                                     if (strstr($file_path, $cur_path) !== false) {
-                                        //$relative_path = substr($file_path, strlen($orig_file_path));
+                                        // html file that wraps the image is inside a course
+                                        if (strstr($orig_file_path, $cur_path) !== false) {
+                                            // Get count of directories from document until the last slash
+                                            // if $orig_file_path =
+                                            // /var/www/html/chamilo/app/courses/CLEAN123/document/learning_path/Le_parcours/
+                                            // $distance should be 2 (learning_path and Le_parcours)
+
+                                            $origFilePathFixed = str_replace($path_to_remove, $path_to_replace, $orig_file_path);
+                                            $distance = array_filter(explode('/', str_replace($cur_path.'document/', '', $origFilePathFixed)));
+
+                                            if ($distance) {
+                                                foreach ($distance as $relative) {
+                                                    $fixDirRelative .=  '../';
+                                                }
+                                            }
+                                        }
                                         $relative_path = str_replace($cur_path, '', $file_path);
                                         $file_path = substr($file_path, strlen($cur_path));
+
+                                        if (!empty($fixDirRelative)) {
+                                            $relative_path = $fixDirRelative.$relative_path;
+                                        }
                                     } else {
                                         // This case is still a problem as it's difficult to calculate a relative path easily
                                         // might still generate wrong links.
@@ -9679,6 +9744,8 @@ class learnpath
         $root->appendChild($resources);
         $xmldoc->appendChild($root);
 
+        $copyAll = api_get_configuration_value('add_all_files_in_lp_export');
+
         // TODO: Add a readme file here, with a short description and a link to the Reload player
         // then add the file to the zip, then destroy the file (this is done automatically).
         // http://www.reload.ac.uk/scormplayer.html - once done, don't forget to close FS#138
@@ -9688,12 +9755,16 @@ class learnpath
                 continue;
             }
 
+
+            $filePath = $sys_course_path.$_course['path'].'/'.$file_path;
             $dest_file = $archive_path.$temp_dir_short.'/'.$file_path;
+
             if (!empty($path_to_remove) && !empty($path_to_replace)) {
                 $dest_file = str_replace($path_to_remove, $path_to_replace, $dest_file);
             }
             $this->create_path($dest_file);
-            @copy($sys_course_path.$_course['path'].'/'.$file_path, $dest_file);
+            @copy($filePath, $dest_file);
+
             // Check if the file needs a link update.
             if (in_array($file_path, array_keys($link_updates))) {
                 $string = file_get_contents($dest_file);
@@ -9717,14 +9788,39 @@ class learnpath
                     }
                     $string = str_replace($old_new['orig'], $newDestination, $string);
 
-                    //Add files inside the HTMLs
-                    $new_path = str_replace('/courses/', '', $old_new['orig']);
+                    // Add files inside the HTMLs
+                    $new_path = str_replace(api_get_path(REL_COURSE_PATH), '', $old_new['orig']);
                     $destinationFile = $archive_path.$temp_dir_short.'/'.$old_new['dest'];
                     if (file_exists($sys_course_path.$new_path)) {
                         copy($sys_course_path.$new_path, $destinationFile);
                     }
                 }
                 file_put_contents($dest_file, $string);
+            }
+
+            if (file_exists($filePath) && $copyAll) {
+                $extension = $this->get_extension($filePath);
+                if (in_array($extension, ['html', 'html'])) {
+                    $containerOrigin = dirname($filePath);
+                    $containerDestination = dirname($dest_file);
+
+                    $finder = new Finder();
+                    $finder->files()->in($containerOrigin)
+                        ->notName('*_DELETED_*')
+                        ->exclude('share_folder')
+                        ->exclude('chat_files')
+                        ->exclude('certificates')
+                    ;
+
+                    if (is_dir($containerOrigin) && is_dir($containerDestination)) {
+                        $fs = new Filesystem();
+                        $fs->mirror(
+                            $containerOrigin,
+                            $containerDestination,
+                            $finder
+                        );
+                    }
+                }
             }
         }
 

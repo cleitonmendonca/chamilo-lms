@@ -1,6 +1,9 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CourseBundle\Entity\CSurveyInvitation,
+    Doctrine\Common\Collections\Criteria;
+
 /**
  * Class SurveyManager
  * @package chamilo.survey
@@ -1683,6 +1686,75 @@ class SurveyManager
         $code = self::generate_survey_hash($survey_id, $course_id, $session_id, $group_id);
         return api_get_path(WEB_CODE_PATH).'survey/link.php?h='.$code.'&i='.$survey_id.'&c='.intval($course_id).'&s='.intval($session_id).'&g='.$group_id;
     }
+
+    /**
+     * Check if the current user has mandatory surveys no-answered
+     * and redirect to fill the first found survey
+     */
+    public static function protectByMandatory()
+    {
+        if (strpos($_SERVER['SCRIPT_NAME'], 'fillsurvey.php') !== false) {
+            return;
+        }
+
+        $userId = api_get_user_id();
+        $courseId = api_get_course_int_id();
+        $sessionId = api_get_session_id();
+
+        if (!$userId) {
+            return;
+        }
+
+        if (!$courseId) {
+            return;
+        }
+
+        try {
+            /** @var CSurveyInvitation $invitation */
+            $invitation = Database::getManager()
+                ->createQuery("
+                    SELECT i FROM ChamiloCourseBundle:CSurveyInvitation i
+                    INNER JOIN ChamiloCourseBundle:CSurvey s WITH s.code = i.surveyCode
+                    INNER JOIN ChamiloCoreBundle:ExtraFieldValues efv WITH efv.itemId = s.iid
+                    INNER JOIN ChamiloCoreBundle:ExtraField ef WITH efv.field = ef.id
+                    WHERE i.answered = 0
+                        AND i.cId = :course
+                        AND i.user = :user
+                        AND i.sessionId = :session
+                        AND :now BETWEEN s.availFrom AND s.availTill
+                        AND ef.variable = :variable
+                        AND efv.value = 1
+                    ORDER BY s.availTill ASC
+                ")
+                ->setMaxResults(1)
+                ->setParameters([
+                    'course' => $courseId,
+                    'user' => $userId,
+                    'session' => $sessionId,
+                    'now' => new DateTime('UTC', new DateTimeZone('UTC')),
+                    'variable' => 'is_mandatory'
+                ])
+                ->getSingleResult();
+        } catch (Exception $e) {
+            $invitation = null;
+        }
+
+        if (!$invitation) {
+            return;
+        }
+
+        $urlParams = http_build_query([
+            'course' => api_get_course_id(),
+            'invitationcode' => $invitation->getInvitationCode()
+        ]);
+
+        Display::addFlash(
+            Display::return_message(get_lang('MandatorySurveyNoAnswered'), 'warning')
+        );
+
+        header('Location: '.api_get_path(WEB_CODE_PATH).'survey/fillsurvey.php?'.$urlParams.'&'.api_get_cidreq());
+        exit;
+    }
 }
 
 
@@ -1919,16 +1991,18 @@ class SurveyUtil
      */
     function delete_user_report($survey_id, $user_id)
     {
-        $table_survey_answer 		= Database :: get_course_table(TABLE_SURVEY_ANSWER);
-        $table_survey_invitation 	= Database :: get_course_table(TABLE_SURVEY_INVITATION);
-        $table_survey 				= Database :: get_course_table(TABLE_SURVEY);
+        $table_survey_answer = Database:: get_course_table(TABLE_SURVEY_ANSWER);
+        $table_survey_invitation = Database:: get_course_table(TABLE_SURVEY_INVITATION);
+        $table_survey = Database:: get_course_table(TABLE_SURVEY);
 
         $course_id = api_get_course_int_id();
+        $survey_id = (int) $survey_id;
 
         if (!empty($survey_id) && !empty($user_id)) {
+            $user_id = Database::escape_string($user_id);
             // delete data from survey_answer by user_id and survey_id
             $sql = "DELETE FROM $table_survey_answer
-			        WHERE c_id = $course_id AND survey_id = '".(int)$survey_id."' AND user = '".(int)$user_id."'";
+			        WHERE c_id = $course_id AND survey_id = '".$survey_id."' AND user = '".$user_id."'";
             Database::query($sql);
             // update field answered from survey_invitation by user_id and survey_id
             $sql = "UPDATE $table_survey_invitation SET answered = '0'
@@ -1940,7 +2014,7 @@ class SurveyUtil
                                 c_id = $course_id AND
                                 survey_id = '".(int)$survey_id."'
                         ) AND
-			            user = '".(int)$user_id."'";
+			            user = '".$user_id."'";
             $result = Database::query($sql);
         }
 
@@ -2165,8 +2239,6 @@ class SurveyUtil
             $limitStatement = null;
             if (!$singlePage) {
                 echo '<div id="question_report_questionnumbers" class="pagination">';
-                /* echo '<ul><li class="disabled"><a href="#">'.get_lang('Question').'</a></li>'; */
-
                 if ($currentQuestion != 0) {
                     echo '<li><a href="' . api_get_path(WEB_CODE_PATH) . 'survey/reporting.php?action=' . $action . '&' . api_get_cidreq() . '&survey_id=' . $surveyId . '&question=' . ($offset - 1) . '">' . get_lang('PreviousQuestion') . '</a></li>';
                 }
@@ -2177,9 +2249,6 @@ class SurveyUtil
                     } else {
                         echo '<li class="disabled"s><a href="#">' . $i . '</a></li>';
                     }
-                    /*if ($i < $survey_data['number_of_questions']) {
-                        echo ' | ';
-                    }*/
                 }
                 if ($currentQuestion < ($survey_data['number_of_questions'] - 1)) {
                     echo '<li><a href="' . api_get_path(WEB_CODE_PATH) . 'survey/reporting.php?action=' . $action . '&' . api_get_cidreq() . '&survey_id=' . $surveyId . '&question=' . ($offset + 1) . '">' . get_lang('NextQuestion') . '</li></a>';
@@ -2198,25 +2267,10 @@ class SurveyUtil
                     ORDER BY sort ASC
                     $limitStatement";
             $result = Database::query($sql);
-            //$question = Database::fetch_array($result);
 
             while ($row = Database::fetch_array($result)) {
                 $questions[$row['question_id']] = $row;
             }
-
-            // Navigate through the questions (next and previous)
-            /*if ($currentQuestion != 0 ) {
-                echo '<a href="'.api_get_path(WEB_CODE_PATH).'survey/reporting.php?action='.Security::remove_XSS($_GET['action']).'&'.api_get_cidreq().'&survey_id='.Security::remove_XSS($_GET['survey_id']).'&question='.Security::remove_XSS($offset-1).'">'.
-                    Display::return_icon('action_prev.png', get_lang('PreviousQuestion'), array('align' => 'middle')).' '.get_lang('PreviousQuestion').'</a>  ';
-            } else {
-                echo Display::return_icon('action_prev.png', get_lang('PreviousQuestion'), array('align' => 'middle')).' '.get_lang('PreviousQuestion').' ';
-            }
-            echo ' | ';
-            if ($currentQuestion < ($survey_data['number_of_questions'] - 1)) {
-                echo '<a href="'.api_get_path(WEB_CODE_PATH).'survey/reporting.php?action='.Security::remove_XSS($_GET['action']).'&'.api_get_cidreq().'&survey_id='.Security::remove_XSS($_GET['survey_id']).'&question='.Security::remove_XSS($offset+1).'">'.get_lang('NextQuestion').' '.Display::return_icon('action_next.png', get_lang('NextQuestion'), array('align' => 'middle')).'</a>';
-            } else {
-                echo get_lang('NextQuestion').' '.Display::return_icon('action_next.png', get_lang('NextQuestion'), array('align' => 'middle'));
-            }*/
         }
 
         foreach ($questions as $question) {
@@ -2252,6 +2306,7 @@ class SurveyUtil
                 while ($row = Database::fetch_array($result)) {
                     $options[$row['question_option_id']] = $row;
                 }
+
                 // Getting the answers
                 $sql = "SELECT *, count(answer_id) as total FROM $table_survey_answer
                         WHERE
@@ -2651,7 +2706,7 @@ class SurveyUtil
                 WHERE
                     c_id = $course_id AND
                     survey_id='".intval($_GET['survey_id'])."'
-                ORDER BY user ASC";
+                ORDER BY answer_id, user ASC";
         $result = Database::query($sql);
         $i = 1;
         while ($row = Database::fetch_array($result)) {
@@ -3014,20 +3069,18 @@ class SurveyUtil
         $spreadsheet = new PHPExcel();
         $spreadsheet->setActiveSheetIndex(0);
         $worksheet = $spreadsheet->getActiveSheet();
-        $line = 0;
+        $line = 1;
         $column = 1; // Skip the first column (row titles)
 
         // Show extra fields blank space (enough for extra fields on next line)
-        //if (!empty($_REQUEST['fields_filter'])) {
         // Show user fields section with a big th colspan that spans over all fields
         $extra_user_fields = UserManager::get_extra_fields(0, 0, 5, 'ASC', false, true);
         $num = count($extra_user_fields);
         for ($i = 0; $i < $num; $i++) {
-            $worksheet->SetCellValueByColumnAndRow($line, $column, '');
+            $worksheet->setCellValueByColumnAndRow($column, $line, '');
             $column++;
         }
         $display_extra_user_fields = true;
-        //}
 
         // Database table definitions
         $table_survey_question = Database :: get_course_table(TABLE_SURVEY_QUESTION);
@@ -3055,15 +3108,15 @@ class SurveyUtil
             // We show the questions if
             // 1. there is no question filter and the export button has not been clicked
             // 2. there is a quesiton filter but the question is selected for display
-            if (!($_POST['submit_question_filter']) || (is_array($_POST['questions_filter']) &&
+            if (!(isset($_POST['submit_question_filter'])) || (is_array($_POST['questions_filter']) &&
                 in_array($row['question_id'], $_POST['questions_filter']))
             ) {
                 // We do not show comment and pagebreak question types
                 if ($row['type'] != 'comment' && $row['type'] != 'pagebreak') {
                     if ($row['number_of_options'] == 0 && $row['type'] == 'open') {
-                        $worksheet->SetCellValueByColumnAndRow(
-                            $line,
+                        $worksheet->setCellValueByColumnAndRow(
                             $column,
+                            $line,
                             api_html_entity_decode(
                                 strip_tags($row['survey_question']),
                                 ENT_QUOTES
@@ -3072,9 +3125,9 @@ class SurveyUtil
                         $column ++;
                     } else {
                         for ($ii = 0; $ii < $row['number_of_options']; $ii ++) {
-                            $worksheet->SetCellValueByColumnAndRow(
-                                $line,
+                            $worksheet->setCellValueByColumnAndRow(
                                 $column,
+                                $line,
                                 api_html_entity_decode(
                                     strip_tags($row['survey_question']),
                                     ENT_QUOTES
@@ -3093,9 +3146,9 @@ class SurveyUtil
         if ($display_extra_user_fields) {
             // Show the fields names for user fields
             foreach ($extra_user_fields as & $field) {
-                $worksheet->SetCellValueByColumnAndRow(
-                    $line,
+                $worksheet->setCellValueByColumnAndRow(
                     $column,
+                    $line,
                     api_html_entity_decode(strip_tags($field[3]), ENT_QUOTES)
                 );
                 $column++;
@@ -3119,14 +3172,14 @@ class SurveyUtil
             // We show the options if
             // 1. there is no question filter and the export button has not been clicked
             // 2. there is a quesiton filter but the question is selected for display
-            if (!($_POST['submit_question_filter']) ||
+            if (!(isset($_POST['submit_question_filter'])) ||
                 (is_array($_POST['questions_filter']) && in_array($row['question_id'], $_POST['questions_filter']))
             ) {
                 // We do not show comment and pagebreak question types
                 if ($row['type'] != 'comment' && $row['type'] != 'pagebreak') {
-                    $worksheet->SetCellValueByColumnAndRow(
-                        $line,
+                    $worksheet->setCellValueByColumnAndRow(
                         $column,
+                        $line,
                         api_html_entity_decode(
                             strip_tags($row['option_text']),
                             ENT_QUOTES
@@ -3163,7 +3216,7 @@ class SurveyUtil
                     true
                 );
                 foreach ($return as $elem) {
-                    $worksheet->SetCellValueByColumnAndRow($line, $column, $elem);
+                    $worksheet->setCellValueByColumnAndRow($column, $line, $elem);
                     $column++;
                 }
                 $answers_of_user = array();
@@ -3189,7 +3242,7 @@ class SurveyUtil
 
         // this is to display the last user
         foreach ($return as $elem) {
-            $worksheet->SetCellValueByColumnAndRow($line, $column, $elem);
+            $worksheet->setCellValueByColumnAndRow($column, $line, $elem);
             $column++;
         }
 
@@ -3249,9 +3302,9 @@ class SurveyUtil
             foreach ($possible_options as $question_id => & $possible_option) {
                 if (is_array($possible_option) && count($possible_option) > 0) {
                     foreach ($possible_option as $option_id => & $value) {
-                        $my_answers_of_user = ($answers_of_user[$question_id]==null) ? array() : $answers_of_user[$question_id];
+                        $my_answers_of_user = isset($answers_of_user[$question_id]) ? $answers_of_user[$question_id] : [];
                         $key = array_keys($my_answers_of_user);
-                        if (substr($key[0], 0, 4) == 'open') {
+                        if (isset($key[0]) && substr($key[0], 0, 4) == 'open') {
                             $return[] = api_html_entity_decode(strip_tags($answers_of_user[$question_id][$key[0]]['option_id']), ENT_QUOTES);
                         } elseif (!empty($answers_of_user[$question_id][$option_id])) {
                             //$return .= 'v';
@@ -4142,9 +4195,18 @@ class SurveyUtil
         $table->set_header(6, get_lang('AvailableUntil'));
         $table->set_header(7, get_lang('Invite'));
         $table->set_header(8, get_lang('Anonymous'));
-        $table->set_header(9, get_lang('Modify'), false, 'width="150"');
+
+        if (api_get_configuration_value('allow_mandatory_survey')) {
+            $table->set_header(9, get_lang('IsMandatory'));
+            $table->set_header(10, get_lang('Modify'), false, 'width="150"');
+            $table->set_column_filter(9, 'anonymous_filter');
+            $table->set_column_filter(10, 'modify_filter_drh');
+        } else {
+            $table->set_header(9, get_lang('Modify'), false, 'width="150"');
+            $table->set_column_filter(9, 'modify_filter_drh');
+        }
+
         $table->set_column_filter(8, 'anonymous_filter');
-        $table->set_column_filter(9, 'modify_filter_drh');
         $table->display();
     }
 
@@ -4180,9 +4242,18 @@ class SurveyUtil
         $table->set_header(6, get_lang('AvailableUntil'));
         $table->set_header(7, get_lang('Invite'));
         $table->set_header(8, get_lang('Anonymous'));
-        $table->set_header(9, get_lang('Modify'), false, 'width="150"');
+
+        if (api_get_configuration_value('allow_mandatory_survey')) {
+            $table->set_header(9, get_lang('IsMandatory'));
+            $table->set_header(10, get_lang('Modify'), false, 'width="150"');
+            $table->set_column_filter(9, 'anonymous_filter');
+            $table->set_column_filter(10, 'modify_filter');
+        } else {
+            $table->set_header(9, get_lang('Modify'), false, 'width="150"');
+            $table->set_column_filter(9, 'modify_filter');
+        }
+
         $table->set_column_filter(8, 'anonymous_filter');
-        $table->set_column_filter(9, 'modify_filter');
         $table->set_form_actions(array('delete' => get_lang('DeleteSurvey')));
         $table->display();
     }
@@ -4211,9 +4282,18 @@ class SurveyUtil
         $table->set_header(6, get_lang('AvailableUntil'));
         $table->set_header(7, get_lang('Invite'));
         $table->set_header(8, get_lang('Anonymous'));
-        $table->set_header(9, get_lang('Modify'), false, 'width="130"');
+
+        if (api_get_configuration_value('allow_mandatory_survey')) {
+            $table->set_header(9, get_lang('Modify'), false, 'width="130"');
+            $table->set_header(10, get_lang('Modify'), false, 'width="130"');
+            $table->set_column_filter(9, 'anonymous_filter');
+            $table->set_column_filter(10, 'modify_filter_for_coach');
+        } else {
+            $table->set_header(9, get_lang('Modify'), false, 'width="130"');
+            $table->set_column_filter(9, 'modify_filter_for_coach');
+        }
+
         $table->set_column_filter(8, 'anonymous_filter');
-        $table->set_column_filter(9, 'modify_filter_for_coach');
         $table->display();
     }
 
@@ -4380,6 +4460,7 @@ class SurveyUtil
         $table_survey = Database :: get_course_table(TABLE_SURVEY);
         $table_user = Database :: get_main_table(TABLE_MAIN_USER);
         $table_survey_question = Database :: get_course_table(TABLE_SURVEY_QUESTION);
+        $mandatoryAllowed = api_get_configuration_value('allow_mandatory_survey');
         $_user = api_get_user_info();
 
         // Searching
@@ -4428,6 +4509,8 @@ class SurveyUtil
         $res = Database::query($sql);
         $surveys = array();
         $array = array();
+        $efv = new ExtraFieldValue('survey');
+
         while ($survey = Database::fetch_array($res)) {
             $array[0] = $survey[0];
             $array[1] = Display::url(
@@ -4453,7 +4536,15 @@ class SurveyUtil
                 );
 
             $array[8] = $survey[8];
-            $array[9] = $survey[9];
+
+            if ($mandatoryAllowed) {
+                $efvMandatory = $efv->get_values_by_handler_and_field_variable($survey[9], 'is_mandatory');
+
+                $array[9] = $efvMandatory ? $efvMandatory['value'] : 0;
+                $array[10] = $survey[9];
+            } else {
+                $array[9] = $survey[9];
+            }
 
             if ($isDrh) {
                 $array[1] = $survey[1];
@@ -4467,6 +4558,7 @@ class SurveyUtil
 
     static function get_survey_data_for_coach($from, $number_of_items, $column, $direction)
     {
+        $mandatoryAllowed = api_get_configuration_value('allow_mandatory_survey');
         $survey_tree = new SurveyTree();
         $last_version_surveys = $survey_tree->get_last_children_from_branch($survey_tree->surveylist);
         $list = array();
@@ -4491,6 +4583,7 @@ class SurveyUtil
         $table_user 			= Database :: get_main_table(TABLE_MAIN_USER);
 
         $course_id = api_get_course_int_id();
+        $efv = new ExtraFieldValue('survey');
 
         //IF(is_shared<>0,'V','-')	 					AS col6,
         $sql = "SELECT ".
@@ -4516,6 +4609,11 @@ class SurveyUtil
         $res = Database::query($sql);
         $surveys = array();
         while ($survey = Database::fetch_array($res)) {
+            if ($mandatoryAllowed) {
+                $survey['col10'] = $survey['col9'];
+                $efvMandatory = $efv->get_values_by_handler_and_field_variable($survey['col9'], 'is_mandatory');
+                $survey['col9'] = $efvMandatory['value'];
+            }
             $surveys[] = $survey;
         }
         return $surveys;
@@ -4535,6 +4633,7 @@ class SurveyUtil
         $course_id = $_course['real_id'];
         $user_id = intval($user_id);
         $sessionId = api_get_session_id();
+        $mandatoryAllowed = api_get_configuration_value('allow_mandatory_survey');
 
         // Database table definitions
         $table_survey_question = Database :: get_course_table(TABLE_SURVEY_QUESTION);
@@ -4577,6 +4676,9 @@ class SurveyUtil
         echo '<tr>';
         echo '	<th>'.get_lang('SurveyName').'</th>';
         echo '	<th>'.get_lang('Anonymous').'</th>';
+        if ($mandatoryAllowed) {
+            echo '<th class="text-center">'.get_lang('IsMandatory').'</th>';
+        }
         echo '</tr>';
 
         $sql = "SELECT *
@@ -4593,6 +4695,9 @@ class SurveyUtil
 				";
         $result = Database::query($sql);
         $counter = 0;
+
+        $efv = new ExtraFieldValue('survey');
+
         while ($row = Database::fetch_array($result, 'ASSOC')) {
 
             // Get the user into survey answer table (user or anonymus)
@@ -4618,6 +4723,10 @@ class SurveyUtil
             echo '<td class="center">';
             echo ($row['anonymous'] == 1) ? get_lang('Yes') : get_lang('No');
             echo '</td>';
+            if ($mandatoryAllowed) {
+                $efvMandatory = $efv->get_values_by_handler_and_field_variable($row['survey_id'], 'is_mandatory');
+                echo '<td class="text-center">'.($efvMandatory['value'] ? get_lang('Yes') : get_lang('No')).'</td>';
+            }
             echo '</tr>';
             if ($row['anonymous'] == 1) {
                 $current_user_id = $_SESSION['surveyuser'];

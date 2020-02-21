@@ -34,8 +34,8 @@ class BBBPlugin extends Plugin
     protected function __construct()
     {
         parent::__construct(
-            '2.4',
-            'Julio Montoya, Yannick Warnier',
+            '2.5',
+            'Julio Montoya, Yannick Warnier, Angel Fernando Quiroz Campos',
             [
                 'tool_enable' => 'boolean',
                 'host' => 'text',
@@ -44,6 +44,8 @@ class BBBPlugin extends Plugin
                 'enable_conference_in_course_groups' => 'boolean',
             ]
         );
+
+        $this->isAdminPlugin = true;
     }
 
     /**
@@ -95,9 +97,23 @@ class BBBPlugin extends Plugin
                 session_id INT unsigned DEFAULT 0,
                 remote_id CHAR(30),
                 visibility TINYINT NOT NULL DEFAULT 1,
-                voice_bridge INT NOT NULL DEFAULT 1
+                voice_bridge INT NOT NULL DEFAULT 1,
+                video_url TEXT NULL,
+                has_video_m4v TINYINT NOT NULL DEFAULT 0
                 )";
         Database::query($sql);
+
+        Database::query(
+            "CREATE TABLE IF NOT EXISTS plugin_bbb_room (
+                id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                meeting_id int(10) unsigned NOT NULL,
+                participant_id int(11) NOT NULL,
+                in_at datetime NOT NULL,
+                out_at datetime NOT NULL,
+                FOREIGN KEY (meeting_id) REFERENCES plugin_bbb_meeting (id),
+                FOREIGN KEY (participant_id) REFERENCES user (id)
+            );"
+        );
 
         // Installing course settings
         $this->install_course_fields_in_all_courses();
@@ -135,9 +151,15 @@ class BBBPlugin extends Plugin
         $sql = "DELETE FROM $t_tool WHERE name = 'bbb' AND c_id != 0";
         Database::query($sql);
 
+        $t = Database::get_main_table('plugin_bbb_room');
+        $sql = "DROP TABLE IF EXISTS $t";
+        Database::query($sql);
+
         $t = Database::get_main_table('plugin_bbb_meeting');
         $sql = "DROP TABLE IF EXISTS $t";
         Database::query($sql);
+
+        Database::query('DROP TABLE IF EXISTS plugin_bbb_room');
 
         // Deleting course settings
         $this->uninstall_course_fields_in_all_courses($this->course_settings);

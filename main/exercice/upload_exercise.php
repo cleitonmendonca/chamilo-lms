@@ -326,7 +326,6 @@ function lp_upload_quiz_action_handling() {
         );
 
         if ($quiz_id) {
-
             // insert into the item_property table
             api_item_property_update(
                 $_course,
@@ -499,28 +498,33 @@ function lp_upload_quiz_action_handling() {
                                 $courseId
                             );
 
-                            switch ($detectQuestionType) {
-                                case GLOBAL_MULTIPLE_ANSWER:
-                                    $questionObj->updateWeighting($globalScore);
-                                    break;
-                                case UNIQUE_ANSWER:
-                                case MULTIPLE_ANSWER:
-                                default:
-                                    $questionObj->updateWeighting($total);
-                                    break;
-                            }
+                            if ($questionObj) {
+                                switch ($detectQuestionType) {
+                                    case GLOBAL_MULTIPLE_ANSWER:
+                                        $questionObj->updateWeighting(
+                                            $globalScore
+                                        );
+                                        break;
+                                    case UNIQUE_ANSWER:
+                                    case MULTIPLE_ANSWER:
+                                    default:
+                                        $questionObj->updateWeighting($total);
+                                        break;
+                                }
 
-                            $questionObj->save();
+                                $questionObj->save();
+                            }
                         }
                         break;
                     case FREE_ANSWER:
                         $questionObj = Question::read($question_id, $courseId);
                         $globalScore = $score_list[$i][3];
-                        $questionObj->updateWeighting($globalScore);
-                        $questionObj->save();
+                        if ($questionObj) {
+                            $questionObj->updateWeighting($globalScore);
+                            $questionObj->save();
+                        }
                         break;
                     case FILL_IN_BLANKS:
-
                         $scoreList = array();
                         $size = array();
 
@@ -549,14 +553,14 @@ function lp_upload_quiz_action_handling() {
                         $objAnswer->save();
 
                         $questionObj = Question::read($question_id, $courseId);
-                        $questionObj->updateWeighting($globalScore);
-                        $questionObj->save();
+                        if ($questionObj) {
+                            $questionObj->updateWeighting($globalScore);
+                            $questionObj->save();
+                        }
                         break;
                     case MATCHING:
                         $globalScore = $score_list[$i][3];
-
                         $position = 1;
-
                         $objAnswer = new Answer($question_id, $courseId);
                         foreach ($answerList as $data) {
                             $option = isset($data[3]) ? $data[3] : '';
@@ -568,7 +572,6 @@ function lp_upload_quiz_action_handling() {
                         foreach ($answerList as $data) {
                             $value = isset($data[2]) ? $data[2] : '';
                             $position++;
-
                             $objAnswer->createAnswer(
                                 $value,
                                 $counter,
@@ -582,9 +585,10 @@ function lp_upload_quiz_action_handling() {
                         $objAnswer->save();
 
                         $questionObj = Question::read($question_id, $courseId);
-                        $questionObj->updateWeighting($globalScore);
-                        $questionObj->save();
-
+                        if ($questionObj) {
+                            $questionObj->updateWeighting($globalScore);
+                            $questionObj->save();
+                        }
                         break;
                 }
             }

@@ -189,10 +189,10 @@ class Exercise
                 $this->edit_exercise_in_lp = true;
             }
 
-            if ($object->end_time != '0000-00-00 00:00:00') {
+            if ($object->end_time != '0000-00-00 00:00:00' && !empty($object->end_time)) {
                 $this->end_time 	= $object->end_time;
             }
-            if ($object->start_time != '0000-00-00 00:00:00') {
+            if ($object->start_time != '0000-00-00 00:00:00' && !empty($object->start_time)) {
                 $this->start_time 	= $object->start_time;
             }
 
@@ -1603,13 +1603,13 @@ class Exercise
         // Exercise already exists
         if ($id) {
             // we prepare date in the database using the api_get_utc_datetime() function
-            if (!empty($this->start_time) && $this->start_time != '0000-00-00 00:00:00') {
+            if (!empty($this->start_time) && $this->start_time != '0000-00-00 00:00:00' && !empty($this->start_time)) {
                 $start_time = $this->start_time;
             } else {
                 $start_time = '0000-00-00 00:00:00';
             }
 
-            if (!empty($this->end_time) && $this->end_time != '0000-00-00 00:00:00') {
+            if (!empty($this->end_time) && $this->end_time != '0000-00-00 00:00:00' && !empty($this->end_time)) {
                 $end_time = $this->end_time;
             } else {
                 $end_time = '0000-00-00 00:00:00';
@@ -2207,7 +2207,7 @@ class Exercise
 
             $var = Exercise::selectTimeLimit();
 
-            if (($this->start_time != '0000-00-00 00:00:00'))
+            if (($this->start_time != '0000-00-00 00:00:00') && !empty($this->start_time))
                 $form->addElement('html','<div id="start_date_div" style="display:block;">');
             else
                 $form->addElement('html','<div id="start_date_div" style="display:none;">');
@@ -2218,7 +2218,7 @@ class Exercise
 
             $form->addElement('checkbox', 'activate_end_date_check', null , get_lang('EnableEndTime'), array('onclick' => 'activate_end_date()'));
 
-            if (($this->end_time != '0000-00-00 00:00:00'))
+            if (($this->end_time != '0000-00-00 00:00:00' && !empty($this->end_time)))
                 $form->addElement('html','<div id="end_date_div" style="display:block;">');
             else
                 $form->addElement('html','<div id="end_date_div" style="display:none;">');
@@ -2359,15 +2359,15 @@ class Exercise
                 $defaults['pass_percentage'] = $this->selectPassPercentage();
                 $defaults['question_selection_type'] = $this->getQuestionSelectionType();
 
-                if (($this->start_time != '0000-00-00 00:00:00')) {
+                if (($this->start_time != '0000-00-00 00:00:00' && !empty($this->start_time))) {
                     $defaults['activate_start_date_check'] = 1;
                 }
-                if ($this->end_time != '0000-00-00 00:00:00') {
+                if ($this->end_time != '0000-00-00 00:00:00' && !empty($this->end_time)) {
                     $defaults['activate_end_date_check'] = 1;
                 }
 
-                $defaults['start_time'] = ($this->start_time!='0000-00-00 00:00:00') ? api_get_local_time($this->start_time) : date('Y-m-d 12:00:00');
-                $defaults['end_time'] = ($this->end_time!='0000-00-00 00:00:00') ? api_get_local_time($this->end_time) : date('Y-m-d 12:00:00', time()+84600);
+                $defaults['start_time'] = ($this->start_time!='0000-00-00 00:00:00' && !empty($this->start_time)) ? api_get_local_time($this->start_time) : date('Y-m-d 12:00:00');
+                $defaults['end_time'] = ($this->end_time!='0000-00-00 00:00:00' && !empty($this->end_time)) ? api_get_local_time($this->end_time) : date('Y-m-d 12:00:00', time()+84600);
 
                 // Get expired time
                 if ($this->expired_time != '0') {
@@ -2786,7 +2786,7 @@ class Exercise
                         // This should be moved to the duplicate function
                         $new_answer_obj = new Answer($old_question_id);
                         $new_answer_obj->read();
-                        $new_answer_obj->duplicate($new_id);
+                        $new_answer_obj->duplicate($new_question_obj);
                     }
                 }
             }
@@ -3123,7 +3123,7 @@ class Exercise
      * @param bool      $show_result show results or not
      * @param int       $propagate_neg
      * @param array     $hotspot_delineation_result
-     * @param boolean $showTotalScoreAndUserChoices
+     * @param boolean $showTotalScoreAndUserChoicesInLastAttempt
      * @todo    reduce parameters of this function
      * @return  string  html code
      */
@@ -3138,7 +3138,7 @@ class Exercise
         $show_result = true,
         $propagate_neg = 0,
         $hotspot_delineation_result = array(),
-        $showTotalScoreAndUserChoices = false
+        $showTotalScoreAndUserChoicesInLastAttempt = true
     ) {
         global $debug;
         //needed in order to use in the exercise_attempt() for the time
@@ -3979,8 +3979,18 @@ class Exercise
                                         $questionScore += $i_answerWeighting;
                                         $totalScore += $i_answerWeighting;
 
+                                        // Try with id
                                         if (isset($real_list[$i_answer_id])) {
                                             $user_answer = Display::span($real_list[$i_answer_id]);
+                                        }
+
+                                        // Try with $i_answer_id_auto
+                                        if (empty($user_answer)) {
+                                            if (isset($real_list[$i_answer_id_auto])) {
+                                                $user_answer = Display::span(
+                                                    $real_list[$i_answer_id_auto]
+                                                );
+                                            }
                                         }
                                     } else {
                                         $user_answer = Display::span(
@@ -3991,18 +4001,24 @@ class Exercise
                                 }
                             } elseif ($answerType == DRAGGABLE) {
                                 $user_answer = Display::label(get_lang('Incorrect'), 'danger');
+                            } else {
+                                $user_answer = Display::span(
+                                    get_lang('Incorrect').' &nbsp;',
+                                    ['style' => 'color: #FF0000; text-decoration: line-through;']
+                                );
                             }
 
                             if ($show_result) {
-                                if ($showTotalScoreAndUserChoices == true) {
+                                if ($showTotalScoreAndUserChoicesInLastAttempt == false) {
                                     $user_answer = '';
                                 }
                                 echo '<tr>';
                                 echo '<td>' . $s_answer_label . '</td>';
                                 echo '<td>' . $user_answer;
-
                                 if (in_array($answerType, [MATCHING, MATCHING_DRAGGABLE])) {
-                                    if (isset($real_list[$i_answer_correct_answer]) && $showTotalScoreAndUserChoices == false) {
+                                    if (isset($real_list[$i_answer_correct_answer]) &&
+                                        $showTotalScoreAndUserChoicesInLastAttempt === true
+                                    ) {
                                         echo Display::span(
                                             $real_list[$i_answer_correct_answer],
                                             ['style' => 'color: #008000; font-weight: bold;']
@@ -4180,7 +4196,7 @@ class Exercise
                                 0,
                                 0,
                                 $results_disabled,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == MULTIPLE_ANSWER_TRUE_FALSE) {
                             ExerciseShowFunctions::display_multiple_answer_true_false(
@@ -4194,7 +4210,7 @@ class Exercise
                                 $questionId,
                                 0,
                                 $results_disabled,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == MULTIPLE_ANSWER_COMBINATION_TRUE_FALSE) {
                             ExerciseShowFunctions::display_multiple_answer_combination_true_false(
@@ -4208,7 +4224,7 @@ class Exercise
                                 0,
                                 0,
                                 $results_disabled,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == FILL_IN_BLANKS) {
                             ExerciseShowFunctions::display_fill_in_blanks_answer(
@@ -4218,7 +4234,7 @@ class Exercise
                                 0,
                                 $results_disabled,
                                 '',
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == CALCULATED_ANSWER) {
                             ExerciseShowFunctions::display_calculated_answer(
@@ -4227,7 +4243,7 @@ class Exercise
                                 0,
                                 0,
                                 $results_disabled,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == FREE_ANSWER) {
                             ExerciseShowFunctions::display_free_answer(
@@ -4263,7 +4279,7 @@ class Exercise
                                 $answerComment,
                                 $results_disabled,
                                 $answerId,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                         } elseif ($answerType == HOT_SPOT_ORDER) {
                             ExerciseShowFunctions::display_hotspot_order_answer(
@@ -4467,7 +4483,7 @@ class Exercise
                                     $questionId,
                                     $answerId,
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             } else {
                                 ExerciseShowFunctions::display_unique_or_multiple_answer(
@@ -4481,7 +4497,7 @@ class Exercise
                                     $questionId,
                                     '',
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             }
                             break;
@@ -4498,7 +4514,7 @@ class Exercise
                                     $questionId,
                                     $answerId,
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             } else {
                                 ExerciseShowFunctions::display_multiple_answer_combination_true_false(
@@ -4512,7 +4528,7 @@ class Exercise
                                     $questionId,
                                     '',
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             }
                             break;
@@ -4529,7 +4545,7 @@ class Exercise
                                     $questionId,
                                     $answerId,
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             } else {
                                 ExerciseShowFunctions::display_multiple_answer_true_false(
@@ -4543,7 +4559,7 @@ class Exercise
                                     $questionId,
                                     '',
                                     $results_disabled,
-                                    $showTotalScoreAndUserChoices
+                                    $showTotalScoreAndUserChoicesInLastAttempt
                                 );
                             }
                             break;
@@ -4555,7 +4571,7 @@ class Exercise
                                 $questionId,
                                 $results_disabled,
                                 $str,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                             break;
                         case CALCULATED_ANSWER:
@@ -4566,7 +4582,7 @@ class Exercise
                                 $questionId,
                                 $results_disabled,
                                 '',
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                             break;
                         case FREE_ANSWER:
@@ -4601,7 +4617,7 @@ class Exercise
                                 $answerComment,
                                 $results_disabled,
                                 $answerId,
-                                $showTotalScoreAndUserChoices
+                                $showTotalScoreAndUserChoicesInLastAttempt
                             );
                             break;
                         case HOT_SPOT_DELINEATION:
@@ -5229,7 +5245,17 @@ class Exercise
         $subject = get_lang('ExerciseAttempted');
 
         if (!empty($sessionId)) {
-            $teachers = CourseManager::get_coach_list_from_course_code($courseCode, $sessionId);
+            $addGeneralCoach = true;
+            $setting = api_get_configuration_value('block_quiz_mail_notification_general_coach');
+            if ($setting === true) {
+                $addGeneralCoach = false;
+            }
+
+            $teachers = CourseManager::get_coach_list_from_course_code(
+                $courseCode,
+                $sessionId,
+                $addGeneralCoach
+            );
         } else {
             $teachers = CourseManager::get_teacher_list_from_course_code($courseCode);
         }

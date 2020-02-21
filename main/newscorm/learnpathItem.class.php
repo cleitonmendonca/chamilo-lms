@@ -2760,7 +2760,7 @@ class learnpathItem
                             'LearnpathPrereqNotCompleted'
                         );
                     }
-                    
+
                     return $returnstatus;
                 }
             }
@@ -3629,7 +3629,7 @@ class learnpathItem
             error_log("total_time: $total_time");
         }
 
-        //Step 2.1 : if normal mode total_time = total_time + total_sec
+        // Step 2.1 : if normal mode total_time = total_time + total_sec
         if (api_get_setting('scorm_cumulative_session_time') != 'false') {
             $total_time += $total_sec;
             //$this->last_scorm_session_time = $total_sec;
@@ -3637,6 +3637,10 @@ class learnpathItem
             //Step 2.2 : if not cumulative mode total_time = total_time - last_update + total_sec
             $total_time = $total_time - $this->last_scorm_session_time + $total_sec;
             $this->last_scorm_session_time = $total_sec;
+
+            if ($total_time < 0) {
+                $total_time = $total_sec;
+            }
         }
         //Step 3 update db only if status != completed, passed, browsed or seriousgamemode not activated
         $case_completed = array(
@@ -4119,12 +4123,10 @@ class learnpathItem
                             0
                         );
                     }
+
                     foreach ($this->interactions as $index => $interaction) {
                         $correct_resp = '';
-                        if (is_array(
-                                $interaction[4]
-                            ) && !empty($interaction[4][0])
-                        ) {
+                        if (is_array($interaction[4] ) && !empty($interaction[4][0])) {
                             foreach ($interaction[4] as $resp) {
                                 $correct_resp .= $resp . ',';
                             }
@@ -4149,7 +4151,15 @@ class learnpathItem
                                         )
                                     ";
                         $iva_res = Database::query($iva_sql);
-                        // id(0), type(1), time(2), weighting(3), correct_responses(4), student_response(5), result(6), latency(7)
+
+                        $interaction[0] = isset($interaction[0]) ? $interaction[0] : '';
+                        $interaction[1] = isset($interaction[1]) ? $interaction[1] : '';
+                        $interaction[2] = isset($interaction[2]) ? $interaction[2] : '';
+                        $interaction[3] = isset($interaction[3]) ? $interaction[3] : '';
+                        $interaction[5] = isset($interaction[5]) ? $interaction[5] : '';
+                        $interaction[6] = isset($interaction[6]) ? $interaction[6] : '';
+                        $interaction[7] = isset($interaction[7]) ? $interaction[7] : '';
+
                         if (Database::num_rows($iva_res) > 0) {
                             // Update (or don't).
                             $iva_row = Database::fetch_array($iva_res);

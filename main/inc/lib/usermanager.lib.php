@@ -389,21 +389,14 @@ class UserManager
                     PERSON_NAME_EMAIL_ADDRESS
                 );
                 $email_admin = api_get_setting('emailAdministrator');
-
-                if (api_is_multiple_url_enabled()) {
-                    $access_url_id = api_get_current_access_url_id();
-                    if ($access_url_id != -1) {
-                        $url = api_get_access_url($access_url_id);
-                    }
-                } else {
-                    $url = api_get_path(WEB_PATH);
-                }
+                $url = api_get_path(WEB_PATH);
                 $tplContent = new Template(null, false, false, false, false, false);
                 // variables for the default template
                 $tplContent->assign('complete_name', stripslashes(api_get_person_name($firstName, $lastName)));
                 $tplContent->assign('login_name', $loginName);
                 $tplContent->assign('original_password', stripslashes($original_password));
                 $tplContent->assign('mailWebPath', $url);
+                $tplContent->assign('new_user', $user);
 
                 $layoutContent = $tplContent->get_template('mail/content_registration_platform.tpl');
                 $emailBody = $tplContent->fetch($layoutContent);
@@ -1329,8 +1322,14 @@ class UserManager
         $condition = 'AND'
     ) {
         $user_table = Database :: get_main_table(TABLE_MAIN_USER);
+        $tblAccessUrlRelUser = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
         $return_array = array();
-        $sql_query = "SELECT * FROM $user_table";
+        $sql_query = "SELECT * FROM $user_table ";
+
+        if (api_is_multiple_url_enabled()) {
+            $sql_query .= " INNER JOIN $tblAccessUrlRelUser auru ON auru.user_id = user.id ";
+        }
+
         if (count($conditions) > 0) {
             $sql_query .= ' WHERE ';
             $temp_conditions = array();
@@ -1345,6 +1344,14 @@ class UserManager
             }
             if (!empty($temp_conditions)) {
                 $sql_query .= implode(' '.$condition.' ', $temp_conditions);
+            }
+
+            if (api_is_multiple_url_enabled()) {
+                $sql_query .= ' AND auru.access_url_id = ' . api_get_current_access_url_id();
+            }
+        } else {
+            if (api_is_multiple_url_enabled()) {
+                $sql_query .= ' WHERE auru.access_url_id = ' . api_get_current_access_url_id();
             }
         }
         if (count($order_by) > 0) {
@@ -2427,30 +2434,38 @@ class UserManager
                     $ignore_visibility_for_admins
                 );
 
-                // Course Coach session visibility.
-                $blockedCourseCount = 0;
-                $closedVisibilityList = array(
-                    COURSE_VISIBILITY_CLOSED,
-                    COURSE_VISIBILITY_HIDDEN
-                );
+                if ($visibility != SESSION_VISIBLE) {
 
-                foreach ($courseList as $course) {
-                    // Checking session visibility
-                    $sessionCourseVisibility = api_get_session_visibility(
-                        $session_id,
-                        $course['real_id'],
-                        $ignore_visibility_for_admins
+                    // Course Coach session visibility.
+                    $blockedCourseCount = 0;
+                    $closedVisibilityList = array(
+                        COURSE_VISIBILITY_CLOSED,
+                        COURSE_VISIBILITY_HIDDEN
                     );
 
-                    $courseIsVisible = !in_array($course['visibility'], $closedVisibilityList);
-                    if ($courseIsVisible === false || $sessionCourseVisibility == SESSION_INVISIBLE) {
-                        $blockedCourseCount++;
-                    }
-                }
+                    foreach ($courseList as $course) {
+                        // Checking session visibility
+                        $sessionCourseVisibility = api_get_session_visibility(
+                            $session_id,
+                            $course['real_id'],
+                            $ignore_visibility_for_admins
+                        );
 
-                // If all courses are blocked then no show in the list.
-                if ($blockedCourseCount == count($courseList)) {
-                    $visibility = SESSION_INVISIBLE;
+                        $courseIsVisible = !in_array(
+                            $course['visibility'],
+                            $closedVisibilityList
+                        );
+                        if ($courseIsVisible === false || $sessionCourseVisibility == SESSION_INVISIBLE) {
+                            $blockedCourseCount++;
+                        }
+                    }
+
+                    // If all courses are blocked then no show in the list.
+                    if ($blockedCourseCount === count($courseList)) {
+                        $visibility = SESSION_INVISIBLE;
+                    } else {
+                        $visibility = SESSION_VISIBLE;
+                    }
                 }
 
                 switch ($visibility) {
@@ -2467,10 +2482,10 @@ class UserManager
                 $categories[$row['session_category_id']]['sessions'][$row['id']] = array(
                     'session_name' => $row['name'],
                     'session_id' => $row['id'],
-                    'access_start_date' => api_get_local_time($row['access_start_date']),
-                    'access_end_date' => api_get_local_time($row['access_end_date']),
-                    'coach_access_start_date' => api_get_local_time($row['coach_access_start_date']),
-                    'coach_access_end_date' => api_get_local_time($row['coach_access_end_date']),
+                    'access_start_date' => $row['access_start_date'],
+                    'access_end_date' => $row['access_end_date'],
+                    'coach_access_start_date' => $row['coach_access_start_date'],
+                    'coach_access_end_date' => $row['coach_access_end_date'],
                     'courses' => $courseList
                 );
             }
@@ -2568,11 +2583,11 @@ class UserManager
         // This is divided into two different queries
         $sessions = array();
         $sql = "SELECT DISTINCT s.id, name, access_start_date, access_end_date
-                FROM $tbl_session_user, $tbl_session s
+                FROM $tbl_session_user su INNER JOIN $tbl_session s
+                ON (s.id = su.session_id)
                 WHERE (
-                    session_id = s.id AND
-                    user_id = $user_id AND
-                    relation_type <> ".SESSION_RELATION_TYPE_RRHH."
+                    su.user_id = $user_id AND
+                    su.relation_type <> ".SESSION_RELATION_TYPE_RRHH."
                 )
                 $coachCourseConditions
                 ORDER BY access_start_date, access_end_date, name";
@@ -2795,7 +2810,9 @@ class UserManager
                 $course_list = SessionManager::get_course_list_by_session_id($session_id);
                 if (!empty($course_list)) {
                     foreach ($course_list as $course) {
-                        $personal_course_list[] = $course;
+                        if (!in_array($course['id'], $courses)) {
+                            $personal_course_list[] = $course;
+                        }
                     }
                 }
             }
@@ -4027,12 +4044,14 @@ class UserManager
                         FROM $tbl_user u
                         INNER JOIN $tbl_session_rel_user sru ON (sru.user_id = u.id)
                         WHERE
-                            sru.session_id IN (
-                                SELECT DISTINCT(s.id) FROM $tbl_session s INNER JOIN
-                                $tbl_session_rel_access_url
-                                WHERE access_url_id = ".api_get_current_access_url_id()."
-                                $sessionConditionsCoach
-                                UNION (
+                            (
+                                sru.session_id IN (
+                                    SELECT DISTINCT(s.id) FROM $tbl_session s INNER JOIN
+                                    $tbl_session_rel_access_url session_rel_access_rel_user
+                                    ON session_rel_access_rel_user.session_id = s.id
+                                    WHERE access_url_id = ".api_get_current_access_url_id()."
+                                    $sessionConditionsCoach                                  
+                                ) OR sru.session_id IN (
                                     SELECT DISTINCT(s.id) FROM $tbl_session s
                                     INNER JOIN $tbl_session_rel_access_url url
                                     ON (url.session_id = s.id)
@@ -4041,7 +4060,7 @@ class UserManager
                                     WHERE access_url_id = ".api_get_current_access_url_id()."
                                     $sessionConditionsTeacher
                                 )
-                            )
+                            ) 
                             $userConditions
                     )
                     UNION ALL(
@@ -4090,18 +4109,19 @@ class UserManager
         }
 
         $orderBy = null;
-        if (api_is_western_name_order()) {
-            $orderBy .= " ORDER BY firstname, lastname ";
-        } else {
-            $orderBy .= " ORDER BY lastname, firstname ";
-        }
+        if ($getOnlyUserId == false) {
+            if (api_is_western_name_order()) {
+                $orderBy .= " ORDER BY firstname, lastname ";
+            } else {
+                $orderBy .= " ORDER BY lastname, firstname ";
+            }
 
-        if (!empty($column) && !empty($direction)) {
-            // Fixing order due the UNIONs
-            $column = str_replace('u.', '', $column);
-            $orderBy = " ORDER BY $column $direction ";
+            if (!empty($column) && !empty($direction)) {
+                // Fixing order due the UNIONs
+                $column = str_replace('u.', '', $column);
+                $orderBy = " ORDER BY $column $direction ";
+            }
         }
-
         $sql .= $orderBy;
         $sql .= $limitCondition;
         $result = Database::query($sql);

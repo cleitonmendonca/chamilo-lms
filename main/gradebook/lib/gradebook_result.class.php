@@ -80,7 +80,7 @@ class GradeBookResult
      */
     public function exportCompleteReportXLS($data)
     {
-        $filename = 'gradebook-results-'.api_get_local_time().'.xls';
+        $filename = 'gradebook-results-'.api_get_local_time().'.xlsx';
 
         $spreadsheet = new PHPExcel();
         $spreadsheet->setActiveSheetIndex(0);
@@ -91,7 +91,7 @@ class GradeBookResult
 
         //headers
         foreach ($data[0] as $header_col) {
-            $worksheet->SetCellValueByColumnAndRow($line, $column, html_entity_decode(strip_tags($header_col)));
+            $worksheet->setCellValueByColumnAndRow($column, $line, html_entity_decode(strip_tags($header_col)));
             $column++;
         }
         $line++;
@@ -101,7 +101,7 @@ class GradeBookResult
         for ($i = 0; $i < $cant_students; $i++) {
             $column = 0;
             foreach ($data[1][$i] as $col_name) {
-                $worksheet->SetCellValueByColumnAndRow($line,$column, html_entity_decode(strip_tags($col_name)));
+                $worksheet->setCellValueByColumnAndRow($column, $line, html_entity_decode(strip_tags($col_name)));
                 $column++;
             }
             $line++;

@@ -1,6 +1,9 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+use Chamilo\CoreBundle\Component\Utils\ChamiloApi;
+
 /**
  *
  *                             SCRIPT PURPOSE
@@ -110,8 +113,6 @@
 */
 
 // Verified if exists the username and password in session current
-
-use ChamiloSession as Session;
 
 // Facebook connexion, if activated
 if (api_is_facebook_auth_activated() && !api_get_user_id()) {
@@ -891,7 +892,7 @@ if (!isset($_SESSION['login_as'])) {
                                 session_id = ".api_get_session_id();
                     Database::query($sql);
                 } else {
-                    $ip = api_get_real_ip();
+                    $ip = Database::escape_string(api_get_real_ip());
                     $sql = "INSERT INTO $course_tracking_table (c_id, user_ip, user_id, login_course_date, logout_course_date, counter, session_id)
                             VALUES('".$_course['real_id']."', '".$ip."', '".$_user['user_id']."', '$time', '$time', '1','".api_get_session_id()."')";
                     Database::query($sql);
@@ -1238,19 +1239,12 @@ if ((isset($uidReset) && $uidReset) || (isset($cidReset) && $cidReset)) {
     $is_allowed_in_course = false;
 
     if (isset($_course) && isset($_course['visibility'])) {
-
         switch ($_course['visibility']) {
             case COURSE_VISIBILITY_OPEN_WORLD: //3
                 $is_allowed_in_course = true;
                 break;
             case COURSE_VISIBILITY_OPEN_PLATFORM: //2
-                $courseCode = $_course['code'];
-                $isUserSubscribedInCourse = CourseManager::is_user_subscribed_in_course(
-                    $user_id,
-                    $courseCode,
-                    $session_id
-                );
-                if (isset($user_id) && ($is_platformAdmin || $isUserSubscribedInCourse === true) && !api_is_anonymous($user_id)) {
+                if (isset($user_id) && !api_is_anonymous($user_id)) {
                     $is_allowed_in_course = true;
                 }
                 break;
@@ -1268,6 +1262,7 @@ if ((isset($uidReset) && $uidReset) || (isset($cidReset) && $cidReset)) {
                 if ($is_platformAdmin) {
                     $is_allowed_in_course = true;
                 }
+                break;
         }
     }
 
@@ -1398,3 +1393,7 @@ if ((isset($cas_login) && $cas_login && exist_firstpage_parameter()) ||
 }
 
 Redirect::session_request_uri($logging_in, $user_id);
+
+if (!ChamiloApi::isAjaxRequest() && api_get_configuration_value('allow_mandatory_survey')) {
+    SurveyManager::protectByMandatory();
+}

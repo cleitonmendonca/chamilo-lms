@@ -467,6 +467,7 @@ if (!empty($student_id)) {
     $userGroups = $userGroupManager->getNameListByUser($user_info['user_id'], UserGroup::NORMAL_CLASS);
     ?>
     <img src="<?php echo $userPicture ?>">
+
     <div class="row">
         <div class="col-sm-6">
             <table class="table table-striped table-hover">
@@ -511,6 +512,9 @@ if (!empty($student_id)) {
             <tr>
                 <td><?php echo get_lang('OnLine') . ' : '.$online; ?> </td>
             </tr>
+            <tr>
+                <td><a href="access_details.php?student=<?php echo $student_id; ?>&course=<?php echo $course_code; ?>&origin=<?php echo $origin; ?>&cidReq=<?php echo $course_code; ?>&id_session=<?php echo $sessionId; ?>"><?php echo get_lang('SeeAccess'); ?></a></td>
+            </tr>
             <?php
 
             // Display timezone if the user selected one and if the admin allows the use of user's timezone
@@ -529,7 +533,7 @@ if (!empty($student_id)) {
             }
             ?>
             </tbody>
-        </table>
+            </table>
         </div>
         <div class="col-sm-6">
         <table class="table table-striped table-hover">
@@ -574,45 +578,28 @@ if (!empty($student_id)) {
                         ?>
                     </td>
                 </tr>
-                <?php
-                /*if (!empty($nb_login)) {
-                    echo '<tr><td align="right">'.get_lang('CountToolAccess').'</td>';
-                    echo '<td align="left"> '.$nb_login.'</td>';
-                    echo '</tr>';
-                }*/
-            } ?>
+                <?php } ?>
             </tbody>
         </table>
         <?php if (!empty($userGroups)) { ?>
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th><?php echo get_lang('Classes') ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($userGroups as $class) { ?>
-                    <tr>
-                        <td><?php echo $class ?></td>
-                    </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th><?php echo get_lang('Classes') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($userGroups as $class) { ?>
+                <tr>
+                    <td><?php echo $class ?></td>
+                </tr>
+                <?php } ?>
+            </tbody>
+        </table>
         <?php } ?>
-        </div>
-    </div>
+        </div>  <!-- div col 6 -->
+    </div> <!-- div .row -->
     <?php
-
-    /*$table_title = '';
-    if (!empty($sessionId)) {
-        $session_name = api_get_session_name($sessionId);
-        $table_title = $session_name ? Display::return_icon('session.png', get_lang('Session'), array(), ICON_SIZE_SMALL).' '.$session_name.' ':'';
-    }
-    if (!empty($courseInfo['title'])) {
-        $table_title .= $courseInfo ? Display::return_icon('course.png', get_lang('Course'), array(), ICON_SIZE_SMALL).' '.$courseInfo['title'].'  ':'';
-    }
-
-    echo Display::page_subheader($table_title);*/
 
     if (empty($_GET['details'])) {
         $csv_content[] = array();
@@ -653,7 +640,7 @@ if (!empty($student_id)) {
 
             // Courses
             echo '<h3>'.$title.'</h3>';
-            echo '<div class="table-respondive">';
+            echo '<div class="table-responsive">';
             echo '<table class="table table-striped table-hover courses-tracking">';
             echo '<thead>';
             echo '<tr>
@@ -714,7 +701,7 @@ if (!empty($student_id)) {
                             $scoretotal_display =
                                 round($scoretotal[0], 1 ).'/'.
                                 round($scoretotal[1], 1).
-                                ' ('.round(($scoretotal[0] / $scoretotal[1]) * 100, 2).' %)';
+                                ' ('.round(($scoretotal[0] / ($scoretotal[1] ? $scoretotal[1] : 1)) * 100, 2).' %)';
                         }
 
                         $progress = Tracking::get_avg_student_progress($user_info['user_id'], $courseCodeItem, null, $sessionId);
@@ -756,7 +743,7 @@ if (!empty($student_id)) {
             }
             echo '</tbody>';
             echo '</table>';
-            echo '</div>';
+            echo '</div>'; // responsive
         }
     } else {
         if ($user_info['status'] != INVITEE) {
@@ -1004,158 +991,161 @@ if (!empty($student_id)) {
                     $data_learnpath[$i][] = $lp_name;
                     $data_learnpath[$i][] = $progress . '%';
                 }
+
+                 ?>
+            </tbody>
+            </table>
+            </div>
+            <?php
+            }
+        }
+
+        // <!-- line about exercises -->
+        if ($user_info['status'] != INVITEE) { ?>
+            <div class="table-responsive">
+            <table class="table table-striped table-hover">
+            <thead>
+            <tr>
+                <th><?php echo get_lang('Exercises'); ?></th>
+                <th><?php echo get_lang('LearningPath');?></th>
+                <th><?php echo get_lang('AvgCourseScore').' '.Display :: return_icon('info3.gif', get_lang('AverageScore'), array('align' => 'absmiddle', 'hspace' => '3px')) ?></th>
+                <th><?php echo get_lang('Attempts'); ?></th>
+                <th><?php echo get_lang('LatestAttempt'); ?></th>
+                <th><?php echo get_lang('AllAttempts'); ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+
+            $csv_content[] = array();
+            $csv_content[] = array(
+                get_lang('Exercises'),
+                get_lang('LearningPath'),
+                get_lang('AvgCourseScore'),
+                get_lang('Attempts')
+            );
+
+            $t_quiz = Database :: get_course_table(TABLE_QUIZ_TEST);
+            $sql = "SELECT quiz.title, id FROM " . $t_quiz . " AS quiz
+                    WHERE
+                        quiz.c_id =  ".$courseInfo['real_id']." AND
+                        (quiz.session_id = $sessionId OR quiz.session_id = 0) AND
+                        active IN (0, 1)
+                    ORDER BY quiz.title ASC ";
+
+            $result_exercices = Database::query($sql);
+            $i = 0;
+            if (Database :: num_rows($result_exercices) > 0) {
+                while ($exercices = Database :: fetch_array($result_exercices)) {
+                    $exercise_id = intval($exercices['id']);
+                    $count_attempts = Tracking::count_student_exercise_attempts(
+                        $student_id,
+                        $courseInfo['real_id'],
+                        $exercise_id,
+                        0,
+                        0,
+                        $sessionId,
+                        2
+                    );
+                    $score_percentage = Tracking::get_avg_student_exercise_score(
+                        $student_id,
+                        $course_code,
+                        $exercise_id,
+                        $sessionId,
+                        1,
+                        0
+                    );
+
+                    if (!isset($score_percentage) && $count_attempts > 0) {
+                        $scores_lp = Tracking::get_avg_student_exercise_score(
+                            $student_id,
+                            $course_code,
+                            $exercise_id,
+                            $sessionId,
+                            2,
+                            1
+                        );
+                        $score_percentage = $scores_lp[0];
+                        $lp_name = $scores_lp[1];
+                    } else {
+                        $lp_name = '-';
+                    }
+                    $lp_name = !empty($lp_name) ? $lp_name : get_lang('NoLearnpath');
+
+                    if ($i % 2) {
+                        $css_class = 'row_odd';
+                    } else {
+                        $css_class = 'row_even';
+                    }
+
+                    echo '<tr class="'.$css_class.'"><td>'.$exercices['title'].'</td>';
+                    echo '<td>';
+
+                    if (!empty($lp_name)) {
+                        echo $lp_name;
+                    } else {
+                        echo '-';
+                    }
+
+                    echo '</td>';
+                    echo '<td>';
+
+                    if ($count_attempts > 0) {
+                        echo $score_percentage . '%';
+                    } else {
+                        echo '-';
+                        $score_percentage = 0;
+                    }
+
+                    echo '</td>';
+                    echo '<td>'.$count_attempts.'</td>';
+                    echo '<td>';
+
+                    $sql = 'SELECT exe_id FROM ' . $tbl_stats_exercices . '
+                             WHERE
+                                exe_exo_id = "'.$exercise_id.'" AND
+                                exe_user_id ="'.$student_id.'" AND
+                                c_id = '.$courseInfo['real_id'].' AND
+                                session_id ="'.$sessionId.'" AND
+                                status = ""
+                            ORDER BY exe_date DESC
+                            LIMIT 1';
+                    $result_last_attempt = Database::query($sql);
+                    if (Database :: num_rows($result_last_attempt) > 0) {
+                        $id_last_attempt = Database :: result($result_last_attempt, 0, 0);
+                        if ($count_attempts > 0)
+                            echo '<a href="../exercice/exercise_show.php?id=' . $id_last_attempt . '&cidReq='.$course_code.'&session_id='.$sessionId.'&student='.$student_id.'&origin='.(empty($origin)?'tracking':$origin).'">
+                            '.Display::return_icon('quiz.gif').'
+                         </a>';
+                    }
+                    echo '</td>';
+
+                    echo '<td>';
+                    $all_attempt_url = "../exercice/exercise_report.php?exerciseId=$exercise_id&cidReq=$course_code&filter_by_user=$student_id&id_session=$sessionId";
+                    echo Display::url(Display::return_icon('test_results.png', get_lang('AllAttempts'), array(), ICON_SIZE_SMALL), $all_attempt_url );
+
+                    echo '</td></tr>';
+                    $data_exercices[$i][] = $exercices['title'];
+                    $data_exercices[$i][] = $score_percentage . '%';
+                    $data_exercices[$i][] = $count_attempts;
+
+                    $csv_content[] = array(
+                        $exercices['title'],
+                        $lp_name,
+                        $score_percentage,
+                        $count_attempts
+                    );
+
+                    $i++;
+
+                }
+            } else {
+                echo '<tr><td colspan="6">'.get_lang('NoExercise').'</td></tr>';
             }
             ?>
             </tbody>
             </table>
             </div>
-        <?php } ?>
-        <!-- line about exercises -->
-        <?php if ($user_info['status'] != INVITEE) { ?>
-        <div class="table-responsive">
-        <table class="table table-striped table-hover">
-        <thead>
-        <tr>
-            <th><?php echo get_lang('Exercises'); ?></th>
-            <th><?php echo get_lang('LearningPath');?></th>
-            <th><?php echo get_lang('AvgCourseScore').' '.Display :: return_icon('info3.gif', get_lang('AverageScore'), array('align' => 'absmiddle', 'hspace' => '3px')) ?></th>
-            <th><?php echo get_lang('Attempts'); ?></th>
-            <th><?php echo get_lang('LatestAttempt'); ?></th>
-            <th><?php echo get_lang('AllAttempts'); ?></th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php
-
-        $csv_content[] = array();
-        $csv_content[] = array(
-            get_lang('Exercises'),
-            get_lang('LearningPath'),
-            get_lang('AvgCourseScore'),
-            get_lang('Attempts')
-        );
-
-        $t_quiz = Database :: get_course_table(TABLE_QUIZ_TEST);
-        $sql = "SELECT quiz.title, id FROM " . $t_quiz . " AS quiz
-                WHERE
-                    quiz.c_id =  ".$courseInfo['real_id']." AND
-                    (quiz.session_id = $sessionId OR quiz.session_id = 0) AND
-                    active IN (0, 1)
-                ORDER BY quiz.title ASC ";
-
-        $result_exercices = Database::query($sql);
-        $i = 0;
-        if (Database :: num_rows($result_exercices) > 0) {
-            while ($exercices = Database :: fetch_array($result_exercices)) {
-                $exercise_id = intval($exercices['id']);
-                $count_attempts = Tracking::count_student_exercise_attempts(
-                    $student_id,
-                    $courseInfo['real_id'],
-                    $exercise_id,
-                    0,
-                    0,
-                    $sessionId,
-                    2
-                );
-                $score_percentage = Tracking::get_avg_student_exercise_score(
-                    $student_id,
-                    $course_code,
-                    $exercise_id,
-                    $sessionId,
-                    1,
-                    0
-                );
-
-                if (!isset($score_percentage) && $count_attempts > 0) {
-                    $scores_lp = Tracking::get_avg_student_exercise_score(
-                        $student_id,
-                        $course_code,
-                        $exercise_id,
-                        $sessionId,
-                        2,
-                        1
-                    );
-                    $score_percentage = $scores_lp[0];
-                    $lp_name = $scores_lp[1];
-                } else {
-                    $lp_name = '-';
-                }
-                $lp_name = !empty($lp_name) ? $lp_name : get_lang('NoLearnpath');
-
-                if ($i % 2) {
-                    $css_class = 'row_odd';
-                } else {
-                    $css_class = 'row_even';
-                }
-
-                echo '<tr class="'.$css_class.'"><td>'.$exercices['title'].'</td>';
-                echo '<td>';
-
-                if (!empty($lp_name)) {
-                    echo $lp_name;
-                } else {
-                    echo '-';
-                }
-
-                echo '</td>';
-                echo '<td>';
-
-                if ($count_attempts > 0) {
-                    echo $score_percentage . '%';
-                } else {
-                    echo '-';
-                    $score_percentage = 0;
-                }
-
-                echo '</td>';
-                echo '<td>'.$count_attempts.'</td>';
-                echo '<td>';
-
-                $sql = 'SELECT exe_id FROM ' . $tbl_stats_exercices . '
-                         WHERE
-                            exe_exo_id = "'.$exercise_id.'" AND
-                            exe_user_id ="'.$student_id.'" AND
-                            c_id = '.$courseInfo['real_id'].' AND
-                            session_id ="'.$sessionId.'" AND
-                            status = ""
-                        ORDER BY exe_date DESC
-                        LIMIT 1';
-                $result_last_attempt = Database::query($sql);
-                if (Database :: num_rows($result_last_attempt) > 0) {
-                    $id_last_attempt = Database :: result($result_last_attempt, 0, 0);
-                    if ($count_attempts > 0)
-                        echo '<a href="../exercice/exercise_show.php?id=' . $id_last_attempt . '&cidReq='.$course_code.'&session_id='.$sessionId.'&student='.$student_id.'&origin='.(empty($origin)?'tracking':$origin).'">
-                        '.Display::return_icon('quiz.gif').'
-                     </a>';
-                }
-                echo '</td>';
-
-                echo '<td>';
-                $all_attempt_url = "../exercice/exercise_report.php?exerciseId=$exercise_id&cidReq=$course_code&filter_by_user=$student_id&id_session=$sessionId";
-                echo Display::url(Display::return_icon('test_results.png', get_lang('AllAttempts'), array(), ICON_SIZE_SMALL), $all_attempt_url );
-
-                echo '</td></tr>';
-                $data_exercices[$i][] = $exercices['title'];
-                $data_exercices[$i][] = $score_percentage . '%';
-                $data_exercices[$i][] = $count_attempts;
-
-                $csv_content[] = array(
-                    $exercices['title'],
-                    $lp_name,
-                    $score_percentage,
-                    $count_attempts
-                );
-
-                $i++;
-
-            }
-        } else {
-            echo '<tr><td colspan="6">'.get_lang('NoExercise').'</td></tr>';
-        }
-        ?>
-        </tbody>
-        </table>
-        </div>
         <?php
         }
 
@@ -1200,6 +1190,64 @@ if (!empty($student_id)) {
                 echo $table->toHtml();
             }
         }
+
+        require_once '../work/work.lib.php';
+        $userWorks = getWorkPerUser($student_id, $courseInfo['real_id'], $sessionId);
+        echo '
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>' . get_lang('Tasks') . '</th>
+                            <th class="text-center">' . get_lang('DocumentNumber') . '</th>
+                            <th class="text-center">' . get_lang('Note') . '</th>
+                            <th class="text-center">' . get_lang('HandedOut') . '</th>
+                            <th class="text-center">' . get_lang('HandOutDateLimit') . '</th>
+                            <th class="text-center">' . get_lang('ConsideredWorkingTime') . '</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        ';
+        $workingTime = api_get_configuration_value('considered_working_time');
+
+        foreach ($userWorks as $work) {
+            $work = $work['work'];
+            foreach ($work->user_results as $key => $results) {
+                echo '<tr>';
+                echo '<td>' . $work->title . '</td>';
+                $documentNumber = $key + 1;
+                echo '<td class="text-center"><a href="' . api_get_path(WEB_CODE_PATH) . 'work/view.php?cidReq=' . $course_code . '&id_session=' . $sessionId .'&id=' . $results['id'] . '">(' . $documentNumber . ')</a></td>';
+                $qualification = !empty($results['qualification']) ? $results['qualification'] : '-';
+                echo '<td class="text-center">' . $qualification. '</td>';
+                echo '<td class="text-center">' . $results['formatted_date']. '</td>';
+                $assignment = get_work_assignment_by_id($work->id, $courseInfo['real_id']);
+
+                echo '<td class="text-center">';
+                if (!empty($assignment['expires_on'])) {
+                    echo api_convert_and_format_date($assignment['expires_on']);
+                }
+                echo '</td>';
+                $fieldValue = new ExtraFieldValue('work');
+                $resultExtra = $fieldValue->getAllValuesForAnItem(
+                    $work->iid,
+                    true
+                );
+
+                foreach ($resultExtra as $field) {
+                    $field = $field['value'];
+                    if ($workingTime == $field->getField()->getVariable()) {
+                        echo '<td class="text-center">' . $field->getValue() . '</td>';
+                    }
+                }
+
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody>
+                </table>
+            </div>
+        ';
 
         // line about other tools
         ?>

@@ -385,7 +385,7 @@ function show_add_forum_form($inputvalues = array(), $lp_id)
     if ($form->validate()) {
         $check = Security::check_token('post');
         if ($check) {
-            $values = $form->exportValues();
+            $values = $form->getSubmitValues();
             $return_message = store_forum($values);
             Display :: display_confirmation_message($return_message);
         }
@@ -590,7 +590,6 @@ function store_forumcategory($values, $courseInfo = array(), $showMessage = true
  */
 function store_forum($values, $courseInfo = array(), $returnId = false)
 {
-    $now = api_get_utc_datetime();
     $courseInfo = empty($courseInfo) ? api_get_course_info() : $courseInfo;
     $course_id = $courseInfo['real_id'];
     $session_id = api_get_session_id();
@@ -619,6 +618,7 @@ function store_forum($values, $courseInfo = array(), $returnId = false)
 
     // Forum images
     $image_moved = false;
+    $has_attachment = false;
     if (!empty($_FILES['picture']['name'])) {
         $upload_ok = process_uploaded_file($_FILES['picture']);
         $has_attachment = true;
@@ -660,21 +660,9 @@ function store_forum($values, $courseInfo = array(), $returnId = false)
     }
 
     if (isset($values['forum_id'])) {
-        $sql_image = isset($sql_image) ? $sql_image : '';
-        $new_file_name = isset($new_file_name) ? $new_file_name : '';
-        if ($image_moved) {
-            if (empty($_FILES['picture']['name'])) {
-                $sql_image = "";
-            } else {
-                $sql_image = $new_file_name;
-                delete_forum_image($values['forum_id']);
-            }
-        }
-
         // Storing after edition.
         $params = [
             'forum_title'=> $values['forum_title'],
-            'forum_image'=> $sql_image,
             'forum_comment'=> isset($values['forum_comment']) ? $values['forum_comment'] : null,
             'forum_category'=> isset($values['forum_category']) ? $values['forum_category'] : null,
             'allow_anonymous'=> isset($values['allow_anonymous_group']['allow_anonymous']) ? $values['allow_anonymous_group']['allow_anonymous'] : null,
@@ -685,10 +673,20 @@ function store_forum($values, $courseInfo = array(), $returnId = false)
             'default_view'=> isset($values['default_view_type_group']['default_view_type']) ? $values['default_view_type_group']['default_view_type'] : null,
             'forum_of_group'=> isset($values['group_forum']) ? $values['group_forum'] : null,
             'forum_group_public_private'=> isset($values['public_private_group_forum_group']['public_private_group_forum']) ? $values['public_private_group_forum_group']['public_private_group_forum'] : null,
-            'forum_order'=> isset($new_max) ? $new_max : null,
             'session_id'=> $session_id,
             'lp_id' => isset($values['lp_id']) ? intval($values['lp_id']) : 0
         ];
+
+        if (isset($upload_ok)) {
+            if ($has_attachment) {
+                $params['forum_image'] = $new_file_name;
+            }
+        }
+
+        if (isset($values['remove_picture']) && $values['remove_picture'] == 1) {
+            $params['forum_image'] = '';
+            delete_forum_image($values['forum_id']);
+        }
 
         Database::update(
             $table_forums,
@@ -1446,13 +1444,8 @@ function get_forums(
     $table_item_property = Database :: get_course_table(TABLE_ITEM_PROPERTY);
 
     // Condition for the session
-    if (empty($sessionId)) {
-        $session_id = api_get_session_id();
-    } else {
-        $session_id = $sessionId;
-    }
-
-    $sessionIdLink = ($session_id === 0) ? '' : 'AND threads.session_id = item_properties.session_id';
+    $session_id = intval($sessionId) ?: api_get_session_id();
+    $sessionIdLink = $session_id === 0 ? '' : ' AND threads.session_id = item_properties.session_id';
 
     $condition_session = api_get_session_condition(
         $session_id,
@@ -1485,6 +1478,7 @@ function get_forums(
                     item_properties.c_id = $course_id
                     $includeGroupsForumSelect
                 ORDER BY forum.forum_order ASC";
+
 
         // Select the number of threads of the forums (only the threads that are visible).
         $sql2 = "SELECT count(*) AS number_of_threads, threads.forum_id
@@ -1904,9 +1898,7 @@ function getPosts($threadId, $orderDirection = 'ASC', $recursive = false, $postI
     $depth++;
     /** @var \Chamilo\CourseBundle\Entity\CForumPost $post */
     foreach ($posts as $post) {
-        $user = $em->find('ChamiloUserBundle:User', $post->getPosterId());
-
-        $list[$post->getPostId()] = [
+        $postInfo = [
             'c_id' => $post->getCId(),
             'post_id' => $post->getPostId(),
             'post_title' => $post->getPostTitle(),
@@ -1919,13 +1911,23 @@ function getPosts($threadId, $orderDirection = 'ASC', $recursive = false, $postI
             'post_notification' => $post->getPostNotification(),
             'post_parent_id' => $post->getPostParentId(),
             'visible' => $post->getVisible(),
-            'indent_cnt' => $depth,
-            'user_id' => $user->getUserId(),
-            'username' => $user->getUsername(),
-            'username_canonical' => $user->getUsernameCanonical(),
-            'lastname' => $user->getLastname(),
-            'firstname' => $user->getFirstname(),
+            'indent_cnt' => $depth
         ];
+
+        $posterId = $post->getPosterId();
+        if (!empty($posterId)) {
+            $user = $em->find('ChamiloUserBundle:User', $posterId);
+
+            if ($user) {
+                $postInfo['user_id'] = $user->getUserId();
+                $postInfo['username'] = $user->getUsername();
+                $postInfo['username_canonical'] = $user->getUsernameCanonical();
+                $postInfo['lastname'] = $user->getLastname();
+                $postInfo['firstname'] = $user->getFirstname();
+            }
+        }
+
+        $list[$post->getPostId()] = $postInfo;
 
         if (!$recursive) {
             continue;

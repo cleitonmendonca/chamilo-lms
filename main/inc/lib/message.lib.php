@@ -253,7 +253,14 @@ class MessageManager
         $total_filesize = 0;
         if (is_array($file_attachments)) {
             foreach ($file_attachments as $file_attach) {
-                $total_filesize += $file_attach['size'];
+                $fileSize = isset($file_attach['size']) ? $file_attach['size'] : 0;
+                if (is_array($fileSize)) {
+                    foreach ($fileSize as $size) {
+                        $total_filesize += $size;
+                    }
+                } else {
+                    $total_filesize += $fileSize;
+                }
             }
         }
 
@@ -756,7 +763,7 @@ class MessageManager
                 WHERE
                     group_id= $group_id AND
                     msg_status NOT IN ('".MESSAGE_STATUS_OUTBOX."', '".MESSAGE_STATUS_DELETED."')
-                ORDER BY id";
+                ORDER BY id DESC";
         $rs = Database::query($sql);
         $data = array();
         if (Database::num_rows($rs) > 0) {

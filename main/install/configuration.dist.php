@@ -247,3 +247,48 @@ $_configuration['system_stable'] = NEW_VERSION_STABLE;
 // to reflect their packaging method. The default value is 'chamilo'. This will
 // be reflected on the https://version.chamilo.org/stats page in the future.
 //$_configuration['packager'] = 'chamilo';
+// List of driver to plugin in ckeditor
+//$_configuration['editor_driver_list'] = ['PersonalDriver', 'CourseDriver'];
+// Hide send to hrm users options in announcements
+//$_configuration['announcements_hide_send_to_hrm_users'] = true;
+// Hide certificate link in index/userportal pages
+//$_configuration['hide_my_certificate_link'] = false;
+// Send only quiz answer notifications to course coaches and not general coach
+//$_configuration['block_quiz_mail_notification_general_coach'] = false;
+// Security: block direct access from logged in users to contents in OPEN (but not public) courses. Set to true to block
+//$_configuration['block_registered_users_access_to_open_course_contents'] = false;
+// Allows syncing the database with the current entity schema
+//$_configuration['sync_db_with_schema'] = false;
+// Load course notifications in user_portal.php using ajax
+//$_configuration['user_portal_load_notification_by_ajax'] = false;
+// When exporting a LP, all files and folders in the same path of an html will be exported too.
+//$_configuration['add_all_files_in_lp_export'] = false;
+// Send exercise student score to manager in email notification
+//$_configuration['send_score_in_exam_notification_mail_to_manager'] = false;
+// Show blocked LPs by prerequisite to students
+//$_configuration['show_prerequisite_as_blocked'] = false;
+// Mail header extra HTML attributes
+//$_configuration['mail_header_style'] = '';
+// Mail body extra HTML attributes
+//$_configuration['mail_content_style'] = '';
+// Show all agenda events in personal agenda from all session no matter the visibility.
+//$_configuration['personal_agenda_show_all_session_events'] = false;
+// Allows to redirect to the session after the inscription in session about
+// $_configuration['allow_redirect_to_session_after_inscription_about'] = false;
+// Allows to do a remove_XSS in course introduction with user status COURSEMANAGERLOWSECURITY in order to accept all embed type videos (like vimeo, wistia, etc)
+// $_configuration['allow_course_introduction_low_security'] = false;
+// Prevents the duplicate upload in assignments
+// $_configuration['assignment_prevent_duplicate_upload'] = false;
+// Set ConsideredWorkingTime work extra field variable from main/admin/extra_fields.php?type=work
+// (with internal id 'work_time' as below) and enable the following line to show in MyStudents page works report
+// $_configuration['considered_working_time'] = 'work_time';
+//
+// ------ Survey configuration settings
+// Add support to mandatory surveys. The user will not be able to enter to the course until fill the mandatory surveys
+// Requires DB change:
+/*
+INSERT INTO extra_field (extra_field_type, field_type, variable, display_text, visible_to_self, changeable, created_at)
+VALUES (12, 13, 'is_mandatory', 'IsMandatory', 1, 1, NOW());
+*/
+//$_configuration['allow_mandatory_survey'] = false;
+// ------

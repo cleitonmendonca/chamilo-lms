@@ -2,9 +2,9 @@
 /* For licensing terms, see /license.txt */
 
 use Chamilo\CoreBundle\Entity\ExtraField as EntityExtraField;
-use CpChart\Classes\pCache as pCache;
-use CpChart\Classes\pData as pData;
-use CpChart\Classes\pImage as pImage;
+use CpChart\Chart\Cache as pCache;
+use CpChart\Chart\Data as pData;
+use CpChart\Chart\Image as pImage;
 use Chamilo\UserBundle\Entity\User;
 use Chamilo\CoreBundle\Entity\Course;
 use Chamilo\CoreBundle\Entity\Session;
@@ -19,6 +19,7 @@ class Tracking
 {
     public static function get_group_reporting(
         $course_id,
+        $sessionId = null,
         $group_id = null,
         $type = 'all',
         $start = 0,
@@ -33,18 +34,23 @@ class Tracking
         $course_info = api_get_course_info_by_id($course_id);
         $table_group = Database :: get_course_table(TABLE_GROUP);
         $course_id = intval($course_id);
+        $sessionId = (int) $sessionId;
 
         $select = ' * ';
         if ($type == 'count') {
             $select = ' count(id) as count ';
         }
 
-        $default_where = array('c_id = ? ' => array($course_id));
+        if (empty($sessionId)) {
+            $default_where = array('c_id = ? AND (session_id = 0 or session_id IS NULL)' => array($course_id));
+        } else {
+            $default_where = array('c_id = ? AND session_id = ? ' => array($course_id, $sessionId));
+        }
 
         $result = Database::select($select, $table_group, array(
-                'limit' => " $start, $limit",
-                'where' => $default_where,
-                'order' => "$sidx $sord")
+            'limit' => " $start, $limit",
+            'where' => $default_where,
+            'order' => "$sidx $sord")
         );
 
         if ($type == 'count') {
@@ -63,19 +69,23 @@ class Tracking
                 $messages = 0;
 
                 foreach ($users as $user_data) {
-                    $time += Tracking::get_time_spent_on_the_course($user_data['user_id'], $course_info['code'], 0);
-                    $avg_student_score += Tracking::get_avg_student_score($user_data['user_id'], $course_info['code'], array(), 0);
-                    $avg_student_progress += Tracking::get_avg_student_progress($user_data['user_id'], $course_info['code'], array(), 0);
-                    $work += Tracking::count_student_assignments($user_data['user_id'], $course_info['code'], 0);
-                    $messages += Tracking::count_student_messages($user_data['user_id'], $course_info['code'], 0);
+                    $time += Tracking::get_time_spent_on_the_course($user_data['user_id'], $course_info['code'], $sessionId);
+                    $avg_student_score += Tracking::get_avg_student_score($user_data['user_id'], $course_info['code'], array(), $sessionId);
+                    $avg_student_progress += Tracking::get_avg_student_progress($user_data['user_id'], $course_info['code'], array(), $sessionId);
+                    $work += Tracking::count_student_assignments($user_data['user_id'], $course_info['code'], $sessionId);
+                    $messages += Tracking::count_student_messages($user_data['user_id'], $course_info['code'], $sessionId);
                 }
+
+                $countUsers = count($users);
+                $averageProgress = empty($countUsers) ? 0 : $avg_student_progress/$countUsers;
+                $averageScore = empty($countUsers) ? 0 : $avg_student_score/$countUsers;
 
                 $group_item = array(
                     'id' => $group['id'],
                     'name' => $group['name'],
                     'time' => api_time_to_hms($time),
-                    'progress' => $avg_student_progress,
-                    'score' => $avg_student_score,
+                    'progress' => $averageProgress,
+                    'score' => $averageScore,
                     'works' => $work,
                     'messages' => $messages,
                 );
@@ -1200,9 +1210,11 @@ class Tracking
             foreach ($platformCourses as $course) {
                 $courses[$course['code']] = $course['code'];
             }
+
+
+
             $sessions = SessionManager::get_sessions_followed_by_drh($userId);
         } else {
-
             $studentList = UserManager::getUsersFollowedByUser(
                 $userId,
                 STUDENT,
@@ -1652,34 +1664,62 @@ class Tracking
      */
     public static function get_course_connections_count($courseId, $session_id = 0, $start = 0, $stop = null)
     {
-    	if ($start < 0) {
+        if ($start < 0) {
     		$start = 0;
     	}
     	if (!isset($stop) or ($stop < 0)) {
     		$stop = api_get_utc_datetime();
     	}
 
-        $start = Database::escape_string($start);
-        $stop = Database::escape_string($stop);
+        // Given we're storing in cache, round the start and end times
+        // to the lower minute
+        $roundedStart = substr($start, 0, -2) . '00';
+        $roundedStop = substr($stop, 0, -2) . '00';
+        $roundedStart = Database::escape_string($roundedStart);
+        $roundedStop = Database::escape_string($roundedStop);
 
-    	$month_filter = " AND login_course_date > '$start' AND login_course_date < '$stop' ";
+    	$month_filter = " AND login_course_date > '$roundedStart' AND login_course_date < '$roundedStop' ";
 
         $courseId = intval($courseId);
     	$session_id  = intval($session_id);
     	$count = 0;
-
-    	$tbl_track_e_course_access = Database :: get_main_table(TABLE_STATISTIC_TRACK_E_COURSE_ACCESS);
-    	$sql = "SELECT count(*) as count_connections
+        $tbl_track_e_course_access = Database :: get_main_table(TABLE_STATISTIC_TRACK_E_COURSE_ACCESS);
+        $sql =  "SELECT count(*) as count_connections
                 FROM $tbl_track_e_course_access
                 WHERE
                     c_id = $courseId AND
                     session_id = $session_id
                     $month_filter";
-    	$rs = Database::query($sql);
-    	if (Database::num_rows($rs)>0) {
-    		$row = Database::fetch_object($rs);
-    		$count = $row->count_connections;
-    	}
+
+        //This query can be very slow (several seconds on an indexed table
+        // with 14M rows). As such, we'll try to use APCU if it is
+        // available to store the resulting value for a few seconds
+        $cacheEnabled = function_exists('apcu_exists');
+        if ($cacheEnabled) {
+            $apc = apcu_cache_info(true);
+            $apc_end = $apc['start_time'] + $apc['ttl'];
+
+            $apc_var = 'course_access_'.$courseId.'_'.$session_id.'_'.strtotime($roundedStart).'_'.strtotime($roundedStop);
+            if (apcu_exists($apc_var) && (time() < $apc_end) &&
+                apcu_fetch($apc_var) > 0
+            ) {
+                $count = apcu_fetch($apc_var);
+            } else {
+                $rs = Database::query($sql);
+                if (Database::num_rows($rs)>0) {
+                    $row = Database::fetch_object($rs);
+                    $count = $row->count_connections;
+                }
+                apcu_clear_cache();
+                apcu_store($apc_var, $count, 60);
+            }
+        } else {
+            $rs = Database::query($sql);
+            if (Database::num_rows($rs)>0) {
+                $row = Database::fetch_object($rs);
+                $count = $row->count_connections;
+            }
+        }
 
     	return $count;
     }
