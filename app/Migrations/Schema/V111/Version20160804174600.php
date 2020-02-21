@@ -3,8 +3,8 @@
 
 namespace Application\Migrations\Schema\V111;
 
-use Application\Migrations\AbstractMigrationChamilo,
-    Doctrine\DBAL\Schema\Schema;
+use Application\Migrations\AbstractMigrationChamilo;
+use Doctrine\DBAL\Schema\Schema;
 use Chamilo\CoreBundle\Entity\SystemTemplate;
 
 /**
@@ -656,9 +656,10 @@ class Version20160804174600 extends AbstractMigrationChamilo
             $tpl = $em
                 ->getRepository('ChamiloCoreBundle:SystemTemplate')
                 ->findOneBy(['title' => $title]);
-            $tpl->setContent($content);
-
-            $em->merge($tpl);
+            if (!empty($tpl)) {
+                $tpl->setContent($content);
+                $em->merge($tpl);
+            }
         }
 
         $em->flush();
@@ -1213,9 +1214,10 @@ class Version20160804174600 extends AbstractMigrationChamilo
             $tpl = $em
                 ->getRepository('ChamiloCoreBundle:SystemTemplate')
                 ->findOneBy(['title' => $title]);
-            $tpl->setContent($content);
-
-            $em->merge($tpl);
+            if (!empty($tpl)) {
+                $tpl->setContent($content);
+                $em->merge($tpl);
+            }
         }
 
         $em->flush();

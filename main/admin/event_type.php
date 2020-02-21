@@ -1,15 +1,15 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Definition of new system event types
+ * Definition of new system event types.
+ *
+ * @deprecated to be removed in 2.x
+ *
  * @package chamilo.admin.events
- */
-/**
- * Init and access validation
  */
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $this_section = SECTION_PLATFORM_ADMIN;
 
 api_protect_admin_script();
@@ -31,27 +31,42 @@ if ($action == 'modEventType') {
     if ($eventUsers) {
         $users = explode(';', $eventUsers);
     } else {
-        $users = array();
+        $users = [];
     }
     if (!empty($event_name)) {
         $eventName = $event_name;
     }
-    Event::save_event_type_message($eventName, $users, $eventMessage, $eventSubject, $eventMessageLanguage, $activated);
+    Event::save_event_type_message(
+        $eventName,
+        $users,
+        $eventMessage,
+        $eventSubject,
+        $eventMessageLanguage,
+        $activated
+    );
     header('location: event_controller.php');
     exit;
 }
 
 $ets = Event::get_all_event_types();
-
 $languages = api_get_languages();
+$ajaxPath = api_get_path(WEB_CODE_PATH).'inc/ajax/events.ajax.php';
 
-$ajaxPath = api_get_path(WEB_CODE_PATH) . 'inc/ajax/events.ajax.php';
-
-$action_array = array(array('url' =>'event_controller.php?action=listing' , 'content' => Display::return_icon('view_text.png', get_lang('ListView'), array(), ICON_SIZE_MEDIUM)));
+$action_array = [
+    [
+        'url' => 'event_controller.php?action=listing',
+        'content' => Display::return_icon(
+            'view_text.png',
+            get_lang('ListView'),
+            [],
+            ICON_SIZE_MEDIUM
+        ),
+    ],
+];
 
 $key_lang = get_lang('YouHaveSomeUnsavedChanges');
-$users = UserManager::get_user_list(array(), array('firstname'));
-$new_user_list = array();
+$users = UserManager::get_user_list([], ['firstname']);
+$new_user_list = [];
 foreach ($users as $user) {
     if ($user['status'] == ANONYMOUS) {
         continue;
@@ -60,10 +75,10 @@ foreach ($users as $user) {
 }
 
 /**
- * Header definition
+ * Header definition.
  */
-$interbreadcrumb[] = array('url' => 'index.php', 'name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => 'event_controller.php', 'name' => get_lang('Events'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
+$interbreadcrumb[] = ['url' => 'event_controller.php', 'name' => get_lang('Events')];
 $tool_name = get_lang('EventMessageManagement');
 
 Display::display_header($tool_name);
@@ -71,18 +86,19 @@ Display::display_header($tool_name);
 echo Display::actions($action_array);
 
 /**
- * JavaScript code
+ * JavaScript code.
+ *
  * @todo move into HTML header
  */
 ?>
 <script>
-    var usersList = <?php echo json_encode($new_user_list) ?>;
-    var eventTypes = <?php echo json_encode($ets) ?>;
-    var eventsConfig = <?php echo json_encode($event_config) ?>;
-    var currentLanguage = <?php echo json_encode(api_get_interface_language()) ?>;
+    var usersList = <?php echo json_encode($new_user_list); ?>;
+    var eventTypes = <?php echo json_encode($ets); ?>;
+    var eventsConfig = <?php echo json_encode($event_config); ?>;
+    var currentLanguage = <?php echo json_encode(api_get_interface_language()); ?>;
     var flagContentHasChanged = false;
-    var key_lang = "<?php echo $key_lang ?>";
-    var event_type_name = "<?php echo $event_name ?>";
+    var key_lang = "<?php echo $key_lang; ?>";
+    var event_type_name = "<?php echo $event_name; ?>";
 
     $(document).ready(function() {
         confirmMessage("eventList");
@@ -93,7 +109,7 @@ echo Display::actions($action_array);
 
     function ajax(params,func) {
         $.ajax({
-            url: "<?php echo $ajaxPath ?>",
+            url: "<?php echo $ajaxPath; ?>",
             type: "POST",
             data: params,
             success: func
@@ -181,7 +197,7 @@ echo Display::actions($action_array);
         if (self_sent == false ) {
 
             $.ajax({
-                url: '<?php echo $ajaxPath ?>?action=get_event_users&eventName=' +currentEventName,
+                url: '<?php echo $ajaxPath; ?>?action=get_event_users&eventName=' +currentEventName,
                 dataType: 'json',
                 success: function(data) {
                     removeAllOption($('#usersSubList'));
@@ -295,12 +311,13 @@ echo Display::actions($action_array);
 </script>
 <?php
 /**
- * HTML body
+ * HTML body.
+ *
  * @todo move as template layout
  */
 ?>
 <div class="page-header">
-<h2><?php echo get_lang('EventMessageManagement') ?></h2>
+<h2><?php echo get_lang('EventMessageManagement'); ?></h2>
 </div>
 
 <form method="POST" onSubmit="return submitForm(); ">
@@ -311,7 +328,7 @@ echo Display::actions($action_array);
         <select class="col-md-6" multiple="1" id="eventList" onchange="confirmMessage(this.name); return false;" name="eventList">
         <?php
         foreach ($event_config as $key => $config) {
-            echo '<option value="' . $key . '">' . $config['name_lang_var'] . '</option>';
+            echo '<option value="'.$key.'">'.$config['name_lang_var'].'</option>';
         }
         ?>
         </select>
@@ -344,19 +361,20 @@ echo Display::actions($action_array);
     <br />
     <select id="languages" name="languages" style="margin-top:20px;" onclick='confirmMessage(this.name); return false;'>
 <?php foreach ($languages["name"] as $key => $value) {
-    $english_name = $languages['folder'][$key]; ?>
-            <option value="<?php echo $english_name; ?>" <?php echo ($english_name == api_get_interface_language()) ? "selected=selected" : ""; ?>><?php echo $value; ?></option>
-<?php } ?>
+            $english_name = $languages['folder'][$key]; ?>
+    <option value="<?php echo $english_name; ?>" <?php echo ($english_name == api_get_interface_language()) ? "selected=selected" : ""; ?>>
+        <?php echo $value; ?>
+    </option>
+<?php
+        } ?>
     </select>
 
     <input type="hidden" name="action" value="modEventType" />
     <input type="hidden" name="eventId" id="eventId"  />
     <input type="hidden" name="eventUsers" id="eventUsers" />
-    <input type="hidden" id="eventName" value="<?php echo $event_name ?>"/>
+    <input type="hidden" id="eventName" value="<?php echo $event_name; ?>"/>
 
     <br />
-    <!--	<div id="descLangVar">
-        </div>-->
     <br />
 
     <label for="eventSubject">
@@ -389,4 +407,3 @@ echo Display::actions($action_array);
 </form>
 <?php
 Display :: display_footer();
-

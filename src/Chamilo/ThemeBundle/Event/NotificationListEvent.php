@@ -1,27 +1,21 @@
 <?php
-/**
- * NotificationListEvent.php
- * avanzu-admin
- * Date: 23.02.14
- */
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\ThemeBundle\Event;
-
 
 use Chamilo\ThemeBundle\Model\NotificationInterface;
 
 /**
- * Class NotificationListEvent
+ * Class NotificationListEvent.
  *
  * @package Chamilo\ThemeBundle\Event
  */
 class NotificationListEvent extends ThemeEvent
 {
-
     /**
      * @var array
      */
-    protected $notifications = array();
+    protected $notifications = [];
 
     protected $total = 0;
 
@@ -34,8 +28,6 @@ class NotificationListEvent extends ThemeEvent
     }
 
     /**
-     * @param NotificationInterface $notificationInterface
-     *
      * @return $this
      */
     public function addNotification(NotificationInterface $notificationInterface)
@@ -60,7 +52,4 @@ class NotificationListEvent extends ThemeEvent
     {
         return $this->total == 0 ? sizeof($this->notifications) : $this->total;
     }
-
-
-
 }

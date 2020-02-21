@@ -1,58 +1,67 @@
 <?php
 /* For licensing terms, see /license.txt */
+
+use ChamiloSession as Session;
+
 /**
- * Script that displays a blank page (with later a message saying why)
+ * Script that displays a blank page (with later a message saying why).
+ *
  * @package chamilo.learnpath
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
 // Flag to allow for anonymous user - needs to be set before global.inc.php.
 $use_anonymous = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $htmlHeadXtra[] = "
 <style>
 body { background: none;}
 </style>
 ";
-Display::display_reduced_header();
 
+$message = '';
 if (isset($_GET['error'])) {
-    switch ($_GET['error']){
+    switch ($_GET['error']) {
         case 'document_deleted':
-            echo '<br /><br />';
-            Display::display_error_message(get_lang('DocumentHasBeenDeleted'));
+            $message = Display::return_message(get_lang('DocumentHasBeenDeleted'), 'error');
             break;
         case 'prerequisites':
-            echo '<br /><br />';
-            Display::display_warning_message(get_lang('LearnpathPrereqNotCompleted'));
+            $prerequisiteMessage = isset($_GET['prerequisite_message']) ? $_GET['prerequisite_message'] : '';
+            $message = Display::return_message(get_lang('LearnpathPrereqNotCompleted'), 'warning');
+            if (!empty($prerequisiteMessage)) {
+                $message = Display::return_message(Security::remove_XSS($prerequisiteMessage), 'warning');
+            }
+
             break;
         case 'document_not_found':
-            echo '<br /><br />';
-            Display::display_warning_message(get_lang('FileNotFound'));
+            $message = Display::return_message(get_lang('FileNotFound'), 'warning');
             break;
         case 'reached_one_attempt':
-            echo '<br /><br />';
-            Display::display_warning_message(get_lang('ReachedOneAttempt'));
+            $message = Display::return_message(get_lang('ReachedOneAttempt'), 'warning');
             break;
         case 'x_frames_options':
-            if (isset($_SESSION['x_frame_source'])) {
-                $src = $_SESSION['x_frame_source'];
-                $icon = '<em class="icon-play-sign icon-2x"></em>&nbsp;';
-
-                echo Display::return_message(
-                    Display::url($icon.$src, $src, ['class' => 'btn generated', 'target' => '_blank']),
+            $src = Session::read('x_frame_source');
+            if (!empty($src)) {
+                $icon = '<em class="icon-play-sign icon-2x" aria-hidden="true"></em>';
+                $message = Display::return_message(
+                    Display::url(
+                        $icon.$src,
+                        $src,
+                        ['class' => 'btn generated', 'target' => '_blank']
+                    ),
                     'normal',
                     false
                 );
-                unset($_SESSION['x_frame_source']);
+                Session::erase('x_frame_source');
             }
             break;
         default:
             break;
     }
 } elseif (isset($_GET['msg']) && $_GET['msg'] == 'exerciseFinished') {
-    echo '<br /><br />';
-    Display::display_normal_message(get_lang('ExerciseFinished'));
+    $message = Display::return_message(get_lang('ExerciseFinished'));
 }
-?>
-</body>
-</html>
+
+$template = new Template();
+$template->assign('content', $message);
+$template->display_blank_template();

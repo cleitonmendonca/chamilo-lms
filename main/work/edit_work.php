@@ -1,9 +1,10 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use ChamiloSession as Session;
+require_once __DIR__.'/../inc/global.inc.php';
 
-require_once '../inc/global.inc.php';
+api_protect_course_script(true);
+
 $lib_path = api_get_path(LIBRARY_PATH);
 
 /* Libraries */
@@ -13,6 +14,12 @@ require_once 'work.lib.php';
 $this_section = SECTION_COURSES;
 
 if (!api_is_allowed_to_edit()) {
+    api_not_allowed(true);
+}
+
+$blockEdition = api_get_configuration_value('block_student_publication_edition');
+
+if ($blockEdition && !api_is_platform_admin()) {
     api_not_allowed(true);
 }
 
@@ -29,16 +36,16 @@ if (api_is_platform_admin() == false && $locked == true) {
 }
 
 $htmlHeadXtra[] = to_javascript_work();
-$interbreadcrumb[] = array(
-    'url' => api_get_path(WEB_CODE_PATH) . 'work/work.php?' . api_get_cidreq(),
-    'name' => get_lang('StudentPublications')
-);
-$interbreadcrumb[] = array('url' => '#', 'name' => get_lang('Edit'));
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(),
+    'name' => get_lang('StudentPublications'),
+];
+$interbreadcrumb[] = ['url' => '#', 'name' => get_lang('Edit')];
 
 $form = new FormValidator(
     'edit_dir',
     'post',
-    api_get_path(WEB_CODE_PATH) . 'work/edit_work.php?id=' . $workId . '&' . api_get_cidreq()
+    api_get_path(WEB_CODE_PATH).'work/edit_work.php?id='.$workId.'&'.api_get_cidreq()
 );
 $form->addElement('header', get_lang('Edit'));
 
@@ -63,40 +70,50 @@ if (Gradebook::is_active()) {
 } else {
     $defaults['category_id'] = '';
 }
-
 if (!empty($homework['expires_on'])) {
     $homework['expires_on'] = api_get_local_time($homework['expires_on']);
-    $there_is_a_expire_date = true;
     $defaults['enableExpiryDate'] = true;
+    $defaults['expires_on'] = $homework['expires_on'];
 } else {
     $homework['expires_on'] = null;
-    $there_is_a_expire_date = false;
 }
 
 if (!empty($homework['ends_on'])) {
     $homework['ends_on'] = api_get_local_time($homework['ends_on']);
-    $there_is_a_end_date = true;
+    $defaults['ends_on'] = $homework['ends_on'];
     $defaults['enableEndDate'] = true;
 } else {
     $homework['ends_on'] = null;
-    $there_is_a_end_date = false;
-}
-
-if ($there_is_a_end_date) {
-    $defaults['ends_on'] = $homework['ends_on'];
-}
-
-if ($there_is_a_expire_date) {
-    $defaults['expires_on'] = $homework['expires_on'];
+    $defaults['enableEndDate'] = false;
+    $defaults['ends_on'] = null;
 }
 
 $defaults['add_to_calendar'] = isset($homework['add_to_calendar']) ? $homework['add_to_calendar'] : null;
-$form = getFormWork($form, $defaults);
+$form = getFormWork($form, $defaults, $workId);
 $form->addElement('hidden', 'work_id', $workId);
 $form->addButtonUpdate(get_lang('ModifyDirectory'));
 
+$currentUrl = api_get_path(WEB_CODE_PATH).'work/edit_work.php?id='.$workId.'&'.api_get_cidreq();
 if ($form->validate()) {
     $params = $form->getSubmitValues();
+    $params['enableEndDate'] = isset($params['enableEndDate']) ? true : false;
+    $params['enableExpiryDate'] = isset($params['enableExpiryDate']) ? true : false;
+
+    if ($params['enableExpiryDate'] &&
+        $params['enableEndDate']
+    ) {
+        if ($params['expires_on'] > $params['ends_on']) {
+            Display::addFlash(
+                Display::return_message(
+                    get_lang('DateExpiredNotBeLessDeadLine'),
+                    'warning'
+                )
+            );
+            header('Location: '.$currentUrl);
+            exit;
+        }
+    }
+
     $workId = $params['work_id'];
     $editCheck = false;
     $workData = get_work_data_by_id($workId);
@@ -108,16 +125,13 @@ if ($form->validate()) {
     }
 
     if ($editCheck) {
-
-        updateWork($workId, $params, $courseInfo, $sessionId);
+        updateWork($workData['iid'], $params, $courseInfo, $sessionId);
         updatePublicationAssignment($workId, $params, $courseInfo, $groupId);
         updateDirName($workData, $params['new_dir']);
-
-        $currentUrl = api_get_path(WEB_CODE_PATH).'work/edit_work.php?id='.$workId.'&'.api_get_cidreq();
-        Display::addFlash(Display::return_message(get_lang('FolderEdited'), 'success'));
+        Skill::saveSkills($form, ITEM_TYPE_STUDENT_PUBLICATION, $workData['iid']);
+        Display::addFlash(Display::return_message(get_lang('Updated'), 'success'));
         header('Location: '.$currentUrl);
         exit;
-
     } else {
         Display::addFlash(Display::return_message(get_lang('FileExists'), 'warning'));
     }

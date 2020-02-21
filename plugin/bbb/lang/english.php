@@ -1,10 +1,5 @@
 <?php
-/**
- *
- * @copyright (c) 2012 University of Geneva
- * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
- * @author Laurent Opprecht <laurent@opprecht.info>
- */
+/* License: see /license.txt */
 // Needed in order to show the plugin title
 $strings['plugin_title'] = "Videoconference";
 $strings['plugin_comment'] = "Add a videoconference room in a Chamilo course using BigBlueButton (BBB)";
@@ -35,7 +30,8 @@ $strings['ServerIsNotConfigured'] = "Videoconference server is not configured";
 $strings['XUsersOnLine'] = "%s user(s) online";
 
 $strings['host'] = 'BigBlueButton host';
-$strings['host_help'] = 'This is the name of the server where your BigBlueButton server is running. Might be localhost, an IP address (e.g. 192.168.13.54) or a domain name (e.g. my.video.com).';
+$strings['host_help'] = 'This is the name of the server where your BigBlueButton server is running. 
+Might be localhost, an IP address (e.g. http://192.168.13.54) or a domain name (e.g. http://my.video.com).';
 
 $strings['salt'] = 'BigBlueButton salt';
 $strings['salt_help'] = 'This is the security key of your BigBlueButton server, which will allow your server to authentify the Chamilo installation. Refer to the BigBlueButton documentation to locate it. Try bbb-conf --salt';
@@ -50,9 +46,34 @@ $strings['enable_global_conference_per_user'] = 'Enable global conference per us
 $strings['enable_conference_in_course_groups'] = 'Enable conference in course groups';
 $strings['enable_global_conference_link'] = 'Enable the link to the global conference in the homepage';
 
+$strings['disable_download_conference_link'] = 'Disable download conference';
+
 $strings['big_blue_button_record_and_store'] = 'Record and store sessions';
 $strings['bbb_enable_conference_in_groups'] = 'Allow conference in groups';
 $strings['plugin_tool_bbb'] = 'Video';
 $strings['ThereAreNotRecordingsForTheMeetings'] = 'There are not recording for the meeting sessions';
 $strings['NoRecording'] = 'No recording';
 $strings['ClickToContinue'] = 'Click to continue';
+$strings['NoGroup'] = 'No group';
+$strings['UrlMeetingToShare'] = 'URL to share';
+
+$strings['AdminView'] = 'View for administrators';
+$strings['max_users_limit'] = 'Max users limit';
+$strings['max_users_limit_help'] = 'Set this to the maximum number of users you want to allow by course or session-course. Leave empty or set to 0 to disable this limit.';
+$strings['MaxXUsersWarning'] = 'This conference room has a maximum number of %s simultaneous users.';
+$strings['MaxXUsersReached'] = 'The limit of %s simultaneous users has been reached for this conference room. Please wait for one seat to be freed or for another conference to start in order to join.';
+$strings['MaxXUsersReachedManager'] = 'The limit of %s simultaneous users has been reached for this conference room. To increase this limit, please contact the platform administrator.';
+$strings['MaxUsersInConferenceRoom'] = 'Max simultaneous users in a conference room';
+$strings['global_conference_allow_roles'] = "Global conference link only visible for this user roles";
+$strings['CreatedAt'] = 'Created at';
+
+$strings['interface'] = 'Default Interface';
+$strings['launch_type'] = 'Client launch choice';
+$strings['EnterConferenceFlash'] = 'Enter the videoconference (Flash client)';
+$strings['EnterConferenceHTML5'] = 'Enter the videoconference (HTML5 client)';
+$strings['ParticipantsWillUseSameInterface'] = 'Participants will use the same interface as you';
+$strings['SetByStudent'] = 'Set by student';
+$strings['SetByTeacher'] = 'Set by teacher';
+$strings['SetByDefault'] = 'Set to default interface';
+$strings['allow_regenerate_recording'] = 'Allow regenerate recording';
+$strings['bbb_force_record_generation'] = 'Force record generation at the end of the meeting';

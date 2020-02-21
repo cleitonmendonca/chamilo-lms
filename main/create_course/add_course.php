@@ -1,12 +1,18 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CoreBundle\Entity\CourseCategory;
+use Chamilo\CoreBundle\Entity\Repository\CourseCategoryRepository;
+
 /**
  * This script allows professors and administrative staff to create course sites.
+ *
  * @author Patrick Cool <patrick.cool@UGent.be>, Ghent University
  * @author Roan Embrechts, refactoring
+ *
  * @package chamilo.create_course
  * "Course validation" feature:
+ *
  * @author Jose Manuel Abuin Mosquera <chema@cesga.es>, Centro de Supercomputacion de Galicia
  * "Course validation" feature, technical adaptation for Chamilo 1.8.8:
  * @author Ivan Tcholakov <ivantcholakov@gmail.com>
@@ -15,17 +21,30 @@
 // Flag forcing the "current course" reset.
 $cidReset = true;
 
-// Including the global initialization file.
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
+
+// Check access rights.
+if (!api_is_allowed_to_create_course()) {
+    api_not_allowed(true);
+    exit;
+}
 
 // Section for the tabs.
 $this_section = SECTION_COURSES;
+
+$em = Database::getManager();
+/** @var CourseCategoryRepository $courseCategoriesRepo */
+$courseCategoriesRepo = $em->getRepository('ChamiloCoreBundle:CourseCategory');
+// Get all possible teachers.
+$accessUrlId = api_get_current_access_url_id();
 
 // "Course validation" feature. This value affects the way of a new course creation:
 // true  - the new course is requested only and it is created after approval;
 // false - the new course is created immediately, after filling this form.
 $course_validation_feature = false;
-if (api_get_setting('course_validation') === 'true' && !api_is_platform_admin()) {
+if (api_get_setting('course_validation') === 'true' &&
+    !api_is_platform_admin()
+) {
     $course_validation_feature = true;
 }
 
@@ -33,30 +52,20 @@ $htmlHeadXtra[] = '<script>
     function setFocus(){
         $("#title").focus();
     }
-    $(window).load(function () {
+    $(window).on("load", function () {
         setFocus();
     });
 </script>';
 
-$interbreadcrumb[] = array(
-    'url' => api_get_path(WEB_PATH) . 'user_portal.php',
-    'name' => get_lang('MyCourses')
-);
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_PATH).'user_portal.php',
+    'name' => get_lang('MyCourses'),
+];
 
 // Displaying the header.
 $tool_name = $course_validation_feature ? get_lang('CreateCourseRequest') : get_lang('CreateSite');
 
 $tpl = new Template($tool_name);
-
-if (api_get_setting('allow_users_to_create_courses') === 'false' && !api_is_platform_admin()) {
-    api_not_allowed(true);
-}
-
-// Check access rights.
-if (!api_is_allowed_to_create_course()) {
-    api_not_allowed(true);
-    exit;
-}
 
 // Build the form.
 $form = new FormValidator('add_course');
@@ -68,13 +77,13 @@ $form->addElement('header', $tool_name);
 $form->addElement(
     'text',
     'title',
-    array(
+    [
         get_lang('CourseName'),
-        get_lang('Ex')
-    ),
-    array(
-        'id' => 'title'
-    )
+        get_lang('Ex'),
+    ],
+    [
+        'id' => 'title',
+    ]
 );
 $form->applyFilter('title', 'html_filter');
 $form->addRule('title', get_lang('ThisFieldIsRequired'), 'required');
@@ -85,30 +94,53 @@ $form->addElement(
     '<div id="advanced_params_options" style="display:none">'
 );
 
-// Category category.
-$url = api_get_path(WEB_AJAX_PATH) . 'course.ajax.php?a=search_category';
-
-$form->addElement(
-    'select_ajax',
-    'category_code',
-    get_lang('CourseFaculty'),
-    null,
-    array('url' => $url)
+$countCategories = $courseCategoriesRepo->countAllInAccessUrl(
+    $accessUrlId,
+    api_get_configuration_value('allow_base_course_category')
 );
+
+if ($countCategories >= 100) {
+    // Category code
+    $url = api_get_path(WEB_AJAX_PATH).'course.ajax.php?a=search_category';
+    $form->addElement(
+        'select_ajax',
+        'category_code',
+        get_lang('CourseFaculty'),
+        null,
+        ['url' => $url]
+    );
+} else {
+    $categories = $courseCategoriesRepo->findAllInAccessUrl(
+        $accessUrlId,
+        api_get_configuration_value('allow_base_course_category')
+    );
+    $categoriesOptions = [null => get_lang('None')];
+
+    /** @var CourseCategory $category */
+    foreach ($categories as $category) {
+        $categoriesOptions[$category->getCode()] = $category->__toString();
+    }
+
+    $form->addSelect(
+        'category_code',
+        get_lang('CourseFaculty'),
+        $categoriesOptions
+    );
+}
 
 // Course code
 $form->addText(
     'wanted_code',
-    array(
+    [
         get_lang('Code'),
-        get_lang('OnlyLettersAndNumbers')
-    ),
+        get_lang('OnlyLettersAndNumbers'),
+    ],
     '',
-    array(
+    [
         'maxlength' => CourseManager::MAX_COURSE_LENGTH_CODE,
         'pattern' => '[a-zA-Z0-9]+',
-        'title' => get_lang('OnlyLettersAndNumbers')
-    )
+        'title' => get_lang('OnlyLettersAndNumbers'),
+    ]
 );
 $form->applyFilter('wanted_code', 'html_filter');
 $form->addRule(
@@ -119,15 +151,14 @@ $form->addRule(
 );
 
 // The teacher
-$titular = & $form->addElement('hidden', 'tutor_name', '');
+$titular = &$form->addElement('hidden', 'tutor_name', '');
 if ($course_validation_feature) {
-
     // Description of the requested course.
     $form->addElement(
         'textarea',
         'description',
         get_lang('Description'),
-        array('rows' => '3')
+        ['rows' => '3']
     );
 
     // Objectives of the requested course.
@@ -135,7 +166,7 @@ if ($course_validation_feature) {
         'textarea',
         'objetives',
         get_lang('Objectives'),
-        array('rows' => '3')
+        ['rows' => '3']
     );
 
     // Target audience of the requested course.
@@ -143,7 +174,7 @@ if ($course_validation_feature) {
         'textarea',
         'target_audience',
         get_lang('TargetAudience'),
-        array('rows' => '3')
+        ['rows' => '3']
     );
 }
 
@@ -153,14 +184,12 @@ if (count($languages['name']) === 1) {
     // If there's only one language available, there's no point in asking
     $form->addElement('hidden', 'course_language', $languages['folder'][0]);
 } else {
-    $form->addElement(
-        'select_language',
+    $form->addSelectLanguage(
         'course_language',
         get_lang('Ln'),
-        array(),
-        array('style' => 'width:150px')
+        [],
+        ['style' => 'width:150px']
     );
-    $form->applyFilter('select_language', 'html_filter');
 }
 
 // Exemplary content checkbox.
@@ -172,7 +201,6 @@ $form->addElement(
 );
 
 if ($course_validation_feature) {
-
     // A special URL to terms and conditions that is set
     // in the platform settings page.
     $terms_and_conditions_url = trim(
@@ -232,7 +260,7 @@ if (api_get_setting('teacher_can_select_course_template') === 'true') {
             get_lang('PickACourseAsATemplateForThisNewCourse'),
         ],
         null,
-        ['url' => api_get_path(WEB_AJAX_PATH) . 'course.ajax.php?a=search_course']
+        ['url' => api_get_path(WEB_AJAX_PATH).'course.ajax.php?a=search_course']
     );
 }
 
@@ -272,7 +300,9 @@ if ($form->validate()) {
     }
 
     if ($wanted_code == '') {
-        $wanted_code = CourseManager::generate_course_code(api_substr($title, 0, CourseManager::MAX_COURSE_LENGTH_CODE));
+        $wanted_code = CourseManager::generate_course_code(
+            api_substr($title, 0, CourseManager::MAX_COURSE_LENGTH_CODE)
+        );
     }
 
     // Check whether the requested course code has already been occupied.
@@ -284,18 +314,17 @@ if ($form->validate()) {
 
     if ($course_code_ok) {
         if (!$course_validation_feature) {
-
-            $params = array();
+            $params = [];
             $params['title'] = $title;
             $params['exemplary_content'] = $exemplary_content;
             $params['wanted_code'] = $wanted_code;
             $params['course_category'] = $category_code;
             $params['course_language'] = $course_language;
             $params['gradebook_model_id'] = isset($course_values['gradebook_model_id']) ? $course_values['gradebook_model_id'] : null;
-            $params['course_template'] = $course_values['course_template'];
+            $params['course_template'] = isset($course_values['course_template']) ? $course_values['course_template'] : '';
 
-            include_once api_get_path(SYS_CODE_PATH) . 'lang/english/trad4all.inc.php';
-            $file_to_include = api_get_path(SYS_CODE_PATH) . 'lang/' . $course_language . '/trad4all.inc.php';
+            include_once api_get_path(SYS_CODE_PATH).'lang/english/trad4all.inc.php';
+            $file_to_include = api_get_path(SYS_CODE_PATH).'lang/'.$course_language.'/trad4all.inc.php';
 
             if (file_exists($file_to_include)) {
                 include $file_to_include;
@@ -320,14 +349,13 @@ if ($form->validate()) {
                 $splash = api_get_setting('course_creation_splash_screen');
                 if ($splash === 'true') {
                     $url = api_get_path(WEB_CODE_PATH);
-                    $url .= 'course_info/start.php?' . api_get_cidreq_params($course_info['code']);
+                    $url .= 'course_info/start.php?'.api_get_cidreq_params($course_info['code']);
                     $url .= '&first=1';
-                    header('Location: ' . $url);
+                    header('Location: '.$url);
                     exit;
                 } else {
-
-                    $url = api_get_path(WEB_COURSE_PATH) . $course_info['directory'] . '/';
-                    header('Location: ' . $url);
+                    $url = api_get_path(WEB_COURSE_PATH).$course_info['directory'].'/';
+                    header('Location: '.$url);
                     exit;
                 }
             } else {
@@ -355,7 +383,7 @@ if ($form->validate()) {
 
             if ($request_id) {
                 $course_request_info = CourseRequestManager::get_course_request_info($request_id);
-                $message = (is_array($course_request_info) ? '<strong>' . $course_request_info['code'] . '</strong> : ' : '') . get_lang('CourseRequestCreated');
+                $message = (is_array($course_request_info) ? '<strong>'.$course_request_info['code'].'</strong> : ' : '').get_lang('CourseRequestCreated');
                 $message = Display::return_message(
                     $message,
                     'confirmation',
@@ -365,7 +393,7 @@ if ($form->validate()) {
                     'div',
                     Display::url(
                         get_lang('Enter'),
-                        api_get_path(WEB_PATH) . 'user_portal.php',
+                        api_get_path(WEB_PATH).'user_portal.php',
                         ['class' => 'btn btn-default']
                     ),
                     ['style' => 'float: left; margin:0px; padding: 0px;']

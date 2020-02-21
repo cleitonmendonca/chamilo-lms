@@ -2,14 +2,15 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Container for the scormResource class
+ * Container for the scormResource class.
+ *
  * @package chamilo.learnpath.scorm
+ *
  * @author	Yannick Warnier <ywarnier@beeznest.org>
  */
 
 /**
- * Class defining the <resource> tag in an imsmanifest.xml file
- *
+ * Class defining the <resource> tag in an imsmanifest.xml file.
  */
 class scormResource
 {
@@ -22,21 +23,20 @@ class scormResource
     public $metadata;
     //public $file_href;
     //public $file_metadata;
-    public $files = array();
-    public $dependencies = array();
+    public $files = [];
+    public $dependencies = [];
 
     /**
      * Class constructor. Depending of the type of construction called ('db' or 'manifest'), will create a scormResource
-     * object from database records or from the DOM element given as parameter
-     * @param	string	Type of construction needed ('db' or 'manifest', default = 'manifest')
-     * @param	mixed	Depending on the type given, DB id for the lp_item or reference to the DOM element
+     * object from database records or from the DOM element given as parameter.
+     *
+     * @param    string    Type of construction needed ('db' or 'manifest', default = 'manifest')
+     * @param    mixed    Depending on the type given, DB id for the lp_item or reference to the DOM element
      */
     public function __construct($type = 'manifest', &$element)
     {
         if (isset($element)) {
-
             // Parsing using PHP5 DOMXML methods.
-
             switch ($type) {
                 case 'db':
                     // TODO: Implement this way of metadata object creation.
@@ -69,7 +69,7 @@ class scormResource
                         }
                     }
                     //$keep_href = '';
-                    if ($element->hasAttributes()){ //in some cases we get here with an empty attributes array
+                    if ($element->hasAttributes()) { //in some cases we get here with an empty attributes array
                         // TODO: Find when and why we get such a case (empty array).
                         $attributes = $element->attributes;
                         foreach ($attributes as $attrib) {
@@ -96,6 +96,7 @@ class scormResource
                             }
                         }
                     }
+
                     return true;
             }
 
@@ -106,8 +107,9 @@ class scormResource
     }
 
     /**
-     * Path getter
-     * @return	string	Path for this resource
+     * Path getter.
+     *
+     * @return string Path for this resource
      */
     public function get_path()
     {
@@ -119,8 +121,9 @@ class scormResource
     }
 
     /**
-     * Scorm type getter
-     * @return	string	generally 'asset' or 'sco' as these are the only two values defined in SCORM 1.2
+     * Scorm type getter.
+     *
+     * @return string generally 'asset' or 'sco' as these are the only two values defined in SCORM 1.2
      */
     public function get_scorm_type()
     {

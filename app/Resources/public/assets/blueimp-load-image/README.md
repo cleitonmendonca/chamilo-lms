@@ -41,10 +41,12 @@ Or alternatively, choose which components you want to include:
 
 ```html
 <script src="js/load-image.js"></script>
-<script src="js/load-image-orientation.js"></script>
+<script src="js/load-image-scale.js"></script>
 <script src="js/load-image-meta.js"></script>
+<script src="js/load-image-fetch.js"></script>
 <script src="js/load-image-exif.js"></script>
 <script src="js/load-image-exif-map.js"></script>
+<script src="js/load-image-orientation.js"></script>
 ```
 
 ## Usage
@@ -194,9 +196,18 @@ Requires `canvas: true`.
 * **crop**: Crops the image to the maxWidth/maxHeight constraints if set to
 `true`.  
 Enabling the `crop` option also enables the `canvas` option.
-* **orientation**: Allows to transform the canvas coordinates according to the
-EXIF orientation specification.  
-Setting the `orientation` also enables the `canvas` option.
+* **orientation**: Transform the canvas according to the specified Exif
+orientation, which can be an `integer` in the range of `1` to `8` or the boolean
+value `true`.  
+When set to `true`, it will set the orientation value based on the EXIF data of
+the image, which will be parsed automatically if the exif library is available.  
+Setting the `orientation` also enables the `canvas` option.  
+Setting `orientation` to `true` also enables the `meta` option.
+* **meta**: Automatically parses the image meta data if set to `true`.  
+The meta data is passed to the callback as second argument.  
+If the file is given as URL and the browser supports the
+[fetch API](https://developer.mozilla.org/en/docs/Web/API/Fetch_API), fetches
+the file as Blob to be able to parse the meta data.
 * **canvas**: Returns the image as
 [canvas](https://developer.mozilla.org/en/HTML/Canvas) element if set to `true`.
 * **crossOrigin**: Sets the crossOrigin property on the img element for loading
@@ -266,9 +277,9 @@ Blob objects of resized images can be created via
 [canvas.toBlob()](https://github.com/blueimp/JavaScript-Canvas-to-Blob).
 
 ### Exif parser
-If you include the Load Image Exif Parser extension, the **parseMetaData**
-callback **data** contains the additional property **exif** if Exif data could
-be found in the given image.  
+If you include the Load Image Exif Parser extension, the argument passed to the
+callback for **parseMetaData** will contain the additional property **exif** if
+Exif data could be found in the given image.  
 The **exif** object stores the parsed Exif tags:
 
 ```js
@@ -305,7 +316,7 @@ disable certain aspects of the parser:
 
 ## License
 The JavaScript Load Image script is released under the
-[MIT license](http://www.opensource.org/licenses/MIT).
+[MIT license](https://opensource.org/licenses/MIT).
 
 ## Credits
 

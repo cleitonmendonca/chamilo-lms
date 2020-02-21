@@ -3,21 +3,15 @@
 
 /**
  * Class to be used as basis for links referring to Evaluation objects.
+ *
  * @author Bert Steppé
+ *
  * @package chamilo.gradebook
  * @package chamilo.gradebook
  */
 abstract class EvalLink extends AbstractLink
 {
-    protected $evaluation = null;
-
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected $evaluation;
 
     /**
      * @return bool
@@ -30,7 +24,7 @@ abstract class EvalLink extends AbstractLink
     }
 
     /**
-     * @param int $userId
+     * @param int    $userId
      * @param string $type
      *
      * @return array
@@ -47,37 +41,42 @@ abstract class EvalLink extends AbstractLink
         $eval = $this->get_evaluation();
         // course/platform admin can go to the view_results page
         if (api_is_allowed_to_edit()) {
-            return 'gradebook_view_result.php?' . api_get_cidreq() . '&selecteval=' . $eval->get_id();
-        } // students can go to the statistics page (if custom display enabled)
-        elseif (ScoreDisplay :: instance()->is_custom()) {
-            return 'gradebook_statistics.php?' . api_get_cidreq() . '&selecteval=' . $eval->get_id();
-        } else {
-            return null;
+            return 'gradebook_view_result.php?'.api_get_cidreq().'&selecteval='.$eval->get_id();
+        } elseif (ScoreDisplay::instance()->is_custom()) {
+            // students can go to the statistics page (if custom display enabled)
+
+            return 'gradebook_statistics.php?'.api_get_cidreq().'&selecteval='.$eval->get_id();
         }
+
+        return null;
     }
 
     public function get_name()
     {
         $eval = $this->get_evaluation();
+
         return $eval->get_name();
     }
 
     public function get_description()
     {
         $eval = $this->get_evaluation();
+
         return $eval->get_description();
     }
 
     public function get_max()
     {
         $eval = $this->get_evaluation();
+
         return $eval->get_max();
     }
 
     public function is_valid_link()
     {
         $eval = $this->get_evaluation();
-        return (isset($eval));
+
+        return isset($eval);
     }
 
     public function needs_name_and_description()
@@ -164,7 +163,7 @@ abstract class EvalLink extends AbstractLink
     }
 
     /**
-     * Lazy load function to get the linked evaluation
+     * Lazy load function to get the linked evaluation.
      */
     protected function get_evaluation()
     {
@@ -176,8 +175,8 @@ abstract class EvalLink extends AbstractLink
                 $eval = new Evaluation();
                 $eval->set_category_id(-1);
                 $eval->set_date(api_get_utc_datetime()); // these values will be changed
-                $eval->set_weight(0);    //   when the link setter
-                $eval->set_visible(0);   //     is called
+                $eval->set_weight(0); //   when the link setter
+                $eval->set_visible(0); //     is called
                 $eval->set_id(-1); // a 'real' id will be set when eval is added to db
                 $eval->set_user_id($this->get_user_id());
                 $eval->set_course_code($this->get_course_code());

@@ -1,6 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CoreBundle\Component\Utils\ChamiloApi;
+
 /**
  * It is recommended that ALL Chamilo scripts include this important file.
  * This script manages
@@ -10,12 +12,10 @@
  * - include of language files.
  *
  * @package chamilo.include
- * @todo remove the code that displays the button that links to the install page
- * 		but use a redirect immediately. By doing so the $alreadyInstalled variable can be removed.
  *
+ * @todo remove the code that displays the button that links to the install page
+ * but use a redirect immediately. By doing so the $alreadyInstalled variable can be removed.
  */
-
-// Showing/hiding error codes in global error messages.
 define('SHOW_ERROR_CODES', false);
 
 // Include the libraries that are necessary everywhere
@@ -37,12 +37,12 @@ if (file_exists($kernel->getConfigurationFile())) {
     // Recalculate a system absolute path symlinks insensible.
     $includePath = $_configuration['root_sys'].'main/inc/';
 } else {
-    $_configuration = array();
+    $_configuration = [];
     //Redirects to the main/install/ page
     if (!$alreadyInstalled) {
         $global_error_code = 2;
         // The system has not been installed yet.
-        require_once __DIR__ . '/../inc/global_error_message.inc.php';
+        require_once __DIR__.'/../inc/global_error_message.inc.php';
         die();
     }
 }
@@ -56,7 +56,6 @@ if (!isset($GLOBALS['_configuration'])) {
 }
 
 // Include the main Chamilo platform library file.
-
 require_once $_configuration['root_sys'].'main/inc/lib/api.lib.php';
 $passwordEncryption = api_get_configuration_value('password_encryption');
 
@@ -72,7 +71,7 @@ api_check_php_version($includePath.'/');
 // 2. Empty username is formally valid, but it is reserved for the anonymous user.
 // 3. Checking the login_is_email portal setting in order to accept 100 chars maximum
 
-$defaultUserNameLength = 40;
+$defaultUserNameLength = 50;
 if (api_get_setting('login_is_email') == 'true') {
     $defaultUserNameLength = 100;
 }
@@ -88,7 +87,7 @@ define('_MPDF_TTFONTDATAPATH', __DIR__.'/../../app/cache/mpdf/');
 require_once __DIR__.'/../../vendor/autoload.php';
 
 // Do not over-use this variable. It is only for this script's local use.
-$libraryPath = api_get_path(LIBRARY_PATH);
+$libraryPath = __DIR__.'/lib/';
 
 // @todo convert this libs in classes
 require_once $libraryPath.'database.constants.inc.php';
@@ -122,7 +121,7 @@ $params = array(
 
 // Doctrine ORM configuration
 
-$dbParams = array(
+$dbParams = [
     'driver' => 'pdo_mysql',
     'host' => $_configuration['db_host'],
     'user' => $_configuration['db_user'],
@@ -131,8 +130,9 @@ $dbParams = array(
     // Only relevant for pdo_sqlite, specifies the path to the SQLite database.
     'path' => isset($_configuration['db_path']) ? $_configuration['db_path'] : '',
     // Only relevant for pdo_mysql, pdo_pgsql, and pdo_oci/oci8,
-    'port' => isset($_configuration['db_port']) ? $_configuration['db_port'] : ''
-);
+    'port' => isset($_configuration['db_port']) ? $_configuration['db_port'] : '',
+];
+
 try {
     $database = new \Database();
     $database->connect($dbParams);
@@ -147,19 +147,24 @@ try {
 if (!empty($_configuration['multiple_access_urls'])) {
     $_configuration['access_url'] = 1;
     $access_urls = api_get_access_urls();
-
     $root_rel = api_get_self();
     $root_rel = substr($root_rel, 1);
     $pos = strpos($root_rel, '/');
     $root_rel = substr($root_rel, 0, $pos);
-    $protocol = ((!empty($_SERVER['HTTPS']) && strtoupper($_SERVER['HTTPS']) != 'OFF') ? 'https' : 'http').'://';
+    $protocol = 'http://';
+    if (!empty($_SERVER['HTTPS']) && strtoupper($_SERVER['HTTPS']) != 'OFF') {
+        $protocol = 'https://';
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+        $protocol = 'https://';
+    }
+
     //urls with subdomains (HTTP_HOST is preferred - see #6764)
     $request_url_root = '';
     if (empty($_SERVER['HTTP_HOST'])) {
         if (empty($_SERVER['SERVER_NAME'])) {
-            $request_url_root = $protocol . 'localhost/';
+            $request_url_root = $protocol.'localhost/';
         } else {
-            $request_url_root = $protocol . $_SERVER['SERVER_NAME'] . '/';
+            $request_url_root = $protocol.$_SERVER['SERVER_NAME'].'/';
         }
     } else {
         $request_url_root = $protocol.$_SERVER['HTTP_HOST'].'/';
@@ -186,29 +191,29 @@ if (!empty($_configuration['multiple_access_urls'])) {
     $_configuration['access_url'] = 1;
 }
 
+// Check if APCu is available. If so, store the value in $_configuration
+if (extension_loaded('apcu')) {
+    $apcEnabled = ini_get('apc.enabled');
+    if (!empty($apcEnabled) && $apcEnabled != 'Off' && $apcEnabled != 'off') {
+        $_configuration['apc'] = true;
+        $_configuration['apc_prefix'] = $_configuration['main_database'].'_'.$_configuration['access_url'].'_';
+    }
+}
+
 $charset = 'UTF-8';
 
-// Enables the portablity layer and configures PHP for UTF-8
+// Enables the portability layer and configures PHP for UTF-8
 \Patchwork\Utf8\Bootup::initAll();
 
 // Start session after the internationalization library has been initialized.
-ChamiloSession::instance()->start($alreadyInstalled);
-
-// Remove quotes added by PHP  - get_magic_quotes_gpc() is deprecated in PHP 5 see #2970
-
-if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
-    array_walk_recursive_limited($_GET, 'stripslashes', true);
-    array_walk_recursive_limited($_POST, 'stripslashes', true);
-    array_walk_recursive_limited($_COOKIE, 'stripslashes', true);
-    array_walk_recursive_limited($_REQUEST, 'stripslashes', true);
-}
+ChamiloSession::start($alreadyInstalled);
 
 // access_url == 1 is the default chamilo location
 if ($_configuration['access_url'] != 1) {
     $url_info = api_get_access_url($_configuration['access_url']);
     if ($url_info['active'] == 1) {
-        $settings_by_access = & api_get_settings(null, 'list', $_configuration['access_url'], 1);
-        foreach ($settings_by_access as & $row) {
+        $settings_by_access = &api_get_settings(null, 'list', $_configuration['access_url'], 1);
+        foreach ($settings_by_access as &$row) {
             if (empty($row['variable'])) {
                 $row['variable'] = 0;
             }
@@ -223,8 +228,8 @@ if ($_configuration['access_url'] != 1) {
     }
 }
 
-$result = & api_get_settings(null, 'list', 1);
-foreach ($result as & $row) {
+$result = &api_get_settings(null, 'list', 1);
+foreach ($result as &$row) {
     if ($_configuration['access_url'] != 1) {
         if ($url_info['active'] == 1) {
             $var = empty($row['variable']) ? 0 : $row['variable'];
@@ -234,6 +239,7 @@ foreach ($result as & $row) {
 
         if ($row['access_url_changeable'] == 1 && $url_info['active'] == 1) {
             if (isset($settings_by_access_list[$var]) &&
+                isset($settings_by_access_list[$var][$subkey]) &&
                 $settings_by_access_list[$var][$subkey][$category]['selected_value'] != '') {
                 if ($row['subkey'] == null) {
                     $_setting[$row['variable']] = $settings_by_access_list[$var][$subkey][$category]['selected_value'];
@@ -263,25 +269,36 @@ foreach ($result as & $row) {
     }
 }
 
-$result = & api_get_settings('Plugins', 'list', $_configuration['access_url']);
-$_plugins = array();
-foreach ($result as & $row) {
-    $key = & $row['variable'];
-    if (is_string($_setting[$key])) {
-        $_setting[$key] = array();
+$result = &api_get_settings('Plugins', 'list', $_configuration['access_url']);
+$_plugins = [];
+foreach ($result as &$row) {
+    $key = &$row['variable'];
+    if (isset($_setting[$key]) && is_string($_setting[$key])) {
+        $_setting[$key] = [];
     }
-    $_setting[$key][] = $row['selected_value'];
-    $_plugins[$key][] = $row['selected_value'];
+    if ($row['subkey'] == null) {
+        $_setting[$key][] = $row['selected_value'];
+        $_plugins[$key][] = $row['selected_value'];
+    } else {
+        $_setting[$key][$row['subkey']] = $row['selected_value'];
+        $_plugins[$key][$row['subkey']] = $row['selected_value'];
+    }
 }
 
 // Error reporting settings.
 if (api_get_setting('server_type') == 'test') {
     ini_set('display_errors', '1');
-    ini_set('log_errors', '1');
+    ini_set('html_errors', '1');
     error_reporting(-1);
+
+    if (function_exists('opcache_reset')) {
+        opcache_reset();
+    }
 } else {
     error_reporting(E_COMPILE_ERROR | E_ERROR | E_CORE_ERROR);
 }
+
+ini_set('log_errors', '1');
 
 // Load allowed tag definitions for kses and/or HTMLPurifier.
 require_once $libraryPath.'formvalidator/Rule/allowed_tags.inc.php';
@@ -290,22 +307,15 @@ require_once $libraryPath.'formvalidator/Rule/allowed_tags.inc.php';
 // which will then be usable from the banner and header scripts
 $this_section = SECTION_GLOBAL;
 
-// Include Chamilo Mail conf this is added here because the api_get_setting works
-
-// Fixes bug in Chamilo 1.8.7.1 array was not set
-$administrator['email'] = isset($administrator['email']) ? $administrator['email'] : 'admin@example.com';
-$administrator['name'] = isset($administrator['name']) ? $administrator['name'] : 'Admin';
-
 // Including configuration files
-$configurationFiles = array(
+$configurationFiles = [
     'mail.conf.php',
     'profile.conf.php',
     'course_info.conf.php',
     'add_course.conf.php',
     'events.conf.php',
     'auth.conf.php',
-    'portfolio.conf.php'
-);
+];
 
 foreach ($configurationFiles as $file) {
     $file = api_get_path(CONFIGURATION_PATH).$file;
@@ -313,7 +323,6 @@ foreach ($configurationFiles as $file) {
         require_once $file;
     }
 }
-
 
 /*  LOAD LANGUAGE FILES SECTION */
 
@@ -357,7 +366,7 @@ if (isset($this_script) && $this_script == 'sub_language') {
     //getting sub language info
     $sub_language = SubLanguageManager::get_all_information_of_language($_REQUEST['sub_language_id']);
 
-    $english_language_array = $parent_language_array = $sub_language_array = array();
+    $english_language_array = $parent_language_array = $sub_language_array = [];
 
     foreach ($language_files_to_load as $language_file_item) {
         $lang_list_pre = array_keys($GLOBALS);
@@ -410,7 +419,6 @@ if (isset($this_script) && $this_script == 'sub_language') {
 $valid_languages = api_get_languages();
 
 if (!empty($valid_languages)) {
-
     if (!in_array($user_language, $valid_languages['folder'])) {
         $user_language = api_get_setting('platformLanguage');
     }
@@ -452,7 +460,7 @@ if (!empty($valid_languages)) {
     }
 
     if (!empty($language_priority1) && api_get_language_from_type($language_priority1) !== false) {
-        $language_interface =  api_get_language_from_type($language_priority1);
+        $language_interface = api_get_language_from_type($language_priority1);
     } else {
         if (isset($_course['language'])) {
             $language_interface = $_course['language'];
@@ -463,6 +471,52 @@ if (!empty($valid_languages)) {
     if (isset($_GET['language'])) {
         $language_interface = $user_language;
     }
+
+    // Load the user language, if user is entering in the terms and condition page
+    if (isset($_SESSION['term_and_condition']) && isset($_SESSION['term_and_condition']['user_id'])) {
+        $userTempId = $_SESSION['term_and_condition']['user_id'];
+        $userTempInfo = api_get_user_info($userTempId);
+        if (!empty($userTempInfo['language'])) {
+            $language_interface = $userTempInfo['language'];
+        }
+    }
+
+    $allow = api_get_configuration_value('show_language_selector_in_menu');
+    // Overwrite all lang configs and use the menu language
+    if ($allow) {
+        if (isset($_SESSION['user_language_choice'])) {
+            $userEntity = api_get_user_entity(api_get_user_id());
+            if ($userEntity) {
+                if (isset($_GET['language'])) {
+                    $language_interface = $_SESSION['user_language_choice'];
+                    $userEntity->setLanguage($language_interface);
+                    Database::getManager()->merge($userEntity);
+                    Database::getManager()->flush();
+
+                    // Update cache
+                    api_get_user_info(
+                        api_get_user_id(),
+                        true,
+                        false,
+                        true,
+                        false,
+                        true,
+                        true
+                    );
+                    if (isset($_SESSION['_user'])) {
+                        $_SESSION['_user']['language'] = $language_interface;
+                    }
+                }
+                $language_interface = $_SESSION['user_language_choice'] = $userEntity->getLanguage();
+            }
+        } else {
+            $userInfo = api_get_user_info();
+            if (!empty($userInfo['language'])) {
+                $_SESSION['user_language_choice'] = $userInfo['language'];
+                $language_interface = $userInfo['language'];
+            }
+        }
+    }
 }
 
 // Sometimes the variable $language_interface is changed
@@ -472,35 +526,12 @@ if (!empty($valid_languages)) {
 $language_interface_initial_value = $language_interface;
 
 /**
- * Include the trad4all language file
+ * Include the trad4all language file.
  */
-// if the sub-language feature is on
-$parent_path = SubLanguageManager::get_parent_language_path($language_interface);
-if (!empty($parent_path)) {
-    // include English
-    include $langpath.'english/trad4all.inc.php';
-    // prepare string for current language and its parent
-    $lang_file = $langpath.$language_interface.'/trad4all.inc.php';
-    $parent_lang_file = $langpath.$parent_path.'/trad4all.inc.php';
-    // load the parent language file first
-    if (file_exists($parent_lang_file)) {
-        include $parent_lang_file;
-    }
-    // overwrite the parent language translations if there is a child
-    if (file_exists($lang_file)) {
-        include $lang_file;
-    }
-} else {
-    // if the sub-languages feature is not on, then just load the
-    // set language interface
-    // include English
-    include $langpath.'english/trad4all.inc.php';
-    // prepare string for current language
-    $langfile = $langpath.$language_interface.'/trad4all.inc.php';
+$languageFilesToLoad = api_get_language_files_to_load($language_interface);
 
-    if (file_exists($langfile)) {
-        include $langfile;
-    }
+foreach ($languageFilesToLoad as $languageFile) {
+    include $languageFile;
 }
 
 // include the local (contextual) parameters of this course or section
@@ -515,19 +546,19 @@ $text_dir = api_get_text_direction();
 
 // check and modify the date of user in the track.e.online table
 if (!$x = strpos($_SERVER['PHP_SELF'], 'whoisonline.php')) {
-    preventMultipleLogin($_user["user_id"]);
-    LoginCheck(isset($_user['user_id']) ? $_user['user_id'] : '');
+    if (!empty($_user['user_id'])) {
+        preventMultipleLogin($_user['user_id']);
+        LoginCheck($_user['user_id']);
+    }
 }
 
 // ===== end "who is logged in?" module section =====
 
-//Update of the logout_date field in the table track_e_login
+// Update of the logout_date field in the table track_e_login
 // (needed for the calculation of the total connection time)
-
 if (!isset($_SESSION['login_as']) && isset($_user)) {
     // if $_SESSION['login_as'] is set, then the user is an admin logged as the user
-
-    $tbl_track_login = Database :: get_main_table(TABLE_STATISTIC_TRACK_E_LOGIN);
+    $tbl_track_login = Database::get_main_table(TABLE_STATISTIC_TRACK_E_LOGIN);
     $sql = "SELECT login_id, login_date
             FROM $tbl_track_login
             WHERE
@@ -537,6 +568,7 @@ if (!isset($_SESSION['login_as']) && isset($_user)) {
 
     $q_last_connection = Database::query($sql);
     if (Database::num_rows($q_last_connection) > 0) {
+        $now = api_get_utc_datetime();
         $i_id_last_connection = Database::result($q_last_connection, 0, 'login_id');
 
         // is the latest logout_date still relevant?
@@ -544,17 +576,17 @@ if (!isset($_SESSION['login_as']) && isset($_user)) {
                 WHERE login_id = $i_id_last_connection";
         $q_logout_date = Database::query($sql);
         $res_logout_date = convert_sql_date(Database::result($q_logout_date, 0, 'logout_date'));
+        $lifeTime = api_get_configuration_value('session_lifetime');
 
-        if ($res_logout_date < time() - $_configuration['session_lifetime']) {
+        if ($res_logout_date < time() - $lifeTime) {
             // it isn't, we should create a fresh entry
-            Event::event_login($_user['user_id']);
-            // now that it's created, we can get its ID and carry on
-            $i_id_last_connection = Database::result($q_last_connection, 0, 'login_id');
+            Event::eventLogin($_user['user_id']);
+        // now that it's created, we can get its ID and carry on
+        } else {
+            $sql = "UPDATE $tbl_track_login SET logout_date = '$now'
+                    WHERE login_id = '$i_id_last_connection'";
+            Database::query($sql);
         }
-        $now = api_get_utc_datetime(time());
-        $sql = "UPDATE $tbl_track_login SET logout_date = '$now'
-                WHERE login_id='$i_id_last_connection'";
-        Database::query($sql);
 
         $tableUser = Database::get_main_table(TABLE_MAIN_USER);
         $sql = "UPDATE $tableUser SET last_login = '$now'
@@ -582,8 +614,39 @@ $default_quota = api_get_setting('default_document_quotum');
 if (empty($default_quota)) {
     $default_quota = 100000000;
 }
+
 define('DEFAULT_DOCUMENT_QUOTA', $default_quota);
+// Forcing PclZip library to use a custom temporary folder.
+define('PCLZIP_TEMPORARY_DIR', api_get_path(SYS_ARCHIVE_PATH));
 
-// Sets the ascii_math plugin see #7134
-$_SESSION['ascii_math_loaded'] = false;
+// Create web/build/main.js
+$webBuildPath = api_get_path(SYS_PUBLIC_PATH).'build/';
+if (!is_dir($webBuildPath)) {
+    if (!mkdir($webBuildPath, api_get_permissions_for_new_directories())) {
+        error_log(
+            'Error: '.$webBuildPath.' could not be written. Please check permissions.'
+        );
+    }
+}
 
+// Load template layout/main.js.tpl and save it into web/build/main.js
+$file = $webBuildPath.'main.js';
+if (!empty($language_interface)) {
+    $file = $webBuildPath.'main.'.$language_interface.'.js';
+}
+
+// if portal is in test mode always generate the file
+if (!file_exists($file) || api_get_setting('server_type') === 'test') {
+    $template = new Template();
+    $template->assign('quiz_markers_rolls_js', ChamiloApi::getQuizMarkersRollsJS());
+    // Force use of default to avoid problems
+    $tpl = 'default/layout/main.js.tpl';
+    $contents = $template->fetch($tpl);
+    if (is_writable($webBuildPath)) {
+        file_put_contents($file, $contents);
+    } else {
+        error_log(
+            'Error: '.$file.' could not be written. Please check permissions. The web server must be able to write there.'
+        );
+    }
+}

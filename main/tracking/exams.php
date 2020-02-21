@@ -2,20 +2,20 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Exams script
+ * Exams script.
+ *
  * @package chamilo.tracking
  */
-
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $toolTable = Database::get_course_table(TABLE_TOOL_LIST);
 $quizTable = Database::get_course_table(TABLE_QUIZ_TEST);
 
 $this_section = SECTION_TRACKING;
-$is_allowedToTrack = $is_courseAdmin || $is_platformAdmin || $is_courseCoach || $is_sessionAdmin;
+$is_allowedToTrack = api_is_course_admin() || api_is_platform_admin(true) || $is_session_general_coach;
 
 if (!$is_allowedToTrack) {
-    api_not_allowed();
+    api_not_allowed(true);
 }
 
 $exportToXLS = false;
@@ -29,7 +29,7 @@ if (api_is_platform_admin() && empty($_GET['cidReq'])) {
     $global = false;
 }
 
-$courseList = array();
+$courseList = [];
 if ($global) {
     $temp = CourseManager::get_courses_list();
     foreach ($temp as $tempCourse) {
@@ -37,7 +37,7 @@ if ($global) {
         $courseList[] = $courseInfo;
     }
 } else {
-    $courseList = array(api_get_course_info());
+    $courseList = [api_get_course_info()];
 }
 
 $sessionId = api_get_session_id();
@@ -64,7 +64,7 @@ if ($global) {
             ORDER BY quiz.title ASC";
     $result = Database::query($sql);
 
-    $exerciseList = array(get_lang('All'));
+    $exerciseList = [get_lang('All')];
     while ($row = Database::fetch_array($result)) {
         $exerciseList[$row['id']] = $row['title'];
     }
@@ -76,43 +76,38 @@ $form->addButtonFilter(get_lang('Filter'));
 $filter_score = isset($_REQUEST['score']) ? intval($_REQUEST['score']) : 70;
 $exerciseId = isset($_REQUEST['exercise_id']) ? intval($_REQUEST['exercise_id']) : 0;
 
-$form->setDefaults(array('score' => $filter_score));
+$form->setDefaults(['score' => $filter_score]);
 
 if (!$exportToXLS) {
     Display :: display_header(get_lang('Reporting'));
-    $actionsLeft = $actionsRight ='';
+    $actionsLeft = $actionsRight = '';
     if ($global) {
         $actionsLeft .= '<a href="'.api_get_path(WEB_CODE_PATH).'auth/my_progress.php">'.
-        Display::return_icon('stats.png', get_lang('MyStats'), '', ICON_SIZE_MEDIUM);
+        Display::return_icon('statistics.png', get_lang('MyStats'), '', ICON_SIZE_MEDIUM);
         $actionsLeft .= '</a>';
-        $courseLink = '';
         $courseInfo = api_get_course_info();
 
-        if (!empty($courseInfo)) {
-            $courseLink = api_get_cidreq();
-        }
-
-        $actionsRight .= '<a href="'.api_get_self().'?export=1&score='.$filter_score.'&exercise_id='.$exerciseId.'&'.$courseLink.'">'.
-            Display::return_icon('export_excel.png',get_lang('ExportAsXLS'),'',ICON_SIZE_MEDIUM).'</a>';
+        $actionsRight .= '<a href="'.api_get_self().'?export=1&score='.$filter_score.'&exercise_id='.$exerciseId.'">'.
+            Display::return_icon('export_excel.png', get_lang('ExportAsXLS'), '', ICON_SIZE_MEDIUM).'</a>';
         $actionsRight .= '<a href="javascript: void(0);" onclick="javascript: window.print()">'.
-            Display::return_icon('printer.png',get_lang('Print'),'',ICON_SIZE_MEDIUM).'</a>';
+            Display::return_icon('printer.png', get_lang('Print'), '', ICON_SIZE_MEDIUM).'</a>';
 
         $menuItems[] = Display::url(
-            Display::return_icon('teacher.png', get_lang('TeacherInterface'), array(), 32),
+            Display::return_icon('teacher.png', get_lang('TeacherInterface'), [], 32),
             api_get_path(WEB_CODE_PATH).'mySpace/?view=teacher'
         );
         if (api_is_platform_admin()) {
             $menuItems[] = Display::url(
-                Display::return_icon('star.png', get_lang('AdminInterface'), array(), 32),
+                Display::return_icon('star.png', get_lang('AdminInterface'), [], 32),
                 api_get_path(WEB_CODE_PATH).'mySpace/admin_view.php'
             );
         } else {
             $menuItems[] = Display::url(
-                Display::return_icon('star.png', get_lang('CoachInterface'), array(), 32),
+                Display::return_icon('star.png', get_lang('CoachInterface'), [], 32),
                 api_get_path(WEB_CODE_PATH).'mySpace/index.php?view=coach'
             );
         }
-        $menuItems[] = '<a href="#">'.Display::return_icon('quiz_na.png', get_lang('ExamTracking'), array(), 32).'</a>';
+        $menuItems[] = '<a href="#">'.Display::return_icon('quiz_na.png', get_lang('ExamTracking'), [], 32).'</a>';
 
         $nb_menu_items = count($menuItems);
         if ($nb_menu_items > 1) {
@@ -121,20 +116,10 @@ if (!$exportToXLS) {
             }
         }
     } else {
-        $actionsLeft .= Display::url(
-            Display::return_icon('user.png', get_lang('StudentsTracking'), array(), 32),
-            'courseLog.php?'.api_get_cidreq().'&studentlist=true'
-        );
-        $actionsLeft .= Display::url(
-            Display::return_icon('course.png', get_lang('CourseTracking'), array(), 32),
-            'courseLog.php?'.api_get_cidreq().'&studentlist=false'
-        );
-        $actionsLeft .= Display::url(
-            Display::return_icon('tools.png', get_lang('ResourcesTracking'), array(), 32),
-            'courseLog.php?'.api_get_cidreq().'&studentlist=resouces'
-        );
-        $actionsLeft .= Display::url(
-            Display::return_icon('export_excel.png', get_lang('ExportAsXLS'), array(), 32),
+        $actionsLeft = TrackingCourseLog::actionsLeft('exams', api_get_session_id());
+
+        $actionsRight .= Display::url(
+            Display::return_icon('export_excel.png', get_lang('ExportAsXLS'), [], 32),
             api_get_self().'?'.api_get_cidreq().'&export=1&score='.$filter_score.'&exercise_id='.$exerciseId
         );
     }
@@ -146,10 +131,10 @@ if (!$exportToXLS) {
     echo '<h3>'.sprintf(get_lang('FilteringWithScoreX'), $filter_score).'%</h3>';
 }
 
-$html = null;
+$html = '<table  class="data_table">';
 if ($global) {
-    $html .= '<table  class="data_table">';
-    $html .= '<tr><th>'.get_lang('Courses').'</th>';
+    $html .= '<tr>';
+    $html .= '<th>'.get_lang('Courses').'</th>';
     $html .= '<th>'.get_lang('Quiz').'</th>';
     $html .= '<th>'.get_lang('ExamTaken').'</th>';
     $html .= '<th>'.get_lang('ExamNotTaken').'</th>';
@@ -158,9 +143,10 @@ if ($global) {
     $html .= '<th>'.get_lang('TotalStudents').'</th>';
     $html .= '</tr>';
 } else {
-    $html .= '<table class="data_table">';
-    $html .= '<tr><th>'.get_lang('Quiz').'</th>';
+    $html .= '<tr>';
+    $html .= '<th>'.get_lang('Quiz').'</th>';
     $html .= '<th>'.get_lang('User').'</th>';
+    $html .= '<th>'.get_lang('Username').'</th>';
     //$html .= '<th>'.sprintf(get_lang('ExamPassX'), $filter_score).'</th>';
     $html .= '<th>'.get_lang('Percentage').' %</th>';
     $html .= '<th>'.get_lang('Status').'</th>';
@@ -168,14 +154,14 @@ if ($global) {
     $html .= '</tr>';
 }
 
-$export_array_global = $export_array = array();
+$export_array_global = $export_array = [];
 $s_css_class = null;
 
 if (!empty($courseList) && is_array($courseList)) {
     foreach ($courseList as $courseInfo) {
         $sessionList = SessionManager::get_session_by_course($courseInfo['real_id']);
 
-        $newSessionList = array();
+        $newSessionList = [];
         if (!empty($sessionList)) {
             foreach ($sessionList as $session) {
                 $newSessionList[$session['id']] = $session['name'];
@@ -199,7 +185,7 @@ if (!empty($courseList) && is_array($courseList)) {
             $countExercises = Database::store_result($result);
             $exerciseSessionCount = $countExercises[0]['count'];
 
-            $exerciseCount =  $exerciseCount + $exerciseCount * count($newSessionList) + $exerciseSessionCount;
+            $exerciseCount = $exerciseCount + $exerciseCount * count($newSessionList) + $exerciseSessionCount;
 
             // Add course and session list.
             if ($exerciseCount == 0) {
@@ -249,14 +235,10 @@ if (!empty($courseList) && is_array($courseList)) {
             $resultExercises = Database::query($sql);
 
             if (Database::num_rows($resultExercises) > 0) {
-                $export_array_global = array();
-
                 while ($exercise = Database::fetch_array($resultExercises, 'ASSOC')) {
-
                     $exerciseSessionId = $exercise['session_id'];
 
                     if (empty($exerciseSessionId)) {
-
                         if ($global) {
                             // If the exercise was created in the base course.
                             // Load all sessions.
@@ -286,7 +268,6 @@ if (!empty($courseList) && is_array($courseList)) {
                             $html .= $result['html'];
                             $export_array_global = array_merge($export_array_global, $result['export_array_global']);
                         } else {
-
                             if (empty($sessionId)) {
                                 // Load base course.
                                 $result = processStudentList(
@@ -299,12 +280,13 @@ if (!empty($courseList) && is_array($courseList)) {
                                 );
 
                                 $html .= $result['html'];
-                                $export_array_global = array_merge(
-                                    $export_array_global,
-                                    $result['export_array_global']
-                                );
+                                if (is_array($result['export_array_global'])) {
+                                    $export_array_global = array_merge(
+                                        $export_array_global,
+                                        $result['export_array_global']
+                                    );
+                                }
                             } else {
-
                                 $result = processStudentList(
                                     $filter_score,
                                     $global,
@@ -323,7 +305,6 @@ if (!empty($courseList) && is_array($courseList)) {
                         }
                     } else {
                         // If the exercise only exists in this session.
-
                         $result = processStudentList(
                             $filter_score,
                             $global,
@@ -368,19 +349,17 @@ if (!$exportToXLS) {
 $filename = 'exam-reporting-'.api_get_local_time().'.xlsx';
 
 if ($exportToXLS) {
-    if ($global) {
-        export_complete_report_xls($filename, $export_array_global);
-    } else {
-        export_complete_report_xls($filename, $export_array);
-    }
+    export_complete_report_xls($filename, $export_array_global);
     exit;
 }
 /**
  * @param $a
  * @param $b
+ *
  * @return int
  */
-function sort_user($a, $b) {
+function sort_user($a, $b)
+{
     if (is_numeric($a['score']) && is_numeric($b['score'])) {
         if ($a['score'] < $b['score']) {
             return 1;
@@ -394,7 +373,7 @@ function sort_user($a, $b) {
 
 /**
  * @param string $filename
- * @param array $array
+ * @param array  $array
  */
 function export_complete_report_xls($filename, $array)
 {
@@ -404,75 +383,76 @@ function export_complete_report_xls($filename, $array)
     $spreadsheet->setActiveSheetIndex(0);
     $worksheet = $spreadsheet->getActiveSheet();
 
-    $line = 0;
+    $line = 1;
     $column = 0; //skip the first column (row titles)
 
     if ($global) {
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('Courses'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('Courses'));
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('Exercises'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('Exercises'));
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('ExamTaken'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('ExamTaken'));
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('ExamNotTaken'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('ExamNotTaken'));
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, sprintf(get_lang('ExamPassX'), $filter_score) . '%');
+        $worksheet->setCellValueByColumnAndRow($column, $line, sprintf(get_lang('ExamPassX'), $filter_score).'%');
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('ExamFail'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('ExamFail'));
         $column++;
-        $worksheet->SetCellValueByColumnAndRow($line, $column, get_lang('TotalStudents'));
+        $worksheet->setCellValueByColumnAndRow($column, $line, get_lang('TotalStudents'));
         $column++;
 
         $line++;
         foreach ($array as $row) {
             $column = 0;
             foreach ($row as $item) {
-                $worksheet->SetCellValueByColumnAndRow($line, $column, html_entity_decode(strip_tags($item)));
+                $worksheet->setCellValueByColumnAndRow($column, $line, html_entity_decode(strip_tags($item)));
                 $column++;
             }
             $line++;
         }
         $line++;
     } else {
-        $worksheet->SetCellValueByColumnAndRow($line,$column,get_lang('Exercises'));
-        $column++;
-        $worksheet->SetCellValueByColumnAndRow($line,$column,get_lang('User'));
-        $column++;
-        $worksheet->SetCellValueByColumnAndRow($line,$column,get_lang('Percentage'));
-        $column++;
-        $worksheet->SetCellValueByColumnAndRow($line,$column,get_lang('Status'));
-        $column++;
-        $worksheet->SetCellValueByColumnAndRow($line,$column,get_lang('Attempts'));
-        $column++;
+        $worksheet->setCellValueByColumnAndRow(0, $line, get_lang('Exercises'));
+        $worksheet->setCellValueByColumnAndRow(1, $line, get_lang('User'));
+        $worksheet->setCellValueByColumnAndRow(2, $line, get_lang('Username'));
+        $worksheet->setCellValueByColumnAndRow(3, $line, get_lang('Percentage'));
+        $worksheet->setCellValueByColumnAndRow(4, $line, get_lang('Status'));
+        $worksheet->setCellValueByColumnAndRow(5, $line, get_lang('Attempts'));
         $line++;
+
         foreach ($array as $row) {
-            $column = 0;
-            $worksheet->SetCellValueByColumnAndRow(
+            $worksheet->setCellValueByColumnAndRow(
+                0,
                 $line,
-                $column,
                 html_entity_decode(strip_tags($row['exercise']))
             );
-            $column++;
-            foreach ($row['users'] as $key=>$user) {
-                $column = 1;
-                $worksheet->SetCellValueByColumnAndRow(
+
+            foreach ($row['users'] as $key => $user) {
+                $worksheet->setCellValueByColumnAndRow(
+                    1,
                     $line,
-                    $column,
                     html_entity_decode(strip_tags($user))
                 );
-                $column++;
+                $worksheet->setCellValueByColumnAndRow(
+                    2,
+                    $line,
+                    $row['usernames'][$key]
+                );
+                $column = 3;
+
                 foreach ($row['results'][$key] as $result_item) {
-                    $worksheet->SetCellValueByColumnAndRow(
-                        $line,
+                    $worksheet->setCellValueByColumnAndRow(
                         $column,
+                        $line,
                         html_entity_decode(strip_tags($result_item))
                     );
                     $column++;
                 }
+
                 $line++;
             }
         }
-        $line++;
     }
 
     $file = api_get_path(SYS_ARCHIVE_PATH).api_replace_dangerous_char($filename);
@@ -489,19 +469,19 @@ function export_complete_report_xls($filename, $array)
  * @param $courseInfo
  * @param $sessionId
  * @param $newSessionList
+ *
  * @return array
  */
 function processStudentList($filter_score, $global, $exercise, $courseInfo, $sessionId, $newSessionList)
 {
-    if (
-        (isset($exercise['id']) && empty($exercise['id'])) ||
+    if ((isset($exercise['id']) && empty($exercise['id'])) ||
         !isset($exercise['id'])
     ) {
-        return array(
+        return [
             'html' => '',
-            'export_array_global' =>  [],
-            'total_students' => 0
-        );
+            'export_array_global' => [],
+            'total_students' => 0,
+        ];
     }
 
     $exerciseStatsTable = Database::get_main_table(TABLE_STATISTIC_TRACK_E_EXERCISES);
@@ -528,7 +508,6 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
     }
 
     $html = null;
-
     $totalStudents = count($students);
 
     if (!$global) {
@@ -550,15 +529,16 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
 
     $html .= '</td>';
 
-    $globalRow = array(
+    $globalRow = [
         $courseInfo['title'],
-        $exercise['title']
-    );
+        $exercise['title'],
+    ];
 
     $total_with_parameter_score = 0;
     $taken = 0;
-    $export_array_global = array();
-    $studentResult = array();
+    $export_array_global = [];
+    $studentResult = [];
+    $export_array = [];
 
     foreach ($students as $student) {
         $studentId = isset($student['user_id']) ? $student['user_id'] : $student['id_user'];
@@ -593,10 +573,10 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
         $percentageScore = 0;
 
         if ($weighting != 0) {
-            $percentageScore = round(($score*100)/$weighting);
+            $percentageScore = round(($score * 100) / $weighting);
         }
 
-        if ($attempts['count'] > 0 ) {
+        if ($attempts['count'] > 0) {
             $taken++;
         }
 
@@ -604,7 +584,7 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
             $total_with_parameter_score++;
         }
 
-        $tempArray = array();
+        $tempArray = [];
 
         if (!$global) {
             $userInfo = api_get_user_info($studentId);
@@ -613,6 +593,7 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
             $userRow = '<td>';
             $userRow .= $userInfo['complete_name'];
             $userRow .= '</td>';
+            $userRow .= '<td>'.$userInfo['username'].'</td>';
 
             // Best result
 
@@ -639,7 +620,7 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
             } else {
                 $score = '-';
                 $userRow .= '<td>';
-                $userRow .=  '-';
+                $userRow .= '-';
                 $tempArray[] = '-';
                 $userRow .= '</td>';
 
@@ -654,12 +635,13 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
             }
             $userRow .= '</tr>';
 
-            $studentResult[$studentId] = array(
+            $studentResult[$studentId] = [
                 'html' => $userRow,
                 'score' => $score,
                 'array' => $tempArray,
-                'user' => $userInfo['complete_name']
-            );
+                'user' => $userInfo['complete_name'],
+                'username' => $userInfo['username'],
+            ];
         }
     }
 
@@ -667,7 +649,7 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
 
     if (!$global) {
         if (!empty($studentResult)) {
-            $studentResultEmpty = $studentResultContent = array();
+            $studentResultEmpty = $studentResultContent = [];
             foreach ($studentResult as $row) {
                 if ($row['score'] == '-') {
                     $studentResultEmpty[] = $row;
@@ -684,6 +666,7 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
                 $html .= $row['html'];
                 $row_not_global['results'][] = $row['array'];
                 $row_not_global['users'][] = $row['user'];
+                $row_not_global['usernames'][] = $row['username'];
             }
             $export_array[] = $row_not_global;
         }
@@ -693,13 +676,13 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
         // Exam taken
         $html .= '<td>';
         $html .= $taken;
-        $globalRow[]= $taken;
+        $globalRow[] = $taken;
         $html .= '</td>';
 
         // Exam NOT taken
         $html .= '<td>';
         $html .= $not_taken = $totalStudents - $taken;
-        $globalRow[]= $not_taken;
+        $globalRow[] = $not_taken;
         $html .= '</td>';
 
         // Exam pass
@@ -710,29 +693,30 @@ function processStudentList($filter_score, $global, $exercise, $courseInfo, $ses
         }
 
         $html .= $total_with_parameter_score;
-        $globalRow[]= $total_with_parameter_score;
+        $globalRow[] = $total_with_parameter_score;
         $html .= '</td>';
 
         // Exam fail
         $html .= '<td>';
 
         $html .= $fail = $taken - $total_with_parameter_score;
-        $globalRow[]= $fail;
+        $globalRow[] = $fail;
         $html .= '</td>';
 
         $html .= '<td>';
         $html .= $totalStudents;
-        $globalRow[]= $totalStudents;
+        $globalRow[] = $totalStudents;
 
         $html .= '</td>';
 
         $html .= '</tr>';
         $export_array_global[] = $globalRow;
     }
-    return array(
+
+    return [
         'html' => $html,
-        'export_array_global' => $export_array_global,
-        'total_students' => $totalStudents
-    );
+        'export_array_global' => $global ? $export_array_global : $export_array,
+        'total_students' => $totalStudents,
+    ];
 }
 Display :: display_footer();

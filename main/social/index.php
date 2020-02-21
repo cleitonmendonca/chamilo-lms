@@ -1,11 +1,9 @@
 <?php
-/* For licensing terms, see /chamilo_license.txt */
+/* For licensing terms, see /license.txt */
 /**
- * Redirect file for social network default page
+ * Redirect file for social network default page.
+ *
  * @package chamilo.social
- */
-/**
- * Redirect
  */
 header('Location: profile.php');
 exit();

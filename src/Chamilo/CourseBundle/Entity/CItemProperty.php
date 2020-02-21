@@ -8,7 +8,7 @@ use Chamilo\UserBundle\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * CItemProperty
+ * CItemProperty.
  *
  * @ORM\Table(name="c_item_property", indexes={@ORM\Index(name="idx_item_property_toolref", columns={"tool", "ref"})})
  * @ORM\Entity(repositoryClass="Chamilo\CoreBundle\Entity\Repository\ItemPropertyRepository")
@@ -16,68 +16,26 @@ use Doctrine\ORM\Mapping as ORM;
 class CItemProperty
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="iid", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue
      */
-    private $iid;
+    protected $iid;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=true)
      */
-    private $id;
+    protected $id;
 
     /** //, inversedBy="users",
      * @ORM\ManyToOne(targetEntity="Chamilo\CoreBundle\Entity\Course", cascade={"persist"})
      * @ORM\JoinColumn(name="c_id", referencedColumnName="id")
      */
     protected $course;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="tool", type="string", length=100, nullable=false)
-     */
-    private $tool;
-
-    /**
-     * @var \DateTime
-     *
-     * @ORM\Column(name="insert_date", type="datetime", nullable=false)
-     */
-    private $insertDate;
-
-    /**
-     * @var \DateTime
-     *
-     * @ORM\Column(name="lastedit_date", type="datetime", nullable=false)
-     */
-    private $lasteditDate;
-
-    /**
-     * @var integer
-     *
-     * @ORM\Column(name="ref", type="integer", nullable=false)
-     */
-    private $ref;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="lastedit_type", type="string", length=100, nullable=false)
-     */
-    private $lasteditType;
-
-    /**
-     * @var integer
-     *
-     * @ORM\Column(name="lastedit_user_id", type="integer", nullable=false)
-     */
-    private $lasteditUserId;
 
     /** //, inversedBy="users",
      * @ORM\ManyToOne(targetEntity="Chamilo\CourseBundle\Entity\CGroupInfo", cascade={"persist"})
@@ -97,27 +55,6 @@ class CItemProperty
      */
     protected $insertUser;
 
-    /**
-     * @var boolean
-     *
-     * @ORM\Column(name="visibility", type="boolean", nullable=false)
-     */
-    private $visibility;
-
-    /**
-     * @var \DateTime
-     *
-     * @ORM\Column(name="start_visible", type="datetime", nullable=true)
-     */
-    private $startVisible;
-
-    /**
-     * @var \DateTime
-     *
-     * @ORM\Column(name="end_visible", type="datetime", nullable=true)
-     */
-    private $endVisible;
-
     /** //, inversedBy="users",
      * @ORM\ManyToOne(targetEntity="Chamilo\CoreBundle\Entity\Session", cascade={"persist"})
      * @ORM\JoinColumn(name="session_id", referencedColumnName="id")
@@ -125,18 +62,81 @@ class CItemProperty
     protected $session;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="tool", type="string", length=100, nullable=false)
+     */
+    protected $tool;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="insert_date", type="datetime", nullable=false)
+     */
+    protected $insertDate;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="lastedit_date", type="datetime", nullable=false)
+     */
+    protected $lasteditDate;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="ref", type="integer", nullable=false)
+     */
+    protected $ref;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="lastedit_type", type="string", length=100, nullable=false)
+     */
+    protected $lasteditType;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="lastedit_user_id", type="integer", nullable=false)
+     */
+    protected $lasteditUserId;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="visibility", type="integer", nullable=false)
+     */
+    protected $visibility;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="start_visible", type="datetime", nullable=true)
+     */
+    protected $startVisible;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="end_visible", type="datetime", nullable=true)
+     */
+    protected $endVisible;
+
+    /**
      * CItemProperty constructor.
-     * @param Course $course
      */
     public function __construct(Course $course)
     {
+        $this->visibility = 1;
         $this->course = $course;
         $this->insertDate = new \DateTime('now', new \DateTimeZone('UTC'));
         $this->lasteditDate = new \DateTime('now', new \DateTimeZone('UTC'));
     }
 
     /**
-     * Set tool
+     * Set tool.
      *
      * @param string $tool
      *
@@ -150,7 +150,7 @@ class CItemProperty
     }
 
     /**
-     * Get tool
+     * Get tool.
      *
      * @return string
      */
@@ -160,7 +160,7 @@ class CItemProperty
     }
 
     /**
-     * Set insertDate
+     * Set insertDate.
      *
      * @param \DateTime $insertDate
      *
@@ -174,7 +174,7 @@ class CItemProperty
     }
 
     /**
-     * Get insertDate
+     * Get insertDate.
      *
      * @return \DateTime
      */
@@ -184,9 +184,7 @@ class CItemProperty
     }
 
     /**
-     * Set lasteditDate
-     *
-     * @param \DateTime $lasteditDate
+     * Set lasteditDate.
      *
      * @return CItemProperty
      */
@@ -198,7 +196,7 @@ class CItemProperty
     }
 
     /**
-     * Get lasteditDate
+     * Get lasteditDate.
      *
      * @return \DateTime
      */
@@ -208,9 +206,9 @@ class CItemProperty
     }
 
     /**
-     * Set ref
+     * Set ref.
      *
-     * @param integer $ref
+     * @param int $ref
      *
      * @return CItemProperty
      */
@@ -222,9 +220,9 @@ class CItemProperty
     }
 
     /**
-     * Get ref
+     * Get ref.
      *
-     * @return integer
+     * @return int
      */
     public function getRef()
     {
@@ -232,7 +230,7 @@ class CItemProperty
     }
 
     /**
-     * Set lasteditType
+     * Set lasteditType.
      *
      * @param string $lasteditType
      *
@@ -246,7 +244,7 @@ class CItemProperty
     }
 
     /**
-     * Get lasteditType
+     * Get lasteditType.
      *
      * @return string
      */
@@ -256,9 +254,9 @@ class CItemProperty
     }
 
     /**
-     * Set lasteditUserId
+     * Set lasteditUserId.
      *
-     * @param integer $lasteditUserId
+     * @param int $lasteditUserId
      *
      * @return CItemProperty
      */
@@ -270,9 +268,9 @@ class CItemProperty
     }
 
     /**
-     * Get lasteditUserId
+     * Get lasteditUserId.
      *
-     * @return integer
+     * @return int
      */
     public function getLasteditUserId()
     {
@@ -280,9 +278,9 @@ class CItemProperty
     }
 
     /**
-     * Set visibility
+     * Set visibility.
      *
-     * @param boolean $visibility
+     * @param int $visibility
      *
      * @return CItemProperty
      */
@@ -294,9 +292,9 @@ class CItemProperty
     }
 
     /**
-     * Get visibility
+     * Get visibility.
      *
-     * @return boolean
+     * @return int
      */
     public function getVisibility()
     {
@@ -304,7 +302,7 @@ class CItemProperty
     }
 
     /**
-     * Set startVisible
+     * Set startVisible.
      *
      * @param \DateTime $startVisible
      *
@@ -318,7 +316,7 @@ class CItemProperty
     }
 
     /**
-     * Get startVisible
+     * Get startVisible.
      *
      * @return \DateTime
      */
@@ -328,7 +326,7 @@ class CItemProperty
     }
 
     /**
-     * Set endVisible
+     * Set endVisible.
      *
      * @param \DateTime $endVisible
      *
@@ -342,7 +340,7 @@ class CItemProperty
     }
 
     /**
-     * Get endVisible
+     * Get endVisible.
      *
      * @return \DateTime
      */
@@ -352,9 +350,9 @@ class CItemProperty
     }
 
     /**
-     * Set id
+     * Set id.
      *
-     * @param integer $id
+     * @param int $id
      *
      * @return CItemProperty
      */
@@ -366,9 +364,9 @@ class CItemProperty
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -464,8 +462,6 @@ class CItemProperty
     }
 
     /**
-     * @param User $insertUser
-     *
      * @return $this
      */
     public function setInsertUser(User $insertUser)
@@ -477,7 +473,8 @@ class CItemProperty
     }
 
     /**
-     * Get iid
+     * Get iid.
+     *
      * @return int
      */
     public function getIid()

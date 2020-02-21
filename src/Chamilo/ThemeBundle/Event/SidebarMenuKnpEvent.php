@@ -1,4 +1,5 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\ThemeBundle\Event;
 
@@ -7,7 +8,7 @@ use Knp\Menu\MenuItem;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Class SidebarMenuKnpEvent
+ * Class SidebarMenuKnpEvent.
  *
  * @package Chamilo\ThemeBundle\Event
  */
@@ -16,7 +17,7 @@ class SidebarMenuKnpEvent extends ThemeEvent
     /**
      * @var array
      */
-    protected $menuRootItems = array();
+    protected $menuRootItems = [];
 
     protected $menu;
 
@@ -46,9 +47,6 @@ class SidebarMenuKnpEvent extends ThemeEvent
         return $this->menu;
     }
 
-    /**
-     * @param MenuItem $menu
-     */
     public function setMenu(MenuItem $menu)
     {
         $this->menu = $menu;
@@ -62,9 +60,6 @@ class SidebarMenuKnpEvent extends ThemeEvent
         return $this->menuRootItems;
     }
 
-    /**
-     * @param MenuItem $item
-     */
     public function addItem(MenuItem $item)
     {
         $this->menuRootItems[$item->getUri()] = $item;
@@ -72,8 +67,6 @@ class SidebarMenuKnpEvent extends ThemeEvent
 
     /**
      * @param $id
-     *
-     * @return null
      */
     public function getRootItem($id)
     {
@@ -93,5 +86,4 @@ class SidebarMenuKnpEvent extends ThemeEvent
 
         return null;
     }
-
 }

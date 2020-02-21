@@ -5,11 +5,16 @@ namespace Chamilo\CoreBundle\Entity\Repository;
 
 use Doctrine\ORM\EntityRepository;
 
+/**
+ * Class LanguageRepository.
+ *
+ * @package Chamilo\CoreBundle\Entity\Repository
+ */
 class LanguageRepository extends EntityRepository
 {
-
     /**
      * Get all the sub languages that are made available by the admin.
+     *
      * @return array
      */
     public function findAllPlatformSubLanguages()

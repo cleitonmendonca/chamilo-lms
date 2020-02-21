@@ -1,13 +1,14 @@
 <?php
 /* For license terms, see /license.txt */
 /**
- * Index of the Advanced subscription plugin courses list
+ * Index of the Advanced subscription plugin courses list.
+ *
  * @package chamilo.plugin.advanced_subscription
  */
 /**
- * Init
+ * Init.
  */
-require_once __DIR__ . '/../config.php';
+require_once __DIR__.'/../config.php';
 // protect
 api_protect_admin_script();
 // start plugin
@@ -27,29 +28,29 @@ if (!empty($sessionId)) {
     $sessionList[$sessionId]['selected'] = 'selected="selected"';
     $studentList['session']['id'] = $sessionId;
     // Assign variables
-    $fieldsArray = array(
+    $fieldsArray = [
         'description',
         'target',
         'mode',
         'publication_end_date',
         'recommended_number_of_participants',
         'vacancies',
-    );
+    ];
     $sessionArray = api_get_session_info($sessionId);
     $extraSession = new ExtraFieldValue('session');
     $extraField = new ExtraField('session');
     // Get session fields
-    $fieldList = $extraField->get_all(array(
-        'variable IN ( ?, ?, ?, ?, ?, ?)' => $fieldsArray
-    ));
+    $fieldList = $extraField->get_all([
+        'variable IN ( ?, ?, ?, ?, ?, ?)' => $fieldsArray,
+    ]);
     // Index session fields
     foreach ($fieldList as $field) {
         $fields[$field['id']] = $field['variable'];
     }
-    $params = array(' item_id = ? '  => $sessionId);
-    $sessionFieldValueList = $extraSession->get_all(array('where' => $params));
+    $params = [' item_id = ? ' => $sessionId];
+    $sessionFieldValueList = $extraSession->get_all(['where' => $params]);
     foreach ($sessionFieldValueList as $sessionFieldValue) {
-            // Check if session field value is set in session field list
+        // Check if session field value is set in session field list
         if (isset($fields[$sessionFieldValue['field_id']])) {
             $var = $fields[$sessionFieldValue['field_id']];
             $val = $sessionFieldValue['value'];
@@ -85,8 +86,7 @@ if (!empty($sessionId)) {
         $data['newStatus'] = ADVANCED_SUBSCRIPTION_QUEUE_STATUS_ADMIN_DISAPPROVED;
         $student['rejectUrl'] = $plugin->getQueueUrl($data);
         $student['complete_name'] = $isWesternNameOrder ?
-            $student['firstname'] . ', ' . $student['lastname'] :
-            $student['lastname'] . ', ' . $student['firstname'];
+            $student['firstname'].', '.$student['lastname'] : $student['lastname'].', '.$student['firstname'];
     }
     $tpl->assign('session', $sessionArray);
     $tpl->assign('students', $studentList['students']);

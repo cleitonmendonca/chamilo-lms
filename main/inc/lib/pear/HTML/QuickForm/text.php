@@ -33,9 +33,6 @@
  */
 class HTML_QuickForm_text extends HTML_QuickForm_input
 {
-    private $inputSize;
-    private $columnsSize;
-
     /**
      * Class constructor
      *
@@ -50,10 +47,14 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
     public function __construct(
         $elementName = null,
         $elementLabel = null,
-        $attributes = array()
+        $attributes = []
     ) {
+        if (is_string($attributes) && empty($attributes)) {
+            $attributes = [];
+        }
         if (is_array($attributes) || empty($attributes)) {
-            $attributes['class'] = 'form-control';
+            $classFromAttributes = isset($attributes['class']) ? $attributes['class'] : '';
+            $attributes['class'] = $classFromAttributes.' form-control';
         }
         $inputSize = isset($attributes['input-size']) ? $attributes['input-size'] : null;
         $this->setInputSize($inputSize);
@@ -72,7 +73,6 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
 
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
-
         $this->setType('text');
     }
 
@@ -88,8 +88,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
             return '';
         }
 
-        return '
-                <div class="input-group-addon">
+        return '<div class="input-group-addon">
                 <em class="fa fa-'.$icon.'"></em>
                 </div>';
     }
@@ -101,29 +100,8 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
      */
     public function getTemplate($layout)
     {
-        $size = $this->getColumnsSize();
-
-        if (empty($size)) {
-            $sizeTemp = $this->getInputSize();
-            if (empty($size)) {
-                $sizeTemp = 8;
-            }
-            $size = array(2, $sizeTemp, 2);
-        } else {
-            if (is_array($size)) {
-                if (count($size) != 3) {
-                    $sizeTemp = $this->getInputSize();
-                    if (empty($size)) {
-                        $sizeTemp = 8;
-                    }
-                    $size = array(2, $sizeTemp, 2);
-                }
-                // else just keep the $size array as received
-            } else {
-                $size = array(2, intval($size), 2);
-            }
-        }
-
+        $size = $this->calculateSize();
+        $attributes = $this->getAttributes();
 
         switch ($layout) {
             case FormValidator::LAYOUT_INLINE:
@@ -152,7 +130,7 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">
@@ -163,47 +141,32 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
                 </div>';
                 break;
             case FormValidator::LAYOUT_BOX_NO_LABEL:
-                return '
+                if (isset($attributes['custom']) && $attributes['custom'] == true) {
+                    $template = '
                         <label {label-for}>{label}</label>
                         <div class="input-group">
-                            
+                            {icon}
+                            {element}
+                            <div class="input-group-btn">
+                                <button class="btn btn-default" type="submit">
+                                    <em class="fa fa-search"></em>
+                                </button>
+                            </div>
+                        </div>  
+                    ';
+                } else {
+                    $template = '
+                        <label {label-for}>{label}</label>
+                        <div class="input-group">
                             {icon}
                             {element}
                         </div>';
+                }
+                return $template;
                 break;
         }
     }
 
-    /**
-     * @return null
-     */
-    public function getInputSize()
-    {
-        return $this->inputSize;
-    }
-
-    /**
-     * @param null $inputSize
-     */
-    public function setInputSize($inputSize)
-    {
-        $this->inputSize = $inputSize;
-    }
-    /**
-     * @return null
-     */
-    public function getColumnsSize()
-    {
-        return $this->columnsSize;
-    }
-
-    /**
-     * @param null $columnsSize
-     */
-    public function setColumnsSize($columnsSize)
-    {
-        $this->columnsSize = $columnsSize;
-    }
     /**
      * Sets size of text field
      *
@@ -235,10 +198,10 @@ class HTML_QuickForm_text extends HTML_QuickForm_input
      */
     public function toHtml()
     {
-        if ($this->_flagFrozen) {
+        if ($this->isFrozen()) {
             return $this->getFrozenHtml();
         } else {
-            return '<input ' . $this->_getAttrString($this->_attributes) . ' />';
+            return '<input '.$this->_getAttrString($this->_attributes).' />';
         }
     }
 }

@@ -4,10 +4,11 @@
 /**
  * Process part of the SCORM sub-process for upload. This script MUST BE included by upload/index.php
  * as it prepares most of the variables needed here.
+ *
  * @package chamilo.upload
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
-
 $cwdir = getcwd();
 require_once '../lp/lp_upload.php';
 
@@ -15,7 +16,7 @@ require_once '../lp/lp_upload.php';
 chdir($cwdir);
 
 if (api_get_setting('search_enabled') === 'true') {
-    require_once api_get_path(LIBRARY_PATH) . 'specific_fields_manager.lib.php';
+    require_once api_get_path(LIBRARY_PATH).'specific_fields_manager.lib.php';
     $specific_fields = get_specific_field_list();
 
     foreach ($specific_fields as $specific_field) {
@@ -37,5 +38,5 @@ if (api_get_setting('search_enabled') === 'true') {
     }
 }
 
-header('location: ../lp/lp_controller.php?action=list?'.api_get_cidreq());
+header('location: ../lp/lp_controller.php?action=list&'.api_get_cidreq());
 exit;

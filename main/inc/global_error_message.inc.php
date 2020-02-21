@@ -5,9 +5,9 @@
  * This script displays error messages on fatal errors during initialization.
  *
  * @package chamilo.include
+ *
  * @author Ivan Tcholakov, 2009-2010
  */
-
 $Organisation = '<a href="http://www.chamilo.org" target="_blank">Chamilo Homepage</a>';
 $PoweredBy = 'Powered by <a href="http://www.chamilo.org" target="_blank"> Chamilo </a> &copy; '.date('Y');
 
@@ -49,7 +49,6 @@ $TechnicalIssuesTitle = 'Technical issues';
 $TechnicalIssuesDescription = 'This portal is currently experiencing technical issues. Please report this to the portal administrator. Thank you for your help.';
 
 if (is_int($global_error_code) && $global_error_code > 0) {
-
     if (class_exists('Template') && function_exists('api_get_configuration_value')) {
         $theme = Template::getThemeFallback().'/';
     } else {
@@ -58,7 +57,7 @@ if (is_int($global_error_code) && $global_error_code > 0) {
 
     $root_rel = '';
     $installation_guide_url = $root_rel.'documentation/installation_guide.html';
-    
+
     $css_path = 'app/Resources/public/css/';
     $css_web_assets = 'web/assets/';
     $css_web_path = 'web/css/';
@@ -66,7 +65,7 @@ if (is_int($global_error_code) && $global_error_code > 0) {
     $bootstrap_file = $css_web_assets.'bootstrap/dist/css/bootstrap.min.css';
     $css_base_file = $css_web_path.'base.css';
 
-    $css_list = array($bootstrap_file, $css_base_file, $themePath);
+    $css_list = [$bootstrap_file, $css_base_file, $themePath];
 
     $web_img = 'main/img';
     $root_sys = str_replace('\\', '/', realpath(__DIR__.'/../../')).'/';
@@ -79,7 +78,7 @@ if (is_int($global_error_code) && $global_error_code > 0) {
         }
     }
 
-    $global_error_message = array();
+    $global_error_message = [];
 
     switch ($global_error_code) {
         case 1:
@@ -99,18 +98,19 @@ if (is_int($global_error_code) && $global_error_code > 0) {
             $global_error_message['description'] = $IncorrectPhpVersionDescription;
             break;
         case 2:
-            require __DIR__ . '/../install/version.php';
+            require __DIR__.'/../install/version.php';
             $global_error_message['section'] = $SectionInstallation;
             $global_error_message['title'] = $InstallationTitle;
             if (($pos = strpos($InstallationDescription, '%s')) === false) {
                 $InstallationDescription = 'Click to INSTALL Chamilo %s or read the installation guide';
             }
             $read_installation_guide = substr($InstallationDescription, $pos + 2);
+            $versionStatus = (!empty($new_version_status) && $new_version_status != 'stable' ? $new_version_status : '');
             $InstallationDescription = '<form action="'.$root_rel.'main/install/index.php" method="get">
             <div class="row">
                     <div class="col-md-12">
                     <div class="office">
-                    <h2 class="title">Welcome to the Chamilo '.$new_version.' installation wizard</h2>
+                    <h2 class="title">Welcome to the Chamilo '.$new_version.' '.$new_version_status.' installation wizard</h2>
                     <p class="text">Let\'s start hunting skills down with Chamilo LMS! This wizard will guide you through the Chamilo installation and configuration process.</p>
                           <p class="download-info">
                               <button class="btn btn-primary btn-lg" type="submit" value="INSTALL Chamilo" ><i class="fa fa-download" aria-hidden="true"></i> Install Chamilo</button>
@@ -153,7 +153,8 @@ if (is_int($global_error_code) && $global_error_code > 0) {
     $installChamiloImage = "data:image/png;base64,".base64_encode(file_get_contents("$root_sys/main/img/mr_chamilo_install.png"));
     $global_error_message['mr_chamilo'] = $installChamiloImage;
 
-    $global_error_message_page =
+    if ($global_error_code == 2) {
+        $global_error_message_page =
 <<<EOM
 <!DOCTYPE html>
 <html>
@@ -249,6 +250,70 @@ if (is_int($global_error_code) && $global_error_code > 0) {
 		</body>
 </html>
 EOM;
+    } else {
+        $global_error_message_page =
+<<<EOM
+    <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{TITLE}</title>
+            <meta charset="{ENCODING}" />
+            <style>
+            $css_def
+            </style>  
+        </head>
+        <body>
+        <div id="page-error">
+            <div class="page-wrap">
+                <header>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="logo">
+                                    <img src="{CHAMILO_LOGO}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <section id="menu-bar">
+                <nav class="navbar navbar-default">
+                    <div class="container">        
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#menuone" aria-expanded="false">
+                            <span class="sr-only">Toggle navigation</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                    </div>  
+                    <div class="collapse navbar-collapse" id="menuone">
+                        <ul class="nav navbar-nav">
+                            <li id="current" class="active tab-homepage"><a href="#" target="_self">Homepage</a></li>
+                        </ul>
+                    </div>
+                    </div>
+                </nav>
+                </section>
+                
+                <section id="content-error">
+                    <div class="container">
+                        <div class="panel panel-default">
+                        <div class="panel-body">
+                            <div class="alert alert-danger" role="alert">
+                                {DESCRIPTION}
+                                {CODE}
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+        </body>
+</html>
+EOM;
+    }
     foreach ($global_error_message as $key => $value) {
         $global_error_message_page = str_replace('{'.strtoupper($key).'}', $value, $global_error_message_page);
     }

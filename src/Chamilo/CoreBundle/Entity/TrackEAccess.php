@@ -6,70 +6,73 @@ namespace Chamilo\CoreBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * TrackEAccess
+ * TrackEAccess.
  *
- * @ORM\Table(name="track_e_access", indexes={@ORM\Index(name="access_user_id", columns={"access_user_id"}), @ORM\Index(name="access_c_id", columns={"c_id"}), @ORM\Index(name="access_session_id", columns={"access_session_id"})})
+ * @ORM\Table(name="track_e_access", indexes={
+ *     @ORM\Index(name="access_user_id", columns={"access_user_id"}),
+ *     @ORM\Index(name="access_c_id", columns={"c_id"}),
+ *     @ORM\Index(name="access_session_id", columns={"access_session_id"})
+ * })
  * @ORM\Entity
  */
 class TrackEAccess
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="access_user_id", type="integer", nullable=true)
      */
-    private $accessUserId;
+    protected $accessUserId;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="access_date", type="datetime", nullable=false)
      */
-    private $accessDate;
+    protected $accessDate;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="c_id", type="integer", nullable=false)
      */
-    private $cId;
+    protected $cId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="access_tool", type="string", length=30, nullable=true)
      */
-    private $accessTool;
+    protected $accessTool;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="access_session_id", type="integer", nullable=false)
      */
-    private $accessSessionId;
+    protected $accessSessionId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="user_ip", type="string", length=39, nullable=false)
      */
-    private $userIp;
+    protected $userIp;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="access_id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
-    private $accessId;
-
-
+    protected $accessId;
 
     /**
-     * Set accessUserId
+     * Set accessUserId.
      *
-     * @param integer $accessUserId
+     * @param int $accessUserId
+     *
      * @return TrackEAccess
      */
     public function setAccessUserId($accessUserId)
@@ -80,9 +83,9 @@ class TrackEAccess
     }
 
     /**
-     * Get accessUserId
+     * Get accessUserId.
      *
-     * @return integer
+     * @return int
      */
     public function getAccessUserId()
     {
@@ -90,9 +93,10 @@ class TrackEAccess
     }
 
     /**
-     * Set accessDate
+     * Set accessDate.
      *
      * @param \DateTime $accessDate
+     *
      * @return TrackEAccess
      */
     public function setAccessDate($accessDate)
@@ -103,7 +107,7 @@ class TrackEAccess
     }
 
     /**
-     * Get accessDate
+     * Get accessDate.
      *
      * @return \DateTime
      */
@@ -113,9 +117,10 @@ class TrackEAccess
     }
 
     /**
-     * Set cId
+     * Set cId.
      *
-     * @param integer $cId
+     * @param int $cId
+     *
      * @return TrackEAccess
      */
     public function setCId($cId)
@@ -126,9 +131,9 @@ class TrackEAccess
     }
 
     /**
-     * Get cId
+     * Get cId.
      *
-     * @return integer
+     * @return int
      */
     public function getCId()
     {
@@ -136,9 +141,10 @@ class TrackEAccess
     }
 
     /**
-     * Set accessTool
+     * Set accessTool.
      *
      * @param string $accessTool
+     *
      * @return TrackEAccess
      */
     public function setAccessTool($accessTool)
@@ -149,7 +155,7 @@ class TrackEAccess
     }
 
     /**
-     * Get accessTool
+     * Get accessTool.
      *
      * @return string
      */
@@ -159,9 +165,10 @@ class TrackEAccess
     }
 
     /**
-     * Set accessSessionId
+     * Set accessSessionId.
      *
-     * @param integer $accessSessionId
+     * @param int $accessSessionId
+     *
      * @return TrackEAccess
      */
     public function setAccessSessionId($accessSessionId)
@@ -172,9 +179,9 @@ class TrackEAccess
     }
 
     /**
-     * Get accessSessionId
+     * Get accessSessionId.
      *
-     * @return integer
+     * @return int
      */
     public function getAccessSessionId()
     {
@@ -182,9 +189,10 @@ class TrackEAccess
     }
 
     /**
-     * Set userIp
+     * Set userIp.
      *
      * @param string $userIp
+     *
      * @return TrackEAccess
      */
     public function setUserIp($userIp)
@@ -195,7 +203,7 @@ class TrackEAccess
     }
 
     /**
-     * Get userIp
+     * Get userIp.
      *
      * @return string
      */
@@ -205,9 +213,9 @@ class TrackEAccess
     }
 
     /**
-     * Get accessId
+     * Get accessId.
      *
-     * @return integer
+     * @return int
      */
     public function getAccessId()
     {

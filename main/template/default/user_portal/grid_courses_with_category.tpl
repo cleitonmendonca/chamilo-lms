@@ -1,5 +1,5 @@
 <div class="grid-courses">
-    {% for category in courses.in_category %}
+    {% for category in categories %}
         {% set nameCategory = category.title_category %}
         {% set idCategory = category.id_category %}
         <div id="category_{{ idCategory }}" class="panel panel-default">
@@ -57,14 +57,37 @@
                                 </div>
                                 <div class="description">
                                     <h4 class="title">
-                                        {% if item.visibility == constant('COURSE_VISIBILITY_CLOSED') %}
+                                        {% if item.visibility == constant('COURSE_VISIBILITY_CLOSED') and not item.current_user_is_teacher %}
                                             {{ item.title }} {{ item.code_course }}
                                         {% else %}
                                             <a href="{{ item.link }}">{{ item.title }} {{ item.code_course }}</a>
                                         {% endif %}
                                     </h4>
-                                    <div class="notifications">{{ item.notifications }}</div>
+                                    {% if item.notifications %}
+                                        <div class="notifications">{{ item.notifications }}</div>
+                                    {% endif %}
+                                    {% if item.student_info %}
+                                        {% if item.student_info.progress is not null or item.student_info.score is not null or item.student_info.certificate is not null %}
+                                            <div class="course-student-info">
+                                                <div class="student-info">
+                                                    {% if (item.student_info.progress is not null) %}
+                                                        {{ "StudentCourseProgressX" | get_lang | format(item.student_info.progress) }}
+                                                    {% endif %}
 
+                                                    {% if (item.student_info.score is not null) %}
+                                                        {{ "StudentCourseScoreX" | get_lang | format(item.student_info.score) }}
+                                                    {% endif %}
+
+                                                    {% if (item.student_info.certificate is not null) %}
+                                                        <span title="{{ "StudentCourseCertificateX" | get_lang | format(item.student_info.certificate) }}">
+                                                            <i class="fa fa-certificate" aria-hidden="true"></i>
+                                                            {{ item.student_info.certificate }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

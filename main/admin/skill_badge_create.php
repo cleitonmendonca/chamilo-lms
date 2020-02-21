@@ -1,55 +1,48 @@
 <?php
 /* For licensing terms, see /license.txt */
+
 /**
- * Show information about Mozilla OpenBadges
+ * Show information about Mozilla OpenBadges.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.admin.openbadges
  */
-use ChamiloSession as Session;
-
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
-if (!api_is_platform_admin() || api_get_setting('allow_skills_tool') !== 'true') {
-    api_not_allowed(true);
-}
+api_protect_admin_script();
+Skill::isAllowed();
 
 $this_section = SECTION_PLATFORM_ADMIN;
 
 $skillId = intval($_GET['id']);
-
 $objSkill = new Skill();
 $skill = $objSkill->get($skillId);
 
-$htmlHeadXtra[] = '<link  href="'. api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/media/css/core.css" rel="stylesheet">';
+$htmlHeadXtra[] = '<link  href="'.api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/media/css/core.css" rel="stylesheet">';
 
 // Add badge studio paths
-
 $badgeStudio = [
-    'core' => api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/',
-    'media' => api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/media/',
-    'templates' => api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/media/images/templates/',
-    'masks' => api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/media/images/masks/',
-    'script_js' => '<script src="'. api_get_path(WEB_LIBRARY_JS_PATH) .'badge-studio/media/js/studio.js?"></script>'
+    'core' => api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/',
+    'media' => api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/media/',
+    'templates' => api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/media/images/templates/',
+    'masks' => api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/media/images/masks/',
+    'script_js' => '<script src="'.api_get_path(WEB_LIBRARY_JS_PATH).'badge-studio/media/js/studio.js?"></script>',
 ];
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $params = array(
-        'name' => $_POST['name'],
-        'description' => $_POST['description'],
-        'criteria' => $_POST['criteria'],
-        'id' => $skillId
-    );
+    $params = [
+        'id' => $skillId,
+    ];
 
-    if ((isset($_FILES['image']) && $_FILES['image']['error'] == 0) || !empty($_POST['badge_studio_image'])) {
+    if ((isset($_FILES['image']) && $_FILES['image']['error'] == 0) ||
+        !empty($_POST['badge_studio_image'])
+    ) {
         $dirPermissions = api_get_permissions_for_new_directories();
-
-        $fileName = sha1($_POST['name']);
-
+        $fileName = sha1($skill['name']);
         $badgePath = api_get_path(SYS_UPLOAD_PATH).'badges/';
-
         $existsBadgesDirectory = is_dir($badgePath);
 
         if (!$existsBadgesDirectory) {
@@ -57,19 +50,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($existsBadgesDirectory) {
-
             if (!empty($skill['icon'])) {
-                $iconFileAbsolutePath = $badgePath . $skill['icon'];
+                $iconFileAbsolutePath = $badgePath.$skill['icon'];
 
                 if (Security::check_abs_path($iconFileAbsolutePath, $badgePath)) {
-                    unlink($badgePath . $skill['icon']);
+                    unlink($badgePath.$skill['icon']);
                 }
             }
 
             $skillImagePath = sprintf("%s%s.png", $badgePath, $fileName);
-
             if (!empty($_POST['badge_studio_image'])) {
-                $badgeImage = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $_POST['badge_studio_image']));
+                $badgeImage = base64_decode(
+                    preg_replace('#^data:image/\w+;base64,#i', '', $_POST['badge_studio_image'])
+                );
                 file_put_contents($skillImagePath, $badgeImage);
                 $skillImage = new Image($skillImagePath);
             } else {
@@ -86,42 +79,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $params['icon'] = sprintf("%s.png", $fileName);
         } else {
-            Session::write('errorMessage', get_lang('UplUnableToSaveFile'));
+            Display::addFlash(Display::return_message(get_lang('UplUnableToSaveFile')), 'warning');
         }
     }
 
+    Display::addFlash(Display::return_message(get_lang('Updated')));
     $objSkill->update($params);
-
-    header('Location: ' . api_get_path(WEB_CODE_PATH) . 'admin/skill_badge_list.php');
+    header('Location: '.api_get_path(WEB_CODE_PATH).'admin/skill_list.php');
     exit;
 }
 
-$interbreadcrumb = array(
-    array(
-        'url' => api_get_path(WEB_CODE_PATH) . 'admin/index.php',
-        'name' => get_lang('Administration')
-    ),
-    array(
-        'url' => api_get_path(WEB_CODE_PATH) . 'admin/skill_badge.php',
-        'name' => get_lang('Badges')
-    )
-);
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'admin/index.php',
+    'name' => get_lang('Administration'),
+];
+$interbreadcrumb[] = ['url' => 'skill_list.php', 'name' => get_lang('ManageSkills')];
 
-$toolbar = Display::toolbarButton(
-    get_lang('ManageSkills'),
-    api_get_path(WEB_CODE_PATH) . 'admin/skill_list.php',
-    'list',
-    'primary',
-    ['title' => get_lang('ManageSkills')]
-);
+$toolbar = $objSkill->getToolBar();
 
 $tpl = new Template(get_lang('CreateBadge'));
 $tpl->assign('platformAdminEmail', api_get_setting('emailAdministrator'));
 $tpl->assign('skill', $skill);
 $tpl->assign('badge_studio', $badgeStudio);
-
-$contentTemplate = $tpl->fetch('default/skill/badge_create.tpl');
-
-$tpl->assign('actions', $toolbar);
-$tpl->assign('content', $contentTemplate);
+$templateName = $tpl->get_template('skill/badge_create.tpl');
+$contentTemplate = $tpl->fetch($templateName);
+$tpl->assign('content', $toolbar.$contentTemplate);
 $tpl->display_one_col_template();

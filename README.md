@@ -6,6 +6,7 @@
 [![Bountysource](https://www.bountysource.com/badge/team?team_id=12439&style=raised)](https://www.bountysource.com/teams/chamilo?utm_source=chamilo&utm_medium=shield&utm_campaign=raised)
 [![Code Consistency](https://squizlabs.github.io/PHP_CodeSniffer/analysis/chamilo/chamilo-lms/grade.svg)](http://squizlabs.github.io/PHP_CodeSniffer/analysis/chamilo/chamilo-lms/)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/166/badge)](https://bestpractices.coreinfrastructure.org/projects/166)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/88e934aab2f34bb7a0397a6f62b078b2)](https://www.codacy.com/app/chamilo/chamilo-lms?utm_source=github.com&utm_medium=referral&utm_content=chamilo/chamilo-lms&utm_campaign=badger)
 
 ## Installation
 
@@ -16,7 +17,7 @@ This installation guide is for development environments only.
 To run Chamilo, you will need at least a web server (we recommend Apache2 for commodity reasons), a database server (we recommend MariaDB but will explain MySQL for commodity reasons) and a PHP interpreter (and a series of libraries for it). If you are working on a Debian-based system (Debian, Ubuntu, Mint, etc), just
 type
 ```
-sudo apt-get install libapache2-mod-php mysql-server php5-gd php5-intl php5-curl php5-json
+sudo apt-get install apache2 mysql-server php libapache2-mod-php php-gd php-intl php-curl php-json php-mysql php-zip composer
 ```
 
 ### Install Git
@@ -74,7 +75,34 @@ generate the missing files.
 
 On a Debian-based system, launch:
 ```
-sudo chown -R www-data:www-data app main/default_course_document/images main/lang  
+sudo chown -R www-data:www-data app main/default_course_document/images main/lang web
+```
+
+### Configure the web server
+
+Enable the Apache web server module "rewrite" :
+```
+sudo a2enmod rewrite
+sudo systemctl restart apache2.service
+```
+
+Chamilo's .htaccess must be obeyed.
+Create /etc/apache2/conf-available/htaccessForChamilo.conf with these lines :
+```
+<Directory /var/www/html/chamilo-lms>
+	AllowOverride All
+</Directory>
+```
+
+then enable it :
+```
+sudo a2enconf htaccessForChamilo
+sudo systemctl reload apache2.service
+```
+
+If you just installed missing PHP extensions using apt, you must restart the web server to get them loaded :
+```
+sudo systemctl restart apache2.service
 ```
 
 ### Start the installer
@@ -177,4 +205,4 @@ In short, we ask you to send us Pull Requests based on a branch that you create
 with this purpose into your repository forked from the original Chamilo repository.
 
 # Documentation
-For more information on Chamilo, visit https://stable.chamilo.org/documentation
+For more information on Chamilo, visit https://1.11.chamilo.org/documentation/index.html

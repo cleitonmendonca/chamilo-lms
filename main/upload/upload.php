@@ -1,16 +1,22 @@
 <?php
 /* For licensing terms, see /license.txt */
+
+use ChamiloSession as Session;
+
 /**
  * Action controller for the upload process. The display scripts (web forms) redirect
  * the process here to do what needs to be done with each file.
+ *
  * @package chamilo.upload
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
-require_once '../inc/global.inc.php';
+$toolFromSession = Session::read('my_tool');
 
 // return to index if no tool is set
-if (empty($_SESSION['my_tool'])) {
+if (empty($toolFromSession)) {
     header('location:index.php');
     exit;
 }
@@ -23,9 +29,9 @@ if (!$is_allowed_to_edit) {
 }
 
 /**
- * Redirect to the correct script to handle this type of upload
+ * Redirect to the correct script to handle this type of upload.
  */
-switch ($_SESSION['my_tool']) {
+switch ($toolFromSession) {
     case TOOL_LEARNPATH:
         require 'upload.scorm.php';
         break;

@@ -3,20 +3,24 @@
 
 namespace Chamilo\CoreBundle\Component\Editor;
 
-use Chamilo\CoreBundle\Framework\Template;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Translation\Translator;
 
 /**
- * Class Editor
+ * Class Editor.
+ *
  * @package Chamilo\CoreBundle\Component\Editor
  */
 class Editor
 {
     /**
+     * @var string
+     */
+    public $textareaId;
+
+    /**
      * Name of the instance.
      *
-     * @access protected
      * @var string
      */
     public $name;
@@ -50,13 +54,13 @@ class Editor
     public $template;
 
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
         $this->toolbarSet = 'Basic';
         $this->value = '';
-        $this->config = array();
+        $this->config = [];
         $this->setConfigAttribute('width', '100%');
         $this->setConfigAttribute('height', '200');
         $this->setConfigAttribute('fullPage', false);
@@ -82,14 +86,36 @@ class Editor
     }
 
     /**
+     * @return string
+     */
+    public function getTextareaId()
+    {
+        return $this->textareaId;
+    }
+
+    /**
+     * @param string $textareaId
+     *
+     * @return Editor
+     */
+    public function setTextareaId($textareaId)
+    {
+        $this->textareaId = $textareaId;
+
+        return $this;
+    }
+
+    /**
      * Return the HTML code required to run editor.
+     *
+     * @param string $value
      *
      * @return string
      */
-    public function createHtml()
+    public function createHtml($value)
     {
-        $html = '<textarea id="'.$this->getName().'" name="'.$this->getName().'">'.$this->value.'</textarea>';
-        //$html .= $this->editorReplace();
+        $html = '<textarea id="'.$this->getTextareaId().'" name="'.$this->getName().'">'.$value.'</textarea>';
+
         return $html;
     }
 
@@ -102,63 +128,15 @@ class Editor
         $toolbar->setLanguage($this->getLocale());
         $config = $toolbar->getConfig();
         $javascript = $this->toJavascript($config);
+
         $html = "<script>
-           CKEDITOR.replace('".$this->name."',
+           CKEDITOR.replace('".$this->getTextareaId()."',
                $javascript
            );
            
            </script>";
 
         return $html;
-    }
-
-    /**
-     * Converts a PHP variable into its Javascript equivalent.
-     * The code of this method has been "borrowed" from the function drupal_to_js() within the Drupal CMS.
-     * @param mixed $var  The variable to be converted into Javascript syntax
-     *
-     * @return string    Returns a string
-     * Note: This function is similar to json_encode(),
-     * in addition it produces HTML-safe strings, i.e. with <, > and & escaped.
-     * @link http://drupal.org/
-     */
-    protected function toJavascript($var)
-    {
-        switch (gettype($var)) {
-            case 'boolean':
-                return $var ? 'true' : 'false'; // Lowercase necessary!
-            case 'integer':
-            case 'double':
-                return (string)$var;
-            case 'resource':
-            case 'string':
-                return '"'.str_replace(
-                    array("\r", "\n", "<", ">", "&"),
-                    array('\r', '\n', '\x3c', '\x3e', '\x26'),
-                    addslashes($var)
-                ).'"';
-             case 'array':
-                // Arrays in JSON can't be associative. If the array is empty or if it
-                // has sequential whole number keys starting with 0, it's not associative
-                // so we can go ahead and convert it as an array.
-                if (empty($var) || array_keys($var) === range(0, sizeof($var) - 1)) {
-                    $output = array();
-                    foreach ($var as $v) {
-                        $output[] = $this->toJavascript($v);
-                    }
-
-                    return '[ '.implode(', ', $output).' ]';
-                }
-            case 'object':
-                // Otherwise, fall through to convert the array as an object.
-                $output = array();
-                foreach ($var as $k => $v) {
-                    $output[] = $this->toJavascript(strval($k)).': '.$this->toJavascript($v);
-                }
-                return '{ '.implode(', ', $output).' }';
-            default:
-                return 'null';
-        }
     }
 
     /**
@@ -194,9 +172,11 @@ class Editor
                     case 'Config':
                         $this->processConfig($value);
                         break;
+                    case 'width':
                     case 'Width':
                         $this->setConfigAttribute('width', $value);
                         break;
+                    case 'height':
                     case 'Height':
                         $this->setConfigAttribute('height', $value);
                         break;
@@ -212,9 +192,6 @@ class Editor
         }
     }
 
-    /**
-     * @return null
-     */
     public function getEditorTemplate()
     {
         return null;
@@ -228,9 +205,6 @@ class Editor
         return 'javascript/editor/elfinder_standalone.tpl';
     }
 
-    /**
-     * @return null
-     */
     public function formatTemplates($templates)
     {
         return null;
@@ -242,5 +216,60 @@ class Editor
     public function getLocale()
     {
         return api_get_language_isocode();
+    }
+
+    /**
+     * Converts a PHP variable into its Javascript equivalent.
+     * The code of this method has been "borrowed" from the function drupal_to_js() within the Drupal CMS.
+     *
+     * @param mixed $var The variable to be converted into Javascript syntax
+     *
+     * @return string Returns a string
+     *                Note: This function is similar to json_encode(),
+     *                in addition it produces HTML-safe strings, i.e. with <, > and & escaped.
+     *
+     * @see http://drupal.org/
+     */
+    protected function toJavascript($var)
+    {
+        switch (gettype($var)) {
+            case 'boolean':
+                return $var ? 'true' : 'false'; // Lowercase necessary!
+            case 'integer':
+            case 'double':
+                return (string) $var;
+            case 'resource':
+            case 'string':
+                return '"'.str_replace(
+                    ["\r", "\n", "<", ">", "&"],
+                    ['\r', '\n', '\x3c', '\x3e', '\x26'],
+                    addslashes($var)
+                ).'"';
+                break;
+            case 'array':
+                // Arrays in JSON can't be associative. If the array is empty or if it
+                // has sequential whole number keys starting with 0, it's not associative
+                // so we can go ahead and convert it as an array.
+                if (empty($var) || array_keys($var) === range(0, sizeof($var) - 1)) {
+                    $output = [];
+                    foreach ($var as $v) {
+                        $output[] = $this->toJavascript($v);
+                    }
+
+                    return '[ '.implode(', ', $output).' ]';
+                }
+                //no break
+            case 'object':
+                // Otherwise, fall through to convert the array as an object.
+                $output = [];
+                foreach ($var as $k => $v) {
+                    $output[] = $this->toJavascript(strval($k)).': '.$this->toJavascript($v);
+                }
+
+                return '{ '.implode(', ', $output).' }';
+                break;
+            default:
+                return 'null';
+        }
     }
 }

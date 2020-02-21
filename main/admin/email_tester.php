@@ -1,14 +1,15 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Index page of the admin tools
+ * Index page of the admin tools.
+ *
  * @package chamilo.admin
  */
 // Resetting the course id.
 $cidReset = true;
 
 // Including some necessary chamilo files.
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_admin_script();
 
@@ -21,11 +22,17 @@ $form->addText('smtp_host', get_lang('Host'), false, ['cols-size' => [2, 8, 2]])
 $form->addText('smtp_port', get_lang('Port'), false, ['cols-size' => [2, 8, 2]]);
 $form->addText('destination', get_lang('Destination'), true, ['cols-size' => [2, 8, 2]]);
 $form->addText('subject', get_lang('Subject'), true, ['cols-size' => [2, 8, 2]]);
-$form->addHtmlEditor('content', get_lang('Message'), true, false, ['ToolbarSet' => 'Minimal', 'cols-size' => [2, 8, 2]]);
+$form->addHtmlEditor(
+    'content',
+    get_lang('Message'),
+    true,
+    false,
+    ['ToolbarSet' => 'Minimal', 'cols-size' => [2, 8, 2]]
+);
 $form->addButtonSend(get_lang('SendMessage'), 'submit', false, ['cols-size' => [2, 8, 2]]);
 $form->setDefaults([
     'smtp_host' => $platform_email['SMTP_HOST'],
-    'smtp_port' => $platform_email['SMTP_PORT']
+    'smtp_port' => $platform_email['SMTP_PORT'],
 ]);
 $form->freeze(['smtp_host', 'smtp_port']);
 
@@ -41,15 +48,15 @@ if ($form->validate()) {
         $values['destination'],
         $values['subject'],
         $values['content'],
-        $user->getCompleteName(),
+        UserManager::formatUserFullName($user),
         $user->getEmail()
     );
 
     Display::addFlash(
-        Display::return_message(get_lang('MailingTestSent'), 'warning')
+        Display::return_message(get_lang('MailingTestSent'), 'success')
     );
 
-    header('Location: ' . api_get_self());
+    header('Location: '.api_get_self());
     exit;
 }
 

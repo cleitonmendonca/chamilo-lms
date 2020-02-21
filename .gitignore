@@ -1,6 +1,10 @@
 # Cache directories
+
 app/cache/*
-!app/cache/.htaccess
+!app/cache/.gitkeep
+
+app/logs/*
+!app/logs/.gitkeep
 
 # Chamilo configuration
 /app/config/parameters.yml
@@ -9,21 +13,20 @@ app/cache/*
 /app/config/course_info.conf.php
 /app/config/events.conf.php
 /app/config/mail.conf.php
-/app/config/portfolio.conf.php
 /app/config/profile.conf.php
 /app/config/configuration.php
 
 # Courses
 app/courses/*
+!app/courses/proxy.php
 
 # Home
 app/home/*
 
-app/logs/*
-app/Resources/views/*
-
 # Upload content
 app/upload/*
+
+.php_cs.cache
 
 # Logs and databases #
 *.log
@@ -42,9 +45,10 @@ plugin/bbb/config.vm.php
 
 # Cron temp files
 main/cron/incoming/*
+plugin/vchamilo/templates/*
 
 # Stuff updated through composer - Remove just before release
-composer.lock
 vendor
 web/assets/*
-
+node_modules
+yarn.lock

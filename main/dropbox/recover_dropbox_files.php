@@ -24,7 +24,7 @@ if (isset($_GET['recover_id']) && !empty($_GET['recover_id'])) {
     $sql = "INSERT INTO $person_tbl VALUES('$course_id', $recover_id, $user_id)";
     $result = Database::query($sql);
     if ($result) {
-        Display::display_confirmation_message(get_lang('Recovered'));
+        echo Display::return_message(get_lang('Recovered'), 'confirm');
     }
 }
 
@@ -33,25 +33,30 @@ $sql = "SELECT * FROM $file_tbl
 $result = Database::query($sql);
 
 if (Database::num_rows($result)) {
-    $files  = Database::store_result($result);
-    $rows = array();
+    $files = Database::store_result($result);
+    $rows = [];
     foreach ($files as $file) {
         //Check if I have this file:
         $sql = "SELECT * FROM $person_tbl
                 WHERE c_id = $course_id AND user_id = $user_id AND file_id = {$file['id']}";
         $result_person = Database::query($sql);
         if (Database::num_rows($result_person) == 0) {
-            $rows[] = array(
+            $rows[] = [
                 $file['filename'],
                 api_convert_and_format_date($file['upload_date']),
                 Display::url(
-                    get_lang('Recover'), api_get_self().'?recover_id='.$file['id'],
-                    array('class' => 'btn btn-default')
-                )
-            );
+                    get_lang('Recover'),
+                    api_get_self().'?recover_id='.$file['id'],
+                    ['class' => 'btn btn-default']
+                ),
+            ];
         }
     }
-    $headers = array(get_lang('FileName'), get_lang('UploadedDate'), get_lang('Action'));
+    $headers = [
+        get_lang('FileName'),
+        get_lang('UploadedDate'),
+        get_lang('Action'),
+    ];
     echo Display::table($headers, $rows);
 }
 Display::display_footer();

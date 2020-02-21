@@ -1,11 +1,12 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CoreBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * CourseCategory
+ * CourseCategory.
  *
  * @ORM\Table(
  *  name="course_category",
@@ -17,74 +18,83 @@ use Doctrine\ORM\Mapping as ORM;
  *      @ORM\Index(name="tree_pos", columns={"tree_pos"})
  *  }
  * )
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass="Chamilo\CoreBundle\Entity\Repository\CourseCategoryRepository")
  */
 class CourseCategory
 {
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
+     */
+    protected $id;
+
     /**
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=100, nullable=false)
      */
-    private $name;
+    protected $name;
 
     /**
      * @var string
      *
      * @ORM\Column(name="code", type="string", length=40, nullable=false)
      */
-    private $code;
+    protected $code;
 
     /**
      * @var string
      *
      * @ORM\Column(name="parent_id", type="string", length=40, nullable=true)
      */
-    private $parentId;
+    protected $parentId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="tree_pos", type="integer", nullable=true)
      */
-    private $treePos;
+    protected $treePos;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="children_count", type="smallint", nullable=true)
      */
-    private $childrenCount;
+    protected $childrenCount;
 
     /**
      * @var string
      *
      * @ORM\Column(name="auth_course_child", type="string", length=40, nullable=true)
      */
-    private $authCourseChild;
+    protected $authCourseChild;
 
     /**
      * @var string
      *
      * @ORM\Column(name="auth_cat_child", type="string", length=40, nullable=true)
      */
-    private $authCatChild;
+    protected $authCatChild;
 
     /**
-     * @var integer
-     *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @return string
      */
-    private $id;
+    public function __toString()
+    {
+        $name = strip_tags($this->name);
 
-
+        return "$name ({$this->code})";
+    }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
+     *
      * @return CourseCategory
      */
     public function setName($name)
@@ -95,7 +105,7 @@ class CourseCategory
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -105,9 +115,10 @@ class CourseCategory
     }
 
     /**
-     * Set code
+     * Set code.
      *
      * @param string $code
+     *
      * @return CourseCategory
      */
     public function setCode($code)
@@ -118,7 +129,7 @@ class CourseCategory
     }
 
     /**
-     * Get code
+     * Get code.
      *
      * @return string
      */
@@ -128,9 +139,10 @@ class CourseCategory
     }
 
     /**
-     * Set parentId
+     * Set parentId.
      *
      * @param string $parentId
+     *
      * @return CourseCategory
      */
     public function setParentId($parentId)
@@ -141,7 +153,7 @@ class CourseCategory
     }
 
     /**
-     * Get parentId
+     * Get parentId.
      *
      * @return string
      */
@@ -151,9 +163,10 @@ class CourseCategory
     }
 
     /**
-     * Set treePos
+     * Set treePos.
      *
-     * @param integer $treePos
+     * @param int $treePos
+     *
      * @return CourseCategory
      */
     public function setTreePos($treePos)
@@ -164,9 +177,9 @@ class CourseCategory
     }
 
     /**
-     * Get treePos
+     * Get treePos.
      *
-     * @return integer
+     * @return int
      */
     public function getTreePos()
     {
@@ -174,9 +187,10 @@ class CourseCategory
     }
 
     /**
-     * Set childrenCount
+     * Set childrenCount.
      *
-     * @param integer $childrenCount
+     * @param int $childrenCount
+     *
      * @return CourseCategory
      */
     public function setChildrenCount($childrenCount)
@@ -187,9 +201,9 @@ class CourseCategory
     }
 
     /**
-     * Get childrenCount
+     * Get childrenCount.
      *
-     * @return integer
+     * @return int
      */
     public function getChildrenCount()
     {
@@ -197,9 +211,10 @@ class CourseCategory
     }
 
     /**
-     * Set authCourseChild
+     * Set authCourseChild.
      *
      * @param string $authCourseChild
+     *
      * @return CourseCategory
      */
     public function setAuthCourseChild($authCourseChild)
@@ -210,7 +225,7 @@ class CourseCategory
     }
 
     /**
-     * Get authCourseChild
+     * Get authCourseChild.
      *
      * @return string
      */
@@ -220,9 +235,10 @@ class CourseCategory
     }
 
     /**
-     * Set authCatChild
+     * Set authCatChild.
      *
      * @param string $authCatChild
+     *
      * @return CourseCategory
      */
     public function setAuthCatChild($authCatChild)
@@ -233,7 +249,7 @@ class CourseCategory
     }
 
     /**
-     * Get authCatChild
+     * Get authCatChild.
      *
      * @return string
      */
@@ -243,9 +259,9 @@ class CourseCategory
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {

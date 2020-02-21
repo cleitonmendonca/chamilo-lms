@@ -4,16 +4,99 @@
 use ChamiloSession as Session;
 
 /**
- * Class survey_question
+ * Class survey_question.
  */
 class survey_question
 {
+    public $buttonList = [];
     /** @var FormValidator */
     private $form;
-    public $buttonList = array();
 
     /**
-     * Generic part of any survey question: the question field
+     * @param array $surveyData
+     */
+    public function addParentMenu(FormValidator $form, $surveyData)
+    {
+        $surveyId = $surveyData['survey_id'];
+        $questions = SurveyManager::get_questions($surveyId);
+
+        $options = [];
+        foreach ($questions as $question) {
+            $options[$question['question_id']] = strip_tags($question['question']);
+        }
+        $form->addSelect(
+            'parent_id',
+            get_lang('Parent'),
+            $options,
+            ['id' => 'parent_id', 'placeholder' => get_lang('SelectAnOption')]
+        );
+        $url = api_get_path(WEB_AJAX_PATH).'survey.ajax.php?'.api_get_cidreq();
+        $form->addHtml('
+            <script>
+                $(function() {                    
+                    $("#parent_id").on("change", function() {
+                        var questionId = $(this).val()
+                        var params = {
+                            "a": "load_question_options",
+                            "survey_id": "'.$surveyId.'",
+                            "question_id": questionId,
+                        };    
+                            
+                          $.ajax({
+                            type: "GET",
+                            url: "'.$url.'",
+                            data: params,
+                            async: false,
+                            success: function(data) {
+                                $("#parent_options").html(data);
+                            }
+                        });        
+                        console.log(); 
+                    });
+                });
+            </script>
+        ');
+        $form->addHtml('<div id="parent_options"></div>');
+        $form->addHidden('option_id', 0);
+    }
+
+    /**
+     * @param string $type
+     *
+     * @return survey_question
+     */
+    public static function createQuestion($type)
+    {
+        switch ($type) {
+            case 'comment':
+                return new ch_comment();
+            case 'dropdown':
+                return new ch_dropdown();
+            case 'multiplechoice':
+                return new ch_multiplechoice();
+            case 'multipleresponse':
+                return new ch_multipleresponse();
+            case 'open':
+                return new ch_open();
+            case 'pagebreak':
+                return new ch_pagebreak();
+            case 'percentage':
+                return new ch_percentage();
+            case 'personality':
+                return new ch_personality();
+            case 'score':
+                return new ch_score();
+            case 'yesno':
+                return new ch_yesno();
+            default:
+                api_not_allowed(true);
+                break;
+        }
+    }
+
+    /**
+     * Generic part of any survey question: the question field.
+     *
      * @param array $surveyData
      * @param array $formData
      *
@@ -22,49 +105,69 @@ class survey_question
     public function createForm($surveyData, $formData)
     {
         $action = isset($_GET['action']) ? Security::remove_XSS($_GET['action']) : null;
-        $questionId = isset($_GET['question_id']) ? intval($_GET['question_id']) : null;
-        $surveyId = isset($_GET['survey_id']) ? intval($_GET['survey_id']) : null;
+        $questionId = isset($_GET['question_id']) ? (int) $_GET['question_id'] : null;
+        $surveyId = isset($_GET['survey_id']) ? (int) $_GET['survey_id'] : null;
+        $type = isset($_GET['type']) ? Security::remove_XSS($_GET['type']) : null;
 
         $toolName = Display::return_icon(
-                SurveyManager::icon_question(Security::remove_XSS($_GET['type'])),
-                get_lang(ucfirst(Security::remove_XSS($_GET['type']))),
-                array('align' => 'middle', 'height' => '22px')
+            SurveyManager::icon_question($type),
+            get_lang(ucfirst($type)),
+            ['align' => 'middle', 'height' => '22px']
         ).' ';
 
         if ($action == 'add') {
-            $toolName .= get_lang('AddQuestion');
-        }
-        if ($action == 'edit') {
-            $toolName .= get_lang('EditQuestion');
+            $toolName .= get_lang('AddQuestion').': ';
+        } elseif ($action == 'edit') {
+            $toolName .= get_lang('EditQuestion').': ';
         }
 
-        if ($_GET['type'] == 'yesno') {
-            $toolName .= ': '.get_lang('YesNo');
-        } else if ($_GET['type'] == 'multiplechoice') {
-            $toolName .= ': '.get_lang('UniqueSelect');
-        } else {
-            $toolName .= ': '.get_lang(api_ucfirst(Security::remove_XSS($_GET['type'])));
+        switch ($_GET['type']) {
+            case 'yesno':
+                $toolName .= get_lang('YesNo');
+                break;
+            case 'multiplechoice':
+                $toolName .= get_lang('UniqueSelect');
+                break;
+            case 'multipleresponse':
+                $toolName .= get_lang('MultipleResponse');
+                break;
+            default:
+                $toolName .= get_lang(api_ucfirst($type));
         }
 
         $sharedQuestionId = isset($formData['shared_question_id']) ? $formData['shared_question_id'] : null;
 
-        $url = api_get_self().'?action='.$action.'&type='.Security::remove_XSS($_GET['type']).'&survey_id='.$surveyId.'&question_id='.$questionId.'&'.api_get_cidreq();
-
+        $url = api_get_self().'?action='.$action.'&type='.$type.'&survey_id='.$surveyId.'&question_id='.$questionId.'&'.api_get_cidreq();
         $form = new FormValidator('question_form', 'post', $url);
         $form->addHeader($toolName);
         $form->addHidden('survey_id', $surveyId);
         $form->addHidden('question_id', $questionId);
         $form->addHidden('shared_question_id', Security::remove_XSS($sharedQuestionId));
-        $form->addHidden('type', Security::remove_XSS($_GET['type']));
+        $form->addHidden('type', $type);
 
-        $config = array('ToolbarSet' => 'SurveyQuestion', 'Width' => '100%', 'Height' => '120');
-        $form->addHtmlEditor('question', get_lang('Question'), true, false, $config);
+        $config = [
+            'ToolbarSet' => 'SurveyQuestion',
+            'Width' => '100%',
+            'Height' => '120',
+        ];
+        $form->addHtmlEditor(
+            'question',
+            get_lang('Question'),
+            true,
+            false,
+            $config
+        );
+
+        if (api_get_configuration_value('allow_required_survey_questions') &&
+            in_array($_GET['type'], ['yesno', 'multiplechoice'])) {
+            $form->addCheckBox('is_required', get_lang('IsMandatory'), get_lang('Yes'));
+        }
 
         // When survey type = 1??
         if ($surveyData['survey_type'] == 1) {
             $table_survey_question_group = Database::get_course_table(TABLE_SURVEY_QUESTION_GROUP);
             $sql = 'SELECT id,name FROM '.$table_survey_question_group.'
-                    WHERE survey_id = '.(int)$_GET['survey_id'].'
+                    WHERE survey_id = '.(int) $_GET['survey_id'].'
                     ORDER BY name';
             $rs = Database::query($sql);
             $glist = null;
@@ -73,17 +176,28 @@ class survey_question
             }
 
             $grouplist = $grouplist1 = $grouplist2 = $glist;
-
             if (!empty($formData['assigned'])) {
-                $grouplist = str_replace('<option value="'.$formData['assigned'].'"','<option value="'.$formData['assigned'].'" selected',$glist);
+                $grouplist = str_replace(
+                    '<option value="'.$formData['assigned'].'"',
+                    '<option value="'.$formData['assigned'].'" selected',
+                    $glist
+                );
             }
 
             if (!empty($formData['assigned1'])) {
-                $grouplist1 = str_replace('<option value="'.$formData['assigned1'].'"','<option value="'.$formData['assigned1'].'" selected',$glist);
+                $grouplist1 = str_replace(
+                    '<option value="'.$formData['assigned1'].'"',
+                    '<option value="'.$formData['assigned1'].'" selected',
+                    $glist
+                );
             }
 
             if (!empty($formData['assigned2'])) {
-                $grouplist2 = str_replace('<option value="'.$formData['assigned2'].'"','<option value="'.$formData['assigned2'].'" selected',$glist);
+                $grouplist2 = str_replace(
+                    '<option value="'.$formData['assigned2'].'"',
+                    '<option value="'.$formData['assigned2'].'" selected',
+                    $glist
+                );
             }
 
             $this->html .= '	<tr><td colspan="">
@@ -95,13 +209,10 @@ class survey_question
 
             $this->html .= '
 			<b>'.get_lang('Secondary').'</b><br />
-			'.'<input type="radio" name="choose" value="2" '.(($formData['choose']==2)?'checked':'').
+			'.'<input type="radio" name="choose" value="2" '.(($formData['choose'] == 2) ? 'checked' : '').
                 '><select name="assigned1">'.$grouplist1.'</select> '.
                 '<select name="assigned2">'.$grouplist2.'</select>'
                 .'</fieldset><br />';
-
-            //$form->addRadio('choose', get_lang('Primary'));
-            //$form->addRadio('choose', get_lang('Secondary'));
         }
 
         $this->setForm($form);
@@ -110,13 +221,30 @@ class survey_question
     }
 
     /**
-     * Adds submit button
-     *
+     * Adds submit button.
      */
     public function renderForm()
     {
-        if (isset($_GET['question_id']) and !empty($_GET['question_id'])) {
-            $this->buttonList[] = $this->getForm()->addButtonUpdate(get_lang('ModifyQuestionSurvey'), 'save', true);
+        if (isset($_GET['question_id']) && !empty($_GET['question_id'])) {
+            /**
+             * Check if survey has answers first before update it, this is because if you update it, the question
+             * options will delete and re-insert in database loosing the iid and question_id to verify the correct answers.
+             */
+            $surveyId = isset($_GET['survey_id']) ? (int) $_GET['survey_id'] : 0;
+            $answersChecker = SurveyUtil::checkIfSurveyHasAnswers($surveyId);
+            if (!$answersChecker) {
+                $this->buttonList[] = $this->getForm()->addButtonUpdate(get_lang('ModifyQuestionSurvey'), 'save', true);
+            } else {
+                $this->getForm()->addHtml('
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label"></label>
+                        <div class="col-sm-8">
+                            <div class="alert alert-info">'.get_lang('YouCantNotEditThisQuestionBecauseAlreadyExistAnswers').'</div>
+                        </div>
+                        <div class="col-sm-2"></div>
+                    </div>
+                ');
+            }
         } else {
             $this->buttonList[] = $this->getForm()->addButtonSave(get_lang('CreateQuestionSurvey'), 'save', true);
         }
@@ -151,7 +279,7 @@ class survey_question
         $answerList = Session::read('answer_list');
 
         if (empty($answerList)) {
-            $answerList = isset($formData['answers']) ? $formData['answers'] : array();
+            $answerList = isset($formData['answers']) ? $formData['answers'] : [];
             Session::write('answer_list', $answerList);
         }
 
@@ -166,7 +294,7 @@ class survey_question
 
         // Moving an answer up
         if (isset($_POST['move_up']) && $_POST['move_up']) {
-            foreach ($_POST['move_up'] as $key => & $value) {
+            foreach ($_POST['move_up'] as $key => &$value) {
                 $id1 = $key;
                 $content1 = $formData['answers'][$id1];
                 $id2 = $key - 1;
@@ -178,7 +306,7 @@ class survey_question
 
         // Moving an answer down
         if (isset($_POST['move_down']) && $_POST['move_down']) {
-            foreach ($_POST['move_down'] as $key => & $value) {
+            foreach ($_POST['move_down'] as $key => &$value) {
                 $id1 = $key;
                 $content1 = $formData['answers'][$id1];
                 $id2 = $key + 1;
@@ -189,22 +317,34 @@ class survey_question
         }
 
         /**
-         * This solution is a little bit strange but I could not find a different solution.
+         * Deleting a specific answer is only saved in the session until the
+         * "Save question" button is pressed. This means all options are kept
+         * in the survey_question_option table until the question is saved.
          */
         if (isset($_POST['delete_answer'])) {
             $deleted = false;
-            foreach ($_POST['delete_answer'] as $key => & $value) {
+            foreach ($_POST['delete_answer'] as $key => &$value) {
                 $deleted = $key;
                 $counter--;
                 Session::write('answer_count', $counter);
             }
 
-            foreach ($formData['answers'] as $key => & $value) {
+            $newAnswers = [];
+            foreach ($formData['answers'] as $key => &$value) {
                 if ($key > $deleted) {
-                    $formData['answers'][$key - 1] = $formData['answers'][$key];
+                    // swap with previous (deleted) option slot
+                    $newAnswers[$key - 1] = $formData['answers'][$key];
                     unset($formData['answers'][$key]);
+                } elseif ($key === $deleted) {
+                    // delete option
+                    unset($formData['answers'][$deleted]);
+                } else {
+                    // keep as is
+                    $newAnswers[$key] = $value;
                 }
             }
+            unset($formData['answers']);
+            $formData['answers'] = $newAnswers;
         }
 
         // Adding an answer
@@ -225,23 +365,31 @@ class survey_question
         }
 
         if (!isset($_POST['delete_answer'])) {
-            if (isset($formData['answers'])) {
-                foreach ($formData['answers'] as $index => $data) {
-                    if ($index > $counter) {
-                        unset($formData['answers'][$index]);
-                    }
+            // Make sure we have an array of answers
+            if (!isset($formData['answers'])) {
+                $formData['answers'] = [];
+            }
+            // Check if no deleted answer remains at the end of the answers
+            // array and add empty answers if the array is too short
+            foreach ($formData['answers'] as $index => $data) {
+                if ($index > $counter) {
+                    unset($formData['answers'][$index]);
                 }
+            }
 
-                for ($i = 0; $i <= $counter; $i++) {
-                    if (!isset($formData['answers'][$i])) {
-                        $formData['answers'][$i] = '';
-                    }
+            for ($i = 0; $i <= $counter; $i++) {
+                if (!isset($formData['answers'][$i])) {
+                    $formData['answers'][$i] = '';
                 }
             }
         }
 
         $formData['answers'] = isset($formData['answers']) ? $formData['answers'] : [];
         Session::write('answer_list', $formData['answers']);
+
+        if (!isset($formData['is_required']) && api_get_configuration_value('survey_mark_question_as_required')) {
+            $formData['is_required'] = true;
+        }
 
         return $formData;
     }
@@ -273,10 +421,9 @@ class survey_question
     }
 
     /**
-     * Adds two buttons. One to add an option, one to remove an option
+     * Adds two buttons. One to add an option, one to remove an option.
      *
      * @param array $data
-     *
      */
     public function addRemoveButtons($data)
     {
@@ -284,12 +431,13 @@ class survey_question
             'button',
             'remove_answer',
             get_lang('RemoveAnswer'),
-            'minus'
+            'minus',
+            'default'
         );
 
         if (count($data['answers']) <= 2) {
             $this->buttonList['remove_answer']->updateAttributes(
-                array('disabled' => 'disabled')
+                ['disabled' => 'disabled']
             );
         }
 
@@ -297,18 +445,17 @@ class survey_question
             'button',
             'add_answer',
             get_lang('AddAnswer'),
-            'plus'
+            'plus',
+            'default'
         );
     }
 
     /**
-     * @param FormValidator $form
      * @param array $questionData
      * @param array $answers
      */
-    public function render(FormValidator $form, $questionData = array(), $answers = array())
+    public function render(FormValidator $form, $questionData = [], $answers = [])
     {
         return null;
     }
 }
-

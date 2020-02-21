@@ -1,11 +1,13 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Validate requirements for a open session
+ * Validate requirements for a open session.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.plugin.advanced_subscription
  */
-require_once __DIR__ . '/../config.php';
+require_once __DIR__.'/../config.php';
 
 $plugin = AdvancedSubscriptionPlugin::create();
 
@@ -42,7 +44,7 @@ if (SessionManager::isUserSubscribedAsStudent(
         $tpl->assign('is_subscribed', false);
         $tpl->assign('errorMessages', $plugin->getErrorMessages());
     } else {
-        SessionManager::suscribe_users_to_session(
+        SessionManager::subscribeUsersToSession(
             $_GET['session_id'],
             [$_GET['user_id']],
             SESSION_VISIBLE_READ_ONLY,

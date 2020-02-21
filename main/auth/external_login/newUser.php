@@ -3,14 +3,14 @@
   Template to automatically create a new user with information from anywhere.
   This file is loaded by main/inc/local.inc.php
   To use it please add this line to main/inc/conf/configuration.php :
-  $extAuthSource["external_logininfo"]["newUser"] = $_configuration['root_sys'].$_configuration['code_append']."auth/external_logininfo/newUser.php";
+  $extAuthSource["external_logininfo"]["newUser"] = $_configuration['root_sys']."main/auth/external_logininfo/newUser.php";
 
   You also have to implements the external_get_user_info function in functions.inc.php
  */
 
 use ChamiloSession as Session;
 
-require_once(dirname(__FILE__) . '/functions.inc.php');
+require_once __DIR__.'/functions.inc.php';
 
 //MAIN CODE
 //$login and $password variables are setted in main/inc/local.inc.php
@@ -34,7 +34,7 @@ if ($user !== false && ($chamilo_uid = external_add_user($user)) !== false) {
         $autoSubscribe = explode('|', $user['courses']);
         foreach ($autoSubscribe as $code) {
             if (CourseManager::course_exists($code)) {
-                CourseManager::subscribe_user($_user['user_id'], $code);
+                CourseManager::subscribeUser($_user['user_id'], $code);
             }
         }
     }
@@ -46,7 +46,7 @@ if ($user !== false && ($chamilo_uid = external_add_user($user)) !== false) {
     // Can user create course
     $is_allowedCreateCourse = (bool) (($user['status'] == COURSEMANAGER) or (api_get_setting('drhCourseManagerRights') and $user['status'] == SESSIONADMIN));
 
-    Event::event_login($chamilo_uid);
+    Event::eventLogin($chamilo_uid);
 } else {
     $loginFailed = true;
     unset($_user['user_id']);

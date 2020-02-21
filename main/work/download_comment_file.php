@@ -2,14 +2,14 @@
 /* For licensing terms, see /license.txt */
 
 /**
- *	This file is responsible for  passing requested documents to the browser.
- *	Html files are parsed to fix a few problems with URLs,
- *	but this code will hopefully be replaced soon by an Apache URL
- *	rewrite mechanism.
+ *  This file is responsible for  passing requested documents to the browser.
+ *  Html files are parsed to fix a few problems with URLs,
+ *  but this code will hopefully be replaced soon by an Apache URL
+ *  rewrite mechanism.
  *
- *	@package chamilo.work
+ * @package chamilo.work
  */
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 require_once 'work.lib.php';
 
 // Course protection
@@ -23,8 +23,7 @@ $workData = getWorkComment($commentId);
 $courseInfo = api_get_course_info();
 
 if (!empty($workData)) {
-    if (
-        empty($workData['file_path']) ||
+    if (empty($workData['file_path']) ||
         (isset($workData['file_path']) && !file_exists($workData['file_path']))
     ) {
         api_not_allowed(true);
@@ -41,7 +40,7 @@ if (!empty($workData)) {
     ) {
         if (Security::check_abs_path(
             $workData['file_path'],
-            api_get_path(SYS_COURSE_PATH) . api_get_course_path() . '/'
+            api_get_path(SYS_COURSE_PATH).api_get_course_path().'/'
         )
         ) {
             DocumentManager::file_send_for_download(
@@ -53,7 +52,6 @@ if (!empty($workData)) {
     } else {
         api_not_allowed(true);
     }
-
 } else {
     api_not_allowed(true);
 }

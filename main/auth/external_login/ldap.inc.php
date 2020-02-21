@@ -1,18 +1,21 @@
 <?php
-
 // External login module : LDAP
+
 /**
  * This files is included by newUser.ldap.php and login.ldap.php
- * It implements the functions nedded by both files
+ * It implements the functions nedded by both files.
  * */
-//Includes the configuration file
-require_once dirname(__FILE__).'/../../inc/global.inc.php';
+require_once __DIR__.'/../../inc/global.inc.php';
+
+$debug = false;
 
 /**
- * Returns a transcoded and trimmed string
+ * Returns a transcoded and trimmed string.
  *
  * @param string
+ *
  * @return string
+ *
  * @author ndiechburg <noel@cblue.be>
  * */
 function extldap_purify_string($string)
@@ -26,17 +29,18 @@ function extldap_purify_string($string)
 }
 
 /**
- * Establishes a connection to the LDAP server and sets the protocol version
+ * Establishes a connection to the LDAP server and sets the protocol version.
  *
- * @return boolean ldap link identifier or false
+ * @return resource|bool ldap link identifier or false
+ *
  * @author ndiechburg <noel@cblue.be>
  * */
 function extldap_connect()
 {
-    global $extldap_config;
+    global $extldap_config, $debug;
 
     if (!is_array($extldap_config['host'])) {
-        $extldap_config['host'] = array($extldap_config['host']);
+        $extldap_config['host'] = [$extldap_config['host']];
     }
 
     foreach ($extldap_config['host'] as $host) {
@@ -48,23 +52,30 @@ function extldap_connect()
         }
         if (!$ds) {
             $port = isset($extldap_config['port']) ? $extldap_config['port'] : 389;
-            error_log('EXTLDAP ERROR : cannot connect to '.$extldap_config['host'].':'.$port);
+            if ($debug) {
+                error_log(
+                    'EXTLDAP ERROR : cannot connect to '.$extldap_config['host'].':'.$port
+                );
+            }
         } else {
             break;
         }
     }
     if (!$ds) {
-        error_log('EXTLDAP ERROR : no valid server found');
+        if ($debug) {
+            error_log('EXTLDAP ERROR : no valid server found');
+        }
+
         return false;
     }
-    //Setting protocol version
+    // Setting protocol version
     if (isset($extldap_config['protocol_version'])) {
         if (!ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, $extldap_config['protocol_version'])) {
             ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 2);
         }
     }
 
-    //Setting protocol version
+    // Setting protocol version
     if (isset($extldap_config['referrals'])) {
         if (!ldap_set_option($ds, LDAP_OPT_REFERRALS, $extldap_config['referrals'])) {
             ldap_set_option($ds, LDAP_OPT_REFERRALS, $extldap_config['referrals']);
@@ -75,10 +86,12 @@ function extldap_connect()
 }
 
 /**
- * Authenticate user on external ldap server and return user ldap entry if that succeeds
+ * Authenticate user on external ldap server and return user ldap entry if that succeeds.
  *
  * @param string $password
+ *
  * @return mixed false if user cannot authenticate on ldap, user ldap entry if tha succeeds
+ *
  * @author ndiechburg <noel@cblue.be>
  * Modified by hubert.borderiou@grenet.fr
  * Add possibility to get user info from LDAP without check password (if CAS auth and LDAP profil update)
@@ -86,9 +99,9 @@ function extldap_connect()
  * */
 function extldap_authenticate($username, $password, $in_auth_with_no_password = false)
 {
-    global $extldap_config;
+    global $extldap_config, $debug;
 
-    if (empty($username) or empty($password)) {
+    if (empty($username) || empty($password)) {
         return false;
     }
 
@@ -97,67 +110,90 @@ function extldap_authenticate($username, $password, $in_auth_with_no_password = 
         return false;
     }
 
-    //Connection as admin to search dn of user
+    // Connection as admin to search dn of user
     $ldapbind = @ldap_bind($ds, $extldap_config['admin_dn'], $extldap_config['admin_password']);
     if ($ldapbind === false) {
-        error_log('EXTLDAP ERROR : cannot connect with admin login/password');
+        if ($debug) {
+            error_log(
+                'EXTLDAP ERROR : cannot connect with admin login/password'
+            );
+        }
+
         return false;
     }
     $user_search = extldap_get_user_search_string($username);
-    //Search distinguish name of user
+    // Search distinguish name of user
     $sr = ldap_search($ds, $extldap_config['base_dn'], $user_search);
     if (!$sr) {
-        error_log('EXTLDAP ERROR : ldap_search('.$ds.', '.$extldap_config['base_dn'].", $user_search) failed");
+        if ($debug) {
+            error_log(
+                'EXTLDAP ERROR : ldap_search('.$ds.', '.$extldap_config['base_dn'].", $user_search) failed"
+            );
+        }
+
         return false;
     }
+
     $entries_count = ldap_count_entries($ds, $sr);
 
     if ($entries_count > 1) {
-        error_log(
-            'EXTLDAP ERROR : more than one entry for that user ( ldap_search(ds, '.$extldap_config['base_dn'].", $user_search) )"
-        );
+        if ($debug) {
+            error_log(
+                'EXTLDAP ERROR : more than one entry for that user ( ldap_search(ds, '.$extldap_config['base_dn'].", $user_search) )"
+            );
+        }
+
         return false;
     }
     if ($entries_count < 1) {
-        error_log(
-            'EXTLDAP ERROR :  No entry for that user ( ldap_search(ds, '.$extldap_config['base_dn'].", $user_search) )"
-        );
+        if ($debug) {
+            error_log(
+                'EXTLDAP ERROR :  No entry for that user ( ldap_search(ds, '.$extldap_config['base_dn'].", $user_search) )"
+            );
+        }
+
         return false;
     }
     $users = ldap_get_entries($ds, $sr);
-    $user  = $users[0];
+    $user = $users[0];
 
     // If we just want to have user info from LDAP and not to check password
     if ($in_auth_with_no_password) {
         return $user;
     }
-    //now we try to autenthicate the user in the ldap
+
+    // now we try to autenthicate the user in the ldap
     $ubind = @ldap_bind($ds, $user['dn'], $password);
     if ($ubind !== false) {
         return $user;
     } else {
-        error_log('EXTLDAP : Wrong password for '.$user['dn']);
+        if ($debug) {
+            error_log('EXTLDAP : Wrong password for '.$user['dn']);
+        }
+
         return false;
     }
 }
 
 /**
  * Return an array with userinfo compatible with chamilo using $extldap_user_correspondance
- * configuration array declared in ldap.conf.php file
+ * configuration array declared in ldap.conf.php file.
  *
  * @param array ldap user
  * @param array correspondance array (if not set use extldap_user_correspondance declared in auth.conf.php
+ *
  * @return array userinfo array
+ *
  * @author ndiechburg <noel@cblue.be>
  * */
 function extldap_get_chamilo_user($ldap_user, $cor = null)
 {
-    global $extldap_user_correspondance;
+    global $extldap_user_correspondance, $debug;
     if (is_null($cor)) {
         $cor = $extldap_user_correspondance;
     }
 
-    $chamilo_user = array();
+    $chamilo_user = [];
     foreach ($cor as $chamilo_field => $ldap_field) {
         if (is_array($ldap_field)) {
             $chamilo_user[$chamilo_field] = extldap_get_chamilo_user($ldap_user, $ldap_field);
@@ -170,7 +206,11 @@ function extldap_get_chamilo_user($ldap_user, $cor = null)
                 if (function_exists($func)) {
                     $chamilo_user[$chamilo_field] = extldap_purify_string($func($ldap_user));
                 } else {
-                    error_log("EXTLDAP WARNING : You forgot to declare $func");
+                    if ($debug) {
+                        error_log(
+                            "EXTLDAP WARNING : You forgot to declare $func"
+                        );
+                    }
                 }
                 break;
             default:
@@ -179,31 +219,33 @@ function extldap_get_chamilo_user($ldap_user, $cor = null)
                     $chamilo_user[$chamilo_field] = trim($ldap_field, "!\t\n\r\0");
                     break;
                 }
+                if (!array_key_exists($ldap_field, $ldap_user)) {
+                    $lowerCaseFieldName = strtolower($ldap_field);
+                    if (array_key_exists($lowerCaseFieldName, $ldap_user)) {
+                        $ldap_field = $lowerCaseFieldName;
+                    }
+                }
                 if (isset($ldap_user[$ldap_field][0])) {
                     $chamilo_user[$chamilo_field] = extldap_purify_string($ldap_user[$ldap_field][0]);
                 } else {
-                    error_log('EXTLDAP WARNING : '.$ldap_field.'[0] field is not set in ldap array');
+                    if ($debug) {
+                        error_log(
+                            'EXTLDAP WARNING : '.$ldap_field.'[0] field is not set in ldap array'
+                        );
+                    }
                 }
                 break;
         }
     }
+
     return $chamilo_user;
 }
 
 /**
  * Please declare here all the function you use in extldap_user_correspondance
  * All these functions must have an $ldap_user parameter. This parameter is the
- * array returned by the ldap for the user
+ * array returned by the ldap for the user.
  * */
-
-/**
- * example function for email
- * */
-/*
-  function extldap_get_email($ldap_user){
-  return $ldap_user['cn'].$ldap['sn'].'@gmail.com';
-  }
- */
 function extldap_get_status($ldap_user)
 {
     return STUDENT;
@@ -215,10 +257,12 @@ function extldap_get_admin($ldap_user)
 }
 
 /**
- * return the string used to search a user in ldap
+ * return the string used to search a user in ldap.
  *
  * @param string username
+ *
  * @return string the serach string
+ *
  * @author ndiechburg <noel@cblue.be>
  * */
 function extldap_get_user_search_string($username)
@@ -237,12 +281,13 @@ function extldap_get_user_search_string($username)
 }
 
 /**
- * Imports all LDAP users into Chamilo
+ * Imports all LDAP users into Chamilo.
+ *
  * @return false|null false on error, true otherwise
  */
 function extldap_import_all_users()
 {
-    global $extldap_config;
+    global $extldap_config, $debug;
     //echo "Connecting...\n";
     $ds = extldap_connect();
     if (!$ds) {
@@ -253,12 +298,17 @@ function extldap_import_all_users()
     //Connection as admin to search dn of user
     $ldapbind = @ldap_bind($ds, $extldap_config['admin_dn'], $extldap_config['admin_password']);
     if ($ldapbind === false) {
-        error_log('EXTLDAP ERROR : cannot connect with admin login/password');
+        if ($debug) {
+            error_log(
+                'EXTLDAP ERROR : cannot connect with admin login/password'
+            );
+        }
+
         return false;
     }
     //browse ASCII values from a to z to avoid 1000 results limit of LDAP
-    $count    = 0;
-    $alphanum = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+    $count = 0;
+    $alphanum = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     for ($a = 97; $a <= 122; $a++) {
         $alphanum[] = chr($a);
     }
@@ -269,7 +319,12 @@ function extldap_import_all_users()
             //Search distinguish name of user
             $sr = ldap_search($ds, $extldap_config['base_dn'], $user_search);
             if (!$sr) {
-                error_log('EXTLDAP ERROR : ldap_search('.$ds.', '.$extldap_config['base_dn'].", $user_search) failed");
+                if ($debug) {
+                    error_log(
+                        'EXTLDAP ERROR : ldap_search('.$ds.', '.$extldap_config['base_dn'].", $user_search) failed"
+                    );
+                }
+
                 return false;
             }
             //echo "Getting entries\n";
@@ -286,29 +341,29 @@ function extldap_import_all_users()
 }
 
 /**
- * Insert users from an array of user fields
+ * Insert users from an array of user fields.
  */
 function extldap_add_user_by_array($data, $update_if_exists = true)
 {
     global $extldap_user_correspondance;
 
-    $lastname  = api_convert_encoding($data[$extldap_user_correspondance['lastname']][0], api_get_system_encoding(), 'UTF-8');
+    $lastname = api_convert_encoding($data[$extldap_user_correspondance['lastname']][0], api_get_system_encoding(), 'UTF-8');
     $firstname = api_convert_encoding($data[$extldap_user_correspondance['firstname']][0], api_get_system_encoding(), 'UTF-8');
-    $email     = $data[$extldap_user_correspondance['email']][0];
-    $username  = $data[$extldap_user_correspondance['username']][0];
+    $email = $data[$extldap_user_correspondance['email']][0];
+    $username = $data[$extldap_user_correspondance['username']][0];
 
     // TODO the password, if encrypted at the source, will be encrypted twice, which makes it useless. Try to fix that.
     $passwordKey = isset($extldap_user_correspondance['password']) ? $extldap_user_correspondance['password'] : 'userPassword';
-    $password        = $data[$passwordKey][0];
+    $password = $data[$passwordKey][0];
 
     // To ease management, we add the step-year (etape-annee) code
     //$official_code = $etape."-".$annee;
     $official_code = api_convert_encoding($data[$extldap_user_correspondance['official_code']][0], api_get_system_encoding(), 'UTF-8');
-    $auth_source   = 'ldap';
+    $auth_source = 'ldap';
 
     // No expiration date for students (recover from LDAP's shadow expiry)
     $expiration_date = '';
-    $active          = 1;
+    $active = 1;
     $status = 5;
     $phone = '';
     $picture_uri = '';
@@ -353,6 +408,99 @@ function extldap_add_user_by_array($data, $update_if_exists = true)
             );
         }
     }
+
     return $user_id;
 }
 
+/**
+ * Get one user's single attribute value.
+ * User is identified by filter.
+ * $extldap_config['filter'] is also applied in complement, if defined.
+ *
+ * @param $filter string LDAP entry filter, such as '(uid=10000)'
+ * @param $attribute string name of the LDAP attribute to read the value from
+ *
+ * @throws Exception if more than one entries matched or on internal error
+ *
+ * @return string|bool the single matching user entry's single attribute value or false if not found
+ */
+function extldapGetUserAttributeValue($filter, $attribute)
+{
+    global $extldap_config;
+
+    if (array_key_exists('filter', $extldap_config) && !empty($extldap_config['filter'])) {
+        $filter = '(&'.$filter.'('.$extldap_config['filter'].'))';
+    }
+
+    $ldap = extldap_connect();
+    if (false === $ldap) {
+        throw new Exception(get_lang('LDAPConnectFailed'));
+    }
+
+    if (false === ldap_bind($ldap, $extldap_config['admin_dn'], $extldap_config['admin_password'])) {
+        throw new Exception(get_lang('LDAPBindFailed'));
+    }
+
+    $searchResult = ldap_search($ldap, $extldap_config['base_dn'], $filter, [$attribute]);
+    if (false === $searchResult) {
+        throw new Exception(get_lang('LDAPSearchFailed'));
+    }
+
+    switch (ldap_count_entries($ldap, $searchResult)) {
+        case 0:
+            return false;
+        case 1:
+            $entry = ldap_first_entry($ldap, $searchResult);
+            if (false === $entry) {
+                throw new Exception(get_lang('LDAPFirstEntryFailed'));
+            }
+            $values = ldap_get_values($ldap, $entry, $attribute);
+            if (false == $values) {
+                throw new Exception(get_lang('LDAPGetValuesFailed'));
+            }
+            if ($values['count'] == 1) {
+                return $values[0];
+            }
+            throw new Exception(get_lang('MoreThanOneAttributeValueFound'));
+        default:
+            throw new Exception(get_lang('MoreThanOneUserMatched'));
+    }
+}
+
+/**
+ * Get the username from the CAS-supplied user identifier.
+ *
+ * searches in attribute $extldap_user_correspondance['extra']['cas_user'] or 'uid' by default
+ * reads value from attribute $extldap_user_correspondance['username'] or 'uid' by default
+ *
+ * @param $casUser string code returned from the CAS server to identify the user
+ *
+ * @throws Exception on error
+ *
+ * @return string|bool user login name, false if not found
+ */
+function extldapCasUserLogin($casUser)
+{
+    global $extldap_user_correspondance;
+
+    // which LDAP attribute is the cas user identifier stored in ?
+    $attributeToFilterOn = 'uid';
+    if (is_array($extldap_user_correspondance) && array_key_exists('extra', $extldap_user_correspondance)) {
+        $extra = $extldap_user_correspondance['extra'];
+        if (is_array($extra) && array_key_exists('cas_user', $extra) && !empty($extra['cas_user'])) {
+            $attributeToFilterOn = $extra['cas_user'];
+        }
+    }
+
+    // which LDAP attribute is the username ?
+    $attributeToRead = 'uid';
+    if (is_array($extldap_user_correspondance)
+        && array_key_exists('username', $extldap_user_correspondance)
+        && !empty($extldap_user_correspondance['username'])
+    ) {
+        $attributeToRead = $extldap_user_correspondance['username'];
+    }
+
+    // return the value
+    return extldapGetUserAttributeValue("($attributeToFilterOn=$casUser)", $attributeToRead);
+}

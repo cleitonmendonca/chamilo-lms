@@ -3,13 +3,14 @@
 
 set_time_limit(0);
 
-use CpChart\Classes\pCache as pCache;
-use CpChart\Classes\pData as pData;
-use CpChart\Classes\pImage as pImage;
+use CpChart\Cache as pCache;
+use CpChart\Data as pData;
+use CpChart\Image as pImage;
 
 /**
  * Class FlatViewTable
- * Table to display flat view (all evaluations and links for all students)
+ * Table to display flat view (all evaluations and links for all students).
+ *
  * @author Stijn Konings
  * @author Bert Steppé  - (refactored, optimised)
  * @author Julio Montoya Armas - Gradebook Graphics
@@ -26,33 +27,37 @@ class FlatViewTable extends SortableTable
 
     /**
      * @param Category $selectcat
-     * @param array $users
-     * @param array $evals
-     * @param array $links
-     * @param bool $limit_enabled
-     * @param int $offset
-     * @param null $addparams
+     * @param array    $users
+     * @param array    $evals
+     * @param array    $links
+     * @param bool     $limit_enabled
+     * @param int      $offset
+     * @param null     $addparams
      * @param Category $mainCourseCategory
      */
     public function __construct(
         $selectcat,
-        $users = array(),
-        $evals = array(),
-        $links = array(),
+        $users = [],
+        $evals = [],
+        $links = [],
         $limit_enabled = false,
         $offset = 0,
         $addparams = null,
         $mainCourseCategory = null
     ) {
-        parent :: __construct('flatviewlist', null, null, api_is_western_name_order() ? 1 : 0);
+        parent:: __construct(
+            'flatviewlist',
+            null,
+            null,
+            api_is_western_name_order() ? 1 : 0
+        );
 
         $this->selectcat = $selectcat;
-
         $this->datagen = new FlatViewDataGenerator(
             $users,
             $evals,
             $links,
-            array('only_subcat' => $this->selectcat->get_id()),
+            ['only_subcat' => $this->selectcat->get_id()],
             $mainCourseCategory
         );
 
@@ -84,7 +89,7 @@ class FlatViewTable extends SortableTable
     }
 
     /**
-     * Display gradebook graphs
+     * Display gradebook graphs.
      */
     public function display_graph_by_resource()
     {
@@ -96,15 +101,15 @@ class FlatViewTable extends SortableTable
 
         if (empty($customdisplays)) {
             echo get_lang('ToViewGraphScoreRuleMustBeEnabled');
+
             return '';
         }
 
         $user_results = $this->datagen->get_data_to_graph2(false);
 
-        //if (empty($this->datagen->get_total_items_count()) || empty($total_users)) {
         if (empty($user_results) || empty($total_users)) {
-
             echo get_lang('NoResults');
+
             return '';
         }
 
@@ -112,8 +117,10 @@ class FlatViewTable extends SortableTable
         array_shift($headerName);
         // Removing last name
         array_shift($headerName);
+        // Removing username
+        array_shift($headerName);
 
-        $pre_result = $new_result = array();
+        $pre_result = $new_result = [];
         foreach ($user_results as $result) {
             for ($i = 0; $i < count($headerName); $i++) {
                 if (isset($result[$i + 1])) {
@@ -123,9 +130,8 @@ class FlatViewTable extends SortableTable
         }
 
         $i = 0;
-        $show_draw = false;
-        $resource_list = array();
-        $pre_result2 = array();
+        $resource_list = [];
+        $pre_result2 = [];
 
         foreach ($pre_result as $key => $res_array) {
             rsort($res_array);
@@ -138,19 +144,20 @@ class FlatViewTable extends SortableTable
 
         if ($total_users > 0) {
             foreach ($pre_result2 as $key => $res_array) {
-                $key_list = array();
+                $key_list = [];
                 foreach ($res_array as $user_result) {
                     $userResult = isset($user_result[1]) ? $user_result[1] : null;
                     if (!isset($resource_list[$key][$userResult])) {
                         $resource_list[$key][$userResult] = 0;
                     }
-                    $resource_list[$key][$userResult] += 1;
+                    $resource_list[$key][$userResult]++;
                     $key_list[] = $userResult;
                 }
 
                 foreach ($customdisplays as $display) {
-                    if (!in_array($display['display'], $key_list))
+                    if (!in_array($display['display'], $key_list)) {
                         $resource_list[$key][$display['display']] = 0;
+                    }
                 }
                 $i++;
             }
@@ -158,10 +165,9 @@ class FlatViewTable extends SortableTable
 
         //fixing $resource_list
         $max = 0;
-        $new_list = array();
+        $new_list = [];
         foreach ($resource_list as $key => $value) {
-            $new_value = array();
-
+            $new_value = [];
             foreach ($customdisplays as $item) {
                 if ($value[$item['display']] > $max) {
                     $max = $value[$item['display']];
@@ -181,29 +187,34 @@ class FlatViewTable extends SortableTable
             $dataSet = new pData();
             $dataSet->addPoints($resource, 'Serie');
             $dataSet->addPoints(array_keys($resource), 'Labels');
-            $dataSet->setSerieDescription('Labels', strip_tags($headerName[$i - 1]));
+            $header = $headerName[$i - 1];
+            if (is_array($header) && isset($header['header'])) {
+                $header = $header['header'];
+            }
+            $header = strip_tags(api_html_entity_decode($header));
+            $dataSet->setSerieDescription('Labels', $header);
             $dataSet->setAbscissa('Labels');
             $dataSet->setAbscissaName(get_lang('GradebookSkillsRanking'));
             $dataSet->setAxisName(0, get_lang('Students'));
-            $palette = array(
-                '0' => array('R' => 186, 'G' => 206, 'B' => 151, 'Alpha' => 100),
-                '1' => array('R' => 210, 'G' => 148, 'B' => 147, 'Alpha' => 100),
-                '2' => array('R' => 148, 'G' => 170, 'B' => 208, 'Alpha' => 100),
-                '3' => array('R' => 221, 'G' => 133, 'B' => 61, 'Alpha' => 100),
-                '4' => array('R' => 65, 'G' => 153, 'B' => 176, 'Alpha' => 100),
-                '5' => array('R' => 114, 'G' => 88, 'B' => 144, 'Alpha' => 100),
-                '6' => array('R' => 138, 'G' => 166, 'B' => 78, 'Alpha' => 100),
-                '7' => array('R' => 171, 'G' => 70, 'B' => 67, 'Alpha' => 100),
-                '8' => array('R' => 69, 'G' => 115, 'B' => 168, 'Alpha' => 100),
-            );
+            $palette = [
+                '0' => ['R' => 186, 'G' => 206, 'B' => 151, 'Alpha' => 100],
+                '1' => ['R' => 210, 'G' => 148, 'B' => 147, 'Alpha' => 100],
+                '2' => ['R' => 148, 'G' => 170, 'B' => 208, 'Alpha' => 100],
+                '3' => ['R' => 221, 'G' => 133, 'B' => 61, 'Alpha' => 100],
+                '4' => ['R' => 65, 'G' => 153, 'B' => 176, 'Alpha' => 100],
+                '5' => ['R' => 114, 'G' => 88, 'B' => 144, 'Alpha' => 100],
+                '6' => ['R' => 138, 'G' => 166, 'B' => 78, 'Alpha' => 100],
+                '7' => ['R' => 171, 'G' => 70, 'B' => 67, 'Alpha' => 100],
+                '8' => ['R' => 69, 'G' => 115, 'B' => 168, 'Alpha' => 100],
+            ];
             // Cache definition
             $cachePath = api_get_path(SYS_ARCHIVE_PATH);
-            $myCache = new pCache(array('CacheFolder' => substr($cachePath, 0, strlen($cachePath) - 1)));
+            $myCache = new pCache(['CacheFolder' => substr($cachePath, 0, strlen($cachePath) - 1)]);
             $chartHash = $myCache->getHash($dataSet);
             if ($myCache->isInCache($chartHash)) {
-                $imgPath = api_get_path(SYS_ARCHIVE_PATH) . $chartHash;
+                $imgPath = api_get_path(SYS_ARCHIVE_PATH).$chartHash;
                 $myCache->saveFromCache($chartHash, $imgPath);
-                $imgPath = api_get_path(WEB_ARCHIVE_PATH) . $chartHash;
+                $imgPath = api_get_path(WEB_ARCHIVE_PATH).$chartHash;
             } else {
                 /* Create the pChart object */
                 $widthSize = 480;
@@ -220,72 +231,71 @@ class FlatViewTable extends SortableTable
                     0,
                     $widthSize - 1,
                     $heightSize - 1,
-                    array(
+                    [
                         'R' => 0,
                         'G' => 0,
-                        'B' => 0
-                    )
+                        'B' => 0,
+                    ]
                 );
 
                 /* Set the default font */
                 $myPicture->setFontProperties(
-                    array(
-                        'FontName' => api_get_path(SYS_FONTS_PATH) . 'opensans/OpenSans-Regular.ttf',
-                        'FontSize' => 10
-                    )
+                    [
+                        'FontName' => api_get_path(SYS_FONTS_PATH).'opensans/OpenSans-Regular.ttf',
+                        'FontSize' => 10,
+                    ]
                 );
-
                 /* Write the chart title */
                 $myPicture->drawText(
                     250,
                     30,
-                    strip_tags($headerName[$i - 1]),
-                    array(
+                    $header,
+                    [
                         'FontSize' => 12,
-                        'Align' => TEXT_ALIGN_BOTTOMMIDDLE
-                    )
+                        'Align' => TEXT_ALIGN_BOTTOMMIDDLE,
+                    ]
                 );
 
                 /* Define the chart area */
                 $myPicture->setGraphArea(50, 40, $widthSize - 20, $heightSize - 50);
 
                 /* Draw the scale */
-                $scaleSettings = array(
+                $scaleSettings = [
                     'GridR' => 200,
                     'GridG' => 200,
                     'GridB' => 200,
                     'DrawSubTicks' => true,
                     'CycleBackground' => true,
-                    'Mode' => SCALE_MODE_START0
-                );
+                    'Mode' => SCALE_MODE_START0,
+                ];
                 $myPicture->drawScale($scaleSettings);
 
                 /* Turn on shadow computing */
                 $myPicture->setShadow(
                     true,
-                    array(
+                    [
                         'X' => 1,
                         'Y' => 1,
                         'R' => 0,
                         'G' => 0,
                         'B' => 0,
-                        'Alpha' => 10
-                    )
+                        'Alpha' => 10,
+                    ]
                 );
 
                 /* Draw the chart */
                 $myPicture->setShadow(
                     true,
-                    array(
+                    [
                         'X' => 1,
                         'Y' => 1,
                         'R' => 0,
                         'G' => 0,
                         'B' => 0,
-                        'Alpha' => 10
-                    )
+                        'Alpha' => 10,
+                    ]
                 );
-                $settings = array(
+                $settings = [
                     'OverrideColors' => $palette,
                     'Gradient' => false,
                     'GradientMode' => GRADIENT_SIMPLE,
@@ -296,17 +306,17 @@ class FlatViewTable extends SortableTable
                     'DisplayB' => 0,
                     'DisplayShadow' => true,
                     'Surrounding' => 10,
-                );
+                ];
                 $myPicture->drawBarChart($settings);
 
                 /* Render the picture (choose the best way) */
 
                 $myCache->writeToCache($chartHash, $myPicture);
-                $imgPath = api_get_path(SYS_ARCHIVE_PATH) . $chartHash;
+                $imgPath = api_get_path(SYS_ARCHIVE_PATH).$chartHash;
                 $myCache->saveFromCache($chartHash, $imgPath);
-                $imgPath = api_get_path(WEB_ARCHIVE_PATH) . $chartHash;
+                $imgPath = api_get_path(WEB_ARCHIVE_PATH).$chartHash;
             }
-            echo '<img src="' . $imgPath . '" >';
+            echo '<img src="'.$imgPath.'" >';
             if ($i % 2 == 0 && $i != 0) {
                 echo '<br /><br />';
             } else {
@@ -317,7 +327,7 @@ class FlatViewTable extends SortableTable
     }
 
     /**
-     * Function used by SortableTable to get total number of items in the table
+     * Function used by SortableTable to get total number of items in the table.
      */
     public function get_total_number_of_items()
     {
@@ -325,10 +335,15 @@ class FlatViewTable extends SortableTable
     }
 
     /**
-     * Function used by SortableTable to generate the data to display
+     * Function used by SortableTable to generate the data to display.
      */
-    public function get_table_data($from = 1, $per_page = null, $column = null, $direction = null, $sort = null)
-    {
+    public function get_table_data(
+        $from = 1,
+        $per_page = null,
+        $column = null,
+        $direction = null,
+        $sort = null
+    ) {
         $is_western_name_order = api_is_western_name_order();
 
         // create page navigation if needed
@@ -343,20 +358,30 @@ class FlatViewTable extends SortableTable
         $header = null;
         if ($this->limit_enabled && $totalitems > GRADEBOOK_ITEM_LIMIT) {
             $header .= '<table style="width: 100%; text-align: right; margin-left: auto; margin-right: auto;" border="0" cellpadding="2">'
-                . '<tbody>'
-                . '<tr>';
+                .'<tbody>'
+                .'<tr>';
 
             // previous X
             $header .= '<td style="width:100%;">';
             if ($this->offset >= GRADEBOOK_ITEM_LIMIT) {
-                $header .= '<a href="' . api_get_self()
-                    . '?selectcat=' . Security::remove_XSS($_GET['selectcat'])
-                    . '&offset=' . (($this->offset) - GRADEBOOK_ITEM_LIMIT)
-                    . (isset($_GET['search']) ? '&search=' . Security::remove_XSS($_GET['search']) : '') . '">'
-                    . Display::return_icon('action_prev.png', get_lang('PreviousPage'), array(), 32)
-                    . '</a>';
+                $header .= '<a href="'.api_get_self()
+                    .'?selectcat='.Security::remove_XSS($_GET['selectcat'])
+                    .'&offset='.(($this->offset) - GRADEBOOK_ITEM_LIMIT)
+                    .(isset($_GET['search']) ? '&search='.Security::remove_XSS($_GET['search']) : '').'">'
+                    .Display::return_icon(
+                        'action_prev.png',
+                        get_lang('PreviousPage'),
+                        [],
+                        ICON_SIZE_MEDIUM
+                    )
+                    .'</a>';
             } else {
-                $header .= Display::return_icon('action_prev_na.png', get_lang('PreviousPage'), array(), 32);
+                $header .= Display::return_icon(
+                    'action_prev_na.png',
+                    get_lang('PreviousPage'),
+                    [],
+                    ICON_SIZE_MEDIUM
+                );
             }
             $header .= ' ';
             // next X
@@ -364,14 +389,19 @@ class FlatViewTable extends SortableTable
                 ($totalitems - (GRADEBOOK_ITEM_LIMIT + $this->offset)) : GRADEBOOK_ITEM_LIMIT;
 
             if ($calcnext > 0) {
-                $header .= '<a href="' . api_get_self()
-                    . '?selectcat=' . Security::remove_XSS($_GET['selectcat'])
-                    . '&offset=' . ($this->offset + GRADEBOOK_ITEM_LIMIT)
-                    . (isset($_GET['search']) ? '&search=' . Security::remove_XSS($_GET['search']) : '') . '">'
-                    . Display::return_icon('action_next.png', get_lang('NextPage'), array(), 32)
-                    . '</a>';
+                $header .= '<a href="'.api_get_self()
+                    .'?selectcat='.Security::remove_XSS($_GET['selectcat'])
+                    .'&offset='.($this->offset + GRADEBOOK_ITEM_LIMIT)
+                    .(isset($_GET['search']) ? '&search='.Security::remove_XSS($_GET['search']) : '').'">'
+                    .Display::return_icon('action_next.png', get_lang('NextPage'), [], ICON_SIZE_MEDIUM)
+                    .'</a>';
             } else {
-                $header .= Display::return_icon('action_next_na.png', get_lang('NextPage'), array(), 32);
+                $header .= Display::return_icon(
+                    'action_next_na.png',
+                    get_lang('NextPage'),
+                    [],
+                    ICON_SIZE_MEDIUM
+                );
             }
             $header .= '</td>';
             $header .= '</tbody></table>';
@@ -379,22 +409,20 @@ class FlatViewTable extends SortableTable
         }
 
         // retrieve sorting type
-
         if ($is_western_name_order) {
-            $users_sorting = ($this->column == 0 ? FlatViewDataGenerator :: FVDG_SORT_FIRSTNAME : FlatViewDataGenerator :: FVDG_SORT_LASTNAME);
+            $users_sorting = ($this->column == 0 ? FlatViewDataGenerator::FVDG_SORT_FIRSTNAME : FlatViewDataGenerator::FVDG_SORT_LASTNAME);
         } else {
-            $users_sorting = ($this->column == 0 ? FlatViewDataGenerator :: FVDG_SORT_LASTNAME : FlatViewDataGenerator :: FVDG_SORT_FIRSTNAME);
+            $users_sorting = ($this->column == 0 ? FlatViewDataGenerator::FVDG_SORT_LASTNAME : FlatViewDataGenerator::FVDG_SORT_FIRSTNAME);
         }
 
         if ($this->direction == 'DESC') {
-            $users_sorting |= FlatViewDataGenerator :: FVDG_SORT_DESC;
+            $users_sorting |= FlatViewDataGenerator::FVDG_SORT_DESC;
         } else {
-            $users_sorting |= FlatViewDataGenerator :: FVDG_SORT_ASC;
+            $users_sorting |= FlatViewDataGenerator::FVDG_SORT_ASC;
         }
 
         // step 1: generate columns: evaluations and links
         $header_names = $this->datagen->get_header_names($this->offset, $selectlimit);
-
         $userRowSpan = false;
         foreach ($header_names as $item) {
             if (is_array($item)) {
@@ -427,7 +455,7 @@ class FlatViewTable extends SortableTable
                 );
 
                 foreach ($headerData['items'] as $item) {
-                    $firstHeader[] = '<center>'.$item.'</center>';
+                    $firstHeader[] = '<span class="text-center">'.$item.'</span>';
                 }
             } else {
                 $this->set_header($column, $headerData, false, $thAttributes);
@@ -443,38 +471,53 @@ class FlatViewTable extends SortableTable
             $selectlimit
         );
 
-        $table_data = array();
+        $table_data = [];
 
         if (!empty($firstHeader)) {
             $table_data[] = $firstHeader;
         }
+
+        $columnOffset = empty($this->datagen->params['show_official_code']) ? 0 : 1;
 
         foreach ($data_array as $user_row) {
             $user_id = $user_row[0];
             unset($user_row[0]);
             $userInfo = api_get_user_info($user_id);
             if ($is_western_name_order) {
-                $user_row[1] = $this->build_name_link($user_id, $userInfo['firstname']);
-                $user_row[2] = $this->build_name_link($user_id, $userInfo['lastname']);
+                $user_row[1 + $columnOffset] = $this->build_name_link(
+                    $user_id,
+                    $userInfo['firstname']
+                );
+                $user_row[2 + $columnOffset] = $this->build_name_link(
+                    $user_id,
+                    $userInfo['lastname']
+                );
             } else {
-                $user_row[1] = $this->build_name_link($user_id, $userInfo['lastname']);
-                $user_row[2] = $this->build_name_link($user_id, $userInfo['firstname']);
+                $user_row[1 + $columnOffset] = $this->build_name_link(
+                    $user_id,
+                    $userInfo['lastname']
+                );
+                $user_row[2 + $columnOffset] = $this->build_name_link(
+                    $user_id,
+                    $userInfo['firstname']
+                );
             }
             $user_row = array_values($user_row);
 
             $table_data[] = $user_row;
         }
+
         return $table_data;
     }
 
     /**
-     * @param $user_id
+     * @param $userId
      * @param $name
      *
      * @return string
      */
-    private function build_name_link($user_id, $name)
+    private function build_name_link($userId, $name)
     {
-        return '<a href="user_stats.php?userid=' . $user_id . '&selectcat=' . $this->selectcat->get_id() . '&'.api_get_cidreq().'">' . $name . '</a>';
+        return '<a href="user_stats.php?userid='.$userId.'&selectcat='.$this->selectcat->get_id().'&'.api_get_cidreq().'">'.$name.'</a>';
     }
 }

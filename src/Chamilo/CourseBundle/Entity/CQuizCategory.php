@@ -6,7 +6,9 @@ namespace Chamilo\CourseBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * CQuizCategory
+ * CQuizCategory.
+ *
+ * Manages quiz question categories inside an exercise.
  *
  * @ORM\Table(name="c_quiz_rel_category")
  * @ORM\Entity
@@ -14,41 +16,41 @@ use Doctrine\ORM\Mapping as ORM;
 class CQuizCategory
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="iid", type="bigint")
      * @ORM\Id
      * @ORM\GeneratedValue
      */
-    private $iid;
+    protected $iid;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="c_id", type="integer")
      */
-    private $cId;
+    protected $cId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="category_id", type="integer", nullable=true)
      */
-    private $categoryId;
+    protected $categoryId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="exercise_id", type="integer", nullable=false)
      */
-    private $exerciseId;
+    protected $exerciseId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="count_questions", type="integer", nullable=true)
      */
-    private $countQuestions;
+    protected $countQuestions;
 
     /**
      * @return int
@@ -60,11 +62,13 @@ class CQuizCategory
 
     /**
      * @param int $iid
+     *
      * @return CQuizCategory
      */
     public function setIid($iid)
     {
         $this->iid = $iid;
+
         return $this;
     }
 
@@ -78,11 +82,13 @@ class CQuizCategory
 
     /**
      * @param int $cId
+     *
      * @return CQuizCategory
      */
     public function setCId($cId)
     {
         $this->cId = $cId;
+
         return $this;
     }
 
@@ -96,11 +102,13 @@ class CQuizCategory
 
     /**
      * @param int $categoryId
+     *
      * @return CQuizCategory
      */
     public function setCategoryId($categoryId)
     {
         $this->categoryId = $categoryId;
+
         return $this;
     }
 
@@ -114,11 +122,13 @@ class CQuizCategory
 
     /**
      * @param int $exerciseId
+     *
      * @return CQuizCategory
      */
     public function setExerciseId($exerciseId)
     {
         $this->exerciseId = $exerciseId;
+
         return $this;
     }
 
@@ -132,11 +142,13 @@ class CQuizCategory
 
     /**
      * @param int $countQuestions
+     *
      * @return CQuizCategory
      */
     public function setCountQuestions($countQuestions)
     {
         $this->countQuestions = $countQuestions;
+
         return $this;
     }
 }

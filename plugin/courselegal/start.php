@@ -1,7 +1,7 @@
 <?php
 /* For license terms, see /license.txt */
 
-require_once dirname(__FILE__) . '/config.php';
+require_once __DIR__.'/config.php';
 
 // Course legal
 $enabled = api_get_plugin_setting('courselegal', 'tool_enable');
@@ -49,7 +49,7 @@ $form->setDefaults($defaults);
 
 if ($form->validate()) {
     $values = $form->getSubmitValues();
-    $file = isset($_FILES['uploaded_file']) ? $_FILES['uploaded_file'] : array();
+    $file = isset($_FILES['uploaded_file']) ? $_FILES['uploaded_file'] : [];
     $deleteFile = isset($values['delete_file']) ? $values['delete_file'] : false;
     $legal->save($values, $file, $deleteFile);
     header('Location: '.$url);

@@ -1,18 +1,20 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+
 /**
- * Script that handles the saving of item status
+ * Script that handles the saving of item status.
+ *
  * @package chamilo.learnpath
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
 
 /**
  * Initialization is to be done by lp_controller.php.
- * Switching within the field to update
+ * Switching within the field to update.
  */
-
-error_log('New LP - Loaded lp_save : '.$_SERVER['REQUEST_URI'].' from '.$_SERVER['HTTP_REFERER'], 0);
 ?>
 <!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -22,7 +24,9 @@ error_log('New LP - Loaded lp_save : '.$_SERVER['REQUEST_URI'].' from '.$_SERVER
 <meta http-equiv="Content-Type" content="text/html; charset=<?php echo api_get_system_encoding(); ?>" />
 <script language='javascript'>
 <?php
-if ($_SESSION['oLP']->mode != 'fullscreen') {
+/** @var learnpath $lp */
+$lp = Session::read('oLP');
+if ($lp->mode != 'fullscreen') {
 }
 ?>
 </script>

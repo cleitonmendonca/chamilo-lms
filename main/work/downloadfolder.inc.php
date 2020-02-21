@@ -2,26 +2,32 @@
 /* For licensing terms, see /license.txt */
 
 /**
- *	Functions and main code for the download folder feature
- *  @todo use ids instead of the path like the document tool
- *	@package chamilo.work
+ * Functions and main code for the download folder feature.
+ *
+ * @todo use ids instead of the path like the document tool
+ *
+ * @package chamilo.work
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
-$work_id = $_GET['id'];
-require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_STUDENTPUBLICATION;
+api_protect_course_script(true);
+
+$workId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+$current_course_tool = TOOL_STUDENTPUBLICATION;
 $_course = api_get_course_info();
 
-// Protection
-api_protect_course_script(true);
+if (empty($_course)) {
+    api_not_allowed();
+}
 
 require_once 'work.lib.php';
 
-$work_data = get_work_data_by_id($work_id);
+$work_data = get_work_data_by_id($workId);
 $groupId = api_get_group_id();
 
 if (empty($work_data)) {
-    exit;
+    api_not_allowed();
 }
 
 // Prevent some stuff.
@@ -36,8 +42,7 @@ if (empty($_course) || empty($_course['path'])) {
 $sys_course_path = api_get_path(SYS_COURSE_PATH);
 
 // Creating a ZIP file
-$temp_zip_file = api_get_path(SYS_ARCHIVE_PATH).api_get_unique_id().".zip";
-
+$temp_zip_file = api_get_path(SYS_ARCHIVE_PATH).api_get_unique_id().'.zip';
 $zip_folder = new PclZip($temp_zip_file);
 
 $tbl_student_publication = Database::get_course_table(TABLE_STUDENT_PUBLICATION);
@@ -49,7 +54,7 @@ $tableUser = Database::get_main_table(TABLE_MAIN_USER);
 // normal users get only visible files that are in visible folders
 
 //admins are allowed to download invisible files
-$files = array();
+$files = [];
 $course_id = api_get_course_int_id();
 $sessionId = api_get_session_id();
 
@@ -60,40 +65,44 @@ if (array_key_exists('filename', $work_data)) {
     $filenameCondition = ", filename";
 }
 
+$groupIid = 0;
+if ($groupId) {
+    $groupInfo = GroupManager::get_group_properties($groupId);
+    $groupIid = $groupInfo['iid'];
+}
+
 if (api_is_allowed_to_edit() || api_is_coach()) {
     //Search for all files that are not deleted => visibility != 2
-   $sql = "SELECT DISTINCT
+    $sql = "SELECT DISTINCT
                 url,
                 title,
                 description,
                 insert_user_id,
-                insert_date,
+                sent_date,
                 contains_file
                 $filenameCondition
             FROM $tbl_student_publication AS work
             INNER JOIN $prop_table AS props
+            ON (work.id = props.ref AND props.c_id = work.c_id)
             INNER JOIN $tableUser as u
             ON (
-                props.c_id = $course_id AND
-                work.c_id = $course_id AND
-                work.id = props.ref AND
-                props.tool='work' AND
                 work.user_id = u.user_id
             )
- 			WHERE
-                work.parent_id = $work_id AND
+            WHERE
+ 			    props.tool = 'work' AND
+ 			    props.c_id = $course_id AND
+                work.c_id = $course_id AND
+                work.parent_id = $workId AND
                 work.filetype = 'file' AND
                 props.visibility <> '2' AND
                 work.active IN (0, 1) AND
-                work.post_group_id = $groupId
+                work.post_group_id = $groupIid
                 $sessionCondition
             ";
-
 } else {
     $courseInfo = api_get_course_info();
-    protectWork($courseInfo, $work_id);
-
-    $userCondition = null;
+    protectWork($courseInfo, $workId);
+    $userCondition = '';
 
     // All users
     if ($courseInfo['show_score'] == 0) {
@@ -109,22 +118,25 @@ if (api_is_allowed_to_edit() || api_is_coach()) {
                 title,
                 description,
                 insert_user_id,
-                insert_date,
+                sent_date,
                 contains_file
                 $filenameCondition
             FROM $tbl_student_publication AS work
             INNER JOIN $prop_table AS props
-                ON (props.c_id = $course_id AND
-                    work.c_id = $course_id AND
-                    work.id = props.ref)
+            ON (
+                props.c_id = work.c_id AND 
+                work.id = props.ref
+            )
             WHERE
-                props.tool='work' AND
+                props.c_id = $course_id AND
+                work.c_id = $course_id AND                
+                props.tool = 'work' AND
                 work.accepted = 1 AND
                 work.active = 1 AND
-                work.parent_id = $work_id AND
+                work.parent_id = $workId AND
                 work.filetype = 'file' AND
                 props.visibility = '1' AND
-                work.post_group_id = $groupId
+                work.post_group_id = $groupIid
                 $userCondition
             ";
 }
@@ -132,10 +144,9 @@ $query = Database::query($sql);
 
 //add tem to the zip file
 while ($not_deleted_file = Database::fetch_assoc($query)) {
-
-    $user_info = api_get_user_info($not_deleted_file['insert_user_id']);
-    $insert_date = api_get_local_time($not_deleted_file['insert_date']);
-    $insert_date = str_replace(array(':', '-', ' '), '_', $insert_date);
+    $userInfo = api_get_user_info($not_deleted_file['insert_user_id']);
+    $insert_date = api_get_local_time($not_deleted_file['sent_date']);
+    $insert_date = str_replace([':', '-', ' '], '_', $insert_date);
 
     $title = basename($not_deleted_file['title']);
     if (!empty($filenameCondition)) {
@@ -143,8 +154,8 @@ while ($not_deleted_file = Database::fetch_assoc($query)) {
             $title = $not_deleted_file['filename'];
         }
     }
-
-    $filename = $insert_date.'_'.$user_info['username'].'_'.$title;
+    $filename = $insert_date.'_'.$userInfo['username'].'_'.$title;
+    $filename = api_replace_dangerous_char($filename);
     // File exists
     if (file_exists($sys_course_path.$_course['path'].'/'.$not_deleted_file['url']) &&
         !empty($not_deleted_file['url'])
@@ -158,8 +169,7 @@ while ($not_deleted_file = Database::fetch_assoc($query)) {
             'my_pre_add_callback'
         );
     } else {
-    // Convert texts in html files
-    //if ($not_deleted_file['contains_file'] == 0) {
+        // Convert texts in html files
         $filename = trim($filename).".html";
         $work_temp = api_get_path(SYS_ARCHIVE_PATH).api_get_unique_id().'_'.$filename;
         file_put_contents($work_temp, $not_deleted_file['description']);
@@ -178,11 +188,11 @@ while ($not_deleted_file = Database::fetch_assoc($query)) {
 if (!empty($files)) {
     $fileName = api_replace_dangerous_char($work_data['title']);
     // Logging
-    Event::event_download($fileName .'.zip (folder)');
+    Event::event_download($fileName.'.zip (folder)');
 
     //start download of created file
-    $name = $fileName .'.zip';
-    
+    $name = $fileName.'.zip';
+
     if (Security::check_abs_path($temp_zip_file, api_get_path(SYS_ARCHIVE_PATH))) {
         DocumentManager::file_send_for_download($temp_zip_file, true, $name);
         @unlink($temp_zip_file);
@@ -192,8 +202,7 @@ if (!empty($files)) {
     exit;
 }
 
-/*	Extra function (only used here) */
-
+/* Extra function (only used here) */
 function my_pre_add_callback($p_event, &$p_header)
 {
     global $files;
@@ -208,7 +217,7 @@ function my_pre_add_callback($p_event, &$p_header)
 
 /**
  * Return the difference between two arrays, as an array of those key/values
- * Use this as array_diff doesn't give the
+ * Use this as array_diff doesn't give the.
  *
  * @param array $arr1 first array
  * @param array $arr2 second array
@@ -217,7 +226,7 @@ function my_pre_add_callback($p_event, &$p_header)
  */
 function diff($arr1, $arr2)
 {
-    $res = array();
+    $res = [];
     $r = 0;
     foreach ($arr1 as $av) {
         if (!in_array($av, $arr2)) {

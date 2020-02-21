@@ -16,27 +16,31 @@ $course_info = api_get_course_info();
 $groupId = api_get_group_id();
 
 $group_properties = GroupManager::get_group_properties($groupId);
-$groupdirpath = $group_properties['directory'];
+$groupIid = 0;
+if ($group_properties) {
+    $groupdirpath = $group_properties['directory'];
+    $groupIid = $group_properties['iid'];
+}
 $group_disk_path = api_get_path(SYS_COURSE_PATH).$course_info['path'].'/document'.$groupdirpath.'/';
 $group_web_path = api_get_path(WEB_COURSE_PATH).$course_info['path'].'/document'.$groupdirpath.'/';
 
 //get all group files and folders
-$docs_and_folders = DocumentManager::get_all_document_data(
+$docs_and_folders = DocumentManager::getAllDocumentData(
     $course_info,
     $groupdirpath,
-    api_get_group_id(),
+    $groupIid,
     null,
     $is_allowed_to_edit,
     false
 );
 
-//get all group filenames
-$array_to_search = is_array($docs_and_folders) ? $docs_and_folders : array();
+// get all group filenames
+$array_to_search = !empty($docs_and_folders) ? $docs_and_folders : array();
 
 if (count($array_to_search) > 0) {
-	while (list($key) = each($array_to_search)) {
-		$all_files[] = basename($array_to_search[$key]['path']);
-	}
+    while (list($key) = each($array_to_search)) {
+        $all_files[] = basename($array_to_search[$key]['path']);
+    }
 }
 
 //get all svg and png group files
@@ -67,7 +71,7 @@ echo '<h2>'.get_lang('GroupSingle').': '.$group_properties['name'].'</h2>';
 
 if ((
         $group_properties['doc_state'] == 2 &&
-        ($is_allowed_to_edit || GroupManager :: is_user_in_group($_user['user_id'], $groupId))) || $group_properties['doc_state'] == 1
+        ($is_allowed_to_edit || GroupManager :: is_user_in_group($_user['user_id'], $group_properties))) || $group_properties['doc_state'] == 1
 ){
 
 	if (!empty($png_svg_files)) {
@@ -89,7 +93,7 @@ if ((
 		echo '</ul>';
 	}
 } else {
-	echo Display::display_warning_message(get_lang('OnlyAccessFromYourGroup'));
+	echo Display::return_message(get_lang('OnlyAccessFromYourGroup'), 'warning');
 }
 ?>
 </body>

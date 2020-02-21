@@ -6,9 +6,9 @@ namespace Chamilo\CoreBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class SequenceResource
+ * Class SequenceResource.
  *
- * @ORM\Entity(repositoryClass="Chamilo\CoreBundle\Entity\Repository\SequenceRepository")
+ * @ORM\Entity(repositoryClass="Chamilo\CoreBundle\Entity\Repository\SequenceResourceRepository")
  * @ORM\Table(name="sequence_resource")
  */
 class SequenceResource
@@ -17,40 +17,40 @@ class SequenceResource
     const SESSION_TYPE = 2;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue()
      */
-    private $id;
+    protected $id;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="type", type="integer")
      */
-    private $type;
+    protected $type;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="resource_id", type="integer")
+     */
+    protected $resourceId;
 
     /**
      * @var Sequence
      *
      * @ORM\ManyToOne(targetEntity="Sequence")
      * @ORM\JoinColumn(name="sequence_id", referencedColumnName="id")
-     **/
+     */
     protected $sequence;
 
     /**
-     * @var integer
+     * Get id.
      *
-     * @ORM\Column(name="resource_id", type="integer")
-     */
-    private $resourceId;
-
-    /**
-     * Get id
-     *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -58,7 +58,7 @@ class SequenceResource
     }
 
     /**
-     * @return string
+     * @return int
      */
     public function getType()
     {
@@ -66,7 +66,9 @@ class SequenceResource
     }
 
     /**
-     * @param string $type
+     * Set the integer type.
+     *
+     * @param int $type
      *
      * @return SequenceResource
      */
@@ -91,6 +93,7 @@ class SequenceResource
     public function hasGraph()
     {
         $graph = $this->getSequence()->getGraph();
+
         return !empty($graph) ? true : false;
     }
 
@@ -123,7 +126,6 @@ class SequenceResource
     }
 
     /**
-     * @param mixed $sequence
      * @return $this
      */
     public function setSequence(Sequence $sequence)
@@ -132,6 +134,4 @@ class SequenceResource
 
         return $this;
     }
-
-
 }

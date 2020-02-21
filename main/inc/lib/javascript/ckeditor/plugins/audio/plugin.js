@@ -33,7 +33,7 @@
                     'background-color:gray;' +
                     'border: 1px solid #a9a9a9;' +
                     'width: 80px;' +
-                    'height: 80px;' +
+                    'height: 40px;' +
                     '}';
         },
         onLoad: function() {
@@ -118,18 +118,13 @@
                                 }
                             }
 
-                            var fakeElement = editor.createFakeParserElement(realElement, 'cke_video', 'audio', false),
+                            var fakeElement = editor.createFakeParserElement(realElement, 'cke_audio', 'audio', false),
                                     fakeStyle = fakeElement.attributes.style || '';
 
-                            var width = realElement.attributes.width,
-                                    height = realElement.attributes.height;
+                            var width = realElement.attributes.width;
 
                             if (typeof width != 'undefined') {
-                                fakeStyle = fakeElement.attributes.style = fakeStyle + 'width:' + CKEDITOR.tools.cssLength(width) + ';';
-                            }
-
-                            if (typeof height != 'undefined') {
-                                fakeStyle = fakeElement.attributes.style = fakeStyle + 'height:' + CKEDITOR.tools.cssLength(height) + ';';
+                                fakeElement.attributes.style = fakeStyle + 'width:' + CKEDITOR.tools.cssLength(width) + ';';
                             }
 
                             return fakeElement;
@@ -169,6 +164,20 @@
         linkTemplate: '<a href="%src%">%type%</a> ',
         fallbackTemplate: 'Su navegador no soporta AUDIO.<br>Por favor, descargue el fichero: %links%',
         autoPlay: 'Reproducir automáticamente'
+    };
+
+    var fr = {
+        toolbar: 'Audio',
+        dialogTitle: 'Propriétés de l\'audio',
+        fakeObject: 'Audio',
+        properties: 'Editer l\'audio',
+        widthRequired: 'La largeur ne peut être vide',
+        heightRequired: 'La hauteur ne peut être vide',
+        sourceAudio: 'Fichier audio',
+        sourceType: 'Type',
+        linkTemplate: '<a href="%src%">%type%</a> ',
+        fallbackTemplate: 'Votre navigateur ne supporte pas l\'AUDIO.<br>Veuillez télécharger le fichier: %links%',
+        autoPlay: 'Lecture automatique'
     };
 
     // v3

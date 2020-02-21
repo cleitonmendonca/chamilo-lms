@@ -1,16 +1,16 @@
 <?php
 /* For licensing terms, see /license.txt */
-/**
- *	Functions and main code for the download folder feature
- *
- *	@package chamilo.document
- */
 
 use ChamiloSession as Session;
 
+/**
+ * Functions and main code for the download folder feature.
+ *
+ * @package chamilo.document
+ */
 set_time_limit(0);
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_course_script();
 
@@ -51,7 +51,7 @@ if (empty($path)) {
 
 // A student should not be able to download a root shared directory
 if (($path == '/shared_folder' ||
-    $path == '/shared_folder_session_' . api_get_session_id()) &&
+    $path == '/shared_folder_session_'.api_get_session_id()) &&
     (!api_is_allowed_to_edit() || !api_is_platform_admin())
 ) {
     api_not_allowed(true);
@@ -113,8 +113,12 @@ function fixDocumentNameCallback($p_event, &$p_header)
     return 1;
 }
 
-$groupCondition = " props.to_group_id = ".$groupId;
-if (empty($groupId)) {
+$groupJoin = '';
+if (!empty($groupId)) {
+    $table = Database::get_course_table(TABLE_GROUP);
+    $groupJoin = " INNER JOIN $table g ON (g.iid = props.to_group_id AND g.c_id = docs.c_id)";
+    $groupCondition = " g.id = ".$groupId;
+} else {
     $groupCondition = " (props.to_group_id = 0 OR props.to_group_id IS NULL ) ";
 }
 
@@ -140,6 +144,7 @@ if (api_is_allowed_to_edit()) {
             ON
                 docs.id = props.ref AND
                 docs.c_id = props.c_id
+                $groupJoin
 			WHERE
 			    props.tool ='".TOOL_DOCUMENT."' AND
                 docs.path LIKE '".$querypath."/%' AND
@@ -149,11 +154,10 @@ if (api_is_allowed_to_edit()) {
                 (props.session_id IN ('0', '$sessionId') OR props.session_id IS NULL) AND
                 docs.c_id = ".$courseId." ";
 
-    $sql.= DocumentManager::getSessionFolderFilters($querypath, $sessionId);
+    $sql .= DocumentManager::getSessionFolderFilters($querypath, $sessionId);
 
     $result = Database::query($sql);
-
-    $files = array();
+    $files = [];
     while ($row = Database::fetch_array($result)) {
         $files[$row['path']] = $row;
     }
@@ -171,8 +175,6 @@ if (api_is_allowed_to_edit()) {
                 }
             }
         }
-        //error_log($sysCoursePath.$courseInfo['path'].'/document'.$not_deleted_file['path']);
-        //error_log($sysCoursePath.$courseInfo['path'].'/document'.$remove_dir);
         $zip->add(
             $sysCoursePath.$courseInfo['path'].'/document'.$not_deleted_file['path'],
             PCLZIP_OPT_REMOVE_PATH,
@@ -185,7 +187,6 @@ if (api_is_allowed_to_edit()) {
     Session::erase('doc_files_to_download');
 } else {
     // For other users, we need to create a zip  file with only visible files and folders
-
     if ($path == '/') {
         $querypath = ''; // To prevent ...path LIKE '//%'... in query
     } else {
@@ -193,7 +194,7 @@ if (api_is_allowed_to_edit()) {
     }
 
     /* A big problem: Visible files that are in a hidden folder are
-       included when we do a query for visiblity='v'
+       included when we do a query for visibility='v'
        So... I do it in a couple of steps:
        1st: Get all files that are visible in the given path
     */
@@ -204,6 +205,7 @@ if (api_is_allowed_to_edit()) {
             ON
                 docs.id = props.ref AND
                 docs.c_id = props.c_id
+                $groupJoin
             WHERE
                 docs.c_id = $courseId AND
                 props.tool = '".TOOL_DOCUMENT."' AND
@@ -214,11 +216,11 @@ if (api_is_allowed_to_edit()) {
                 $groupCondition
             ";
 
-    $sql.= DocumentManager::getSessionFolderFilters($querypath, $sessionId);
+    $sql .= DocumentManager::getSessionFolderFilters($querypath, $sessionId);
     $result = Database::query($sql);
 
-    $files = array();
-
+    $files = [];
+    $all_visible_files_path = [];
     // Add them to an array
     while ($all_visible_files = Database::fetch_assoc($result)) {
         if (strpos($all_visible_files['path'], 'chat_files') > 0 ||
@@ -236,10 +238,11 @@ if (api_is_allowed_to_edit()) {
 
     // 2nd: Get all folders that are invisible in the given path
     $sql = "SELECT path, docs.session_id, docs.id, props.to_group_id, docs.c_id
-            FROM $doc_table AS docs INNER JOIN $prop_table AS props
+            FROM $doc_table AS docs 
+            INNER JOIN $prop_table AS props
             ON
                 docs.id = props.ref AND
-                docs.c_id = props.c_id
+                docs.c_id = props.c_id                
             WHERE
                 docs.c_id = $courseId AND
                 props.tool = '".TOOL_DOCUMENT."' AND
@@ -250,9 +253,8 @@ if (api_is_allowed_to_edit()) {
     $query2 = Database::query($sql);
 
     // If we get invisible folders, we have to filter out these results from all visible files we found
-
     if (Database::num_rows($query2) > 0) {
-        $files = array();
+        $files = [];
         // Add item to an array
         while ($invisible_folders = Database::fetch_assoc($query2)) {
             //3rd: Get all files that are in the found invisible folder (these are "invisible" too)
@@ -261,7 +263,7 @@ if (api_is_allowed_to_edit()) {
                     INNER JOIN $prop_table AS props
                     ON
                         docs.id = props.ref AND
-                        docs.c_id = props.c_id
+                        docs.c_id = props.c_id                        
                     WHERE
                         docs.c_id = $courseId AND
                         props.tool ='".TOOL_DOCUMENT."' AND
@@ -283,7 +285,6 @@ if (api_is_allowed_to_edit()) {
             (array) $all_visible_files_path,
             (array) $files_in_invisible_folder_path
         );
-
     } else {
         // No invisible folders found, so all visible files can be added to the zipfile
         $files_for_zipfile = $all_visible_files_path;
@@ -294,9 +295,9 @@ if (api_is_allowed_to_edit()) {
     // Add all files in our final array to the zipfile
     for ($i = 0; $i < count($files_for_zipfile); $i++) {
         $zip->add(
-            $sysCoursePath . $courseInfo['path'] . '/document' . $files_for_zipfile[$i],
+            $sysCoursePath.$courseInfo['path'].'/document'.$files_for_zipfile[$i],
             PCLZIP_OPT_REMOVE_PATH,
-            $sysCoursePath . $courseInfo['path'] . '/document' . $remove_dir,
+            $sysCoursePath.$courseInfo['path'].'/document'.$remove_dir,
             PCLZIP_CB_PRE_ADD,
             'fixDocumentNameCallback'
         );
@@ -314,6 +315,9 @@ $name = ($path == '/') ? 'documents.zip' : $documentInfo['title'].'.zip';
 
 if (Security::check_abs_path($tempZipFile, api_get_path(SYS_ARCHIVE_PATH))) {
     $result = DocumentManager::file_send_for_download($tempZipFile, true, $name);
+    if ($result === false) {
+        api_not_allowed(true);
+    }
     @unlink($tempZipFile);
     exit;
 } else {
@@ -322,7 +326,7 @@ if (Security::check_abs_path($tempZipFile, api_get_path(SYS_ARCHIVE_PATH))) {
 
 /**
  * Returns the difference between two arrays, as an array of those key/values
- * Use this as array_diff doesn't give the
+ * Use this as array_diff doesn't give the.
  *
  * @param array $arr1 first array
  * @param array $arr2 second array
@@ -331,9 +335,9 @@ if (Security::check_abs_path($tempZipFile, api_get_path(SYS_ARCHIVE_PATH))) {
  */
 function diff($arr1, $arr2)
 {
-    $res = array();
+    $res = [];
     $r = 0;
-    foreach ($arr1 as & $av) {
+    foreach ($arr1 as &$av) {
         if (!in_array($av, $arr2)) {
             $res[$r] = $av;
             $r++;

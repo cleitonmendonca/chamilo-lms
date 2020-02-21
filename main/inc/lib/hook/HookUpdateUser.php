@@ -2,14 +2,14 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Class HookUpdateUser
+ * Class HookUpdateUser.
  *
- * @var \SplObjectStorage $observers
+ * @var \SplObjectStorage
  */
 class HookUpdateUser extends HookEvent implements HookUpdateUserEventInterface
 {
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
@@ -17,14 +17,17 @@ class HookUpdateUser extends HookEvent implements HookUpdateUserEventInterface
     }
 
     /**
-     * Update all the observers
+     * Update all the observers.
+     *
      * @param int $type
+     *
      * @return int
      */
     public function notifyUpdateUser($type)
     {
-        /** @var \HookUpdateUserObserverInterface $observer */
         $this->eventData['type'] = $type;
+
+        /** @var HookUpdateUserObserverInterface $observer */
         foreach ($this->observers as $observer) {
             $observer->hookUpdateUser($this);
         }

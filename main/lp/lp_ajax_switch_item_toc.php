@@ -6,23 +6,27 @@ use ChamiloSession as Session;
 /**
  * This script contains the server part of the ajax interaction process. The client part is located
  * in lp_api.php or other api's.
- * This script updated the TOC of the SCORM without updating the SCO's attributes
+ * This script updated the TOC of the SCORM without updating the SCO's attributes.
+ *
  * @package chamilo.learnpath
+ *
  * @author Yannick Warnier <ywarnier@beeznest.org>
  */
 
 // Flag to allow for anonymous user - needs to be set before global.inc.php.
 $use_anonymous = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 /**
- * Get one item's details
- * @param   integer $lpId LP ID
- * @param   integer $userId user ID
- * @param   integer $viewId View ID
- * @param   integer $currentItem Current item ID
- * @param   integer $nextItem New item ID
- * @return  string  JavaScript commands to be executed in scorm_api.php
+ * Get one item's details.
+ *
+ * @param int $lpId        LP ID
+ * @param int $userId      user ID
+ * @param int $viewId      View ID
+ * @param int $currentItem Current item ID
+ * @param int $nextItem    New item ID
+ *
+ * @return string JavaScript commands to be executed in scorm_api.php
  */
 function switch_item_toc($lpId, $userId, $viewId, $currentItem, $nextItem)
 {
@@ -102,7 +106,7 @@ function switch_item_toc($lpId, $userId, $viewId, $currentItem, $nextItem)
     $interactionsCount = $myLPI->get_interactions_count();
     /**
      * Interactions are not returned by switch_item at the moment, but please
-     * leave commented code to allow for the addition of these in the future
+     * leave commented code to allow for the addition of these in the future.
      */
     /*
     $interactionsString = '';
@@ -127,28 +131,44 @@ function switch_item_toc($lpId, $userId, $viewId, $currentItem, $nextItem)
     $coreExit = $myLPI->get_core_exit();
 
     $return .=
-        "olms.lms_lp_id=".$lpId.";" .
-        "olms.lms_item_id=".$newItemId.";" .
-        "olms.lms_old_item_id=".$oldItemId.";" .
-        "olms.lms_initialized=0;" .
-        "olms.lms_view_id=".$viewId.";" .
-        "olms.lms_user_id=".$userId.";" .
-        "olms.next_item=".$newItemId.";" . // This one is very important to replace possible literal strings.
-        "olms.lms_next_item=".$nextItemId.";" .
-        "olms.lms_previous_item=".$previousItemId.";" .
-        "olms.lms_item_type = '".$itemType."';" .
-        "olms.lms_item_credit = '".$credit."';" .
-        "olms.lms_item_lesson_mode = '".$lessonMode."';" .
-        "olms.lms_item_launch_data = '".$launchData."';" .
-        "olms.lms_item_interactions_count = '".$interactionsCount."';" .
-        "olms.lms_item_objectives_count = '".$objectivesCount."';" .
-        "olms.lms_item_core_exit = '".$coreExit."';" .
+        "olms.lms_lp_id=".$lpId.";".
+        "olms.lms_item_id=".$newItemId.";".
+        "olms.lms_old_item_id=".$oldItemId.";".
+        "olms.lms_initialized=0;".
+        "olms.lms_view_id=".$viewId.";".
+        "olms.lms_user_id=".$userId.";".
+        "olms.next_item=".$newItemId.";".// This one is very important to replace possible literal strings.
+        "olms.lms_next_item=".$nextItemId.";".
+        "olms.lms_previous_item=".$previousItemId.";".
+        "olms.lms_item_type = '".$itemType."';".
+        "olms.lms_item_credit = '".$credit."';".
+        "olms.lms_item_lesson_mode = '".$lessonMode."';".
+        "olms.lms_item_launch_data = '".$launchData."';".
+        "olms.lms_item_interactions_count = '".$interactionsCount."';".
+        "olms.lms_item_objectives_count = '".$objectivesCount."';".
+        "olms.lms_item_core_exit = '".$coreExit."';".
         "olms.asset_timer = 0;";
 
     $return .= "update_toc('unhighlight','".$currentItem."');".
         "update_toc('highlight','".$newItemId."');".
-        "update_toc('$lessonStatus','".$newItemId."');".
-        "update_progress_bar('$completedItems','$totalItems','$progressMode');";
+        "update_toc('$lessonStatus','".$newItemId."');";
+
+    $progressBarSpecial = false;
+    $scoreAsProgressSetting = api_get_configuration_value('lp_score_as_progress_enable');
+    if ($scoreAsProgressSetting === true) {
+        $scoreAsProgress = $myLP->getUseScoreAsProgress();
+        if ($scoreAsProgress) {
+            $score = $myLPI->get_score();
+            $maxScore = $myLPI->get_max();
+            $return .= "update_progress_bar('$score', '$maxScore', '$progressMode');";
+            $progressBarSpecial = true;
+        }
+    }
+    if (!$progressBarSpecial) {
+        $return .= "update_progress_bar('$completedItems','$totalItems','$progressMode');";
+    }
+
+
 
     $myLP->set_error_msg('');
     $myLP->prerequisites_match(); // Check the prerequisites are all complete.
@@ -157,6 +177,7 @@ function switch_item_toc($lpId, $userId, $viewId, $currentItem, $nextItem)
     }
     Session::write('scorm_item_id', $newItemId);
     Session::write('lpobject', serialize($myLP));
+    Session::write('oLP', $myLP);
 
     return $return;
 }

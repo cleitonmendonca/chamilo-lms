@@ -3,12 +3,9 @@
 /**
  * @package chamilo.dropbox
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
-// including the basic Chamilo initialisation file
-require_once '../inc/global.inc.php';
-
-// the dropbox configuration parameters
-require_once 'dropbox_config.inc.php';
+$_course = api_get_course_info();
 
 // the dropbox file that contains additional functions
 require_once 'dropbox_functions.inc.php';
@@ -28,12 +25,11 @@ if (isset($_GET['cat_id']) &&
     It would have been more elegant if these could be stored in dropbox_person (which stores the link file-person)
     Therefore we have to create to separate sql statements to find which files are in the category
     (depending if we zip-download a sent category or a received category)*/
-
     if ($_GET['sent_received'] == 'sent') {
         // here we also incorporate the person table to make sure that deleted sent documents are not included.
         $sql = "SELECT DISTINCT file.id, file.filename, file.title
-                FROM ".$dropbox_cnf['tbl_file']." file
-                INNER JOIN ".$dropbox_cnf['tbl_person']." person
+                FROM ".Database::get_course_table(TABLE_DROPBOX_FILE)." file
+                INNER JOIN ".Database::get_course_table(TABLE_DROPBOX_PERSON)." person
                 ON (person.file_id=file.id AND file.c_id = $course_id AND person.c_id = $course_id)
                 WHERE
                     file.uploader_id = $user_id AND
@@ -43,22 +39,22 @@ if (isset($_GET['cat_id']) &&
 
     if ($_GET['sent_received'] == 'received') {
         $sql = "SELECT DISTINCT file.id, file.filename, file.title
-                FROM ".$dropbox_cnf['tbl_file']." file
-                INNER JOIN ".$dropbox_cnf['tbl_person']." person
+                FROM ".Database::get_course_table(TABLE_DROPBOX_FILE)." file
+                INNER JOIN ".Database::get_course_table(TABLE_DROPBOX_PERSON)." person
                 ON (person.file_id=file.id AND file.c_id = $course_id AND person.c_id = $course_id)
-                INNER JOIN ".$dropbox_cnf['tbl_post']." post
+                INNER JOIN ".Database::get_course_table(TABLE_DROPBOX_POST)." post
                 ON (post.file_id = file.id AND post.c_id = $course_id AND file.c_id = $course_id)
                 WHERE
                     post.cat_id = ".intval($_GET['cat_id'])." AND
-                    post.dest_user_id = $user_id" ;
+                    post.dest_user_id = $user_id";
     }
-    $files_to_download = array();
+    $files_to_download = [];
     $result = Database::query($sql);
     while ($row = Database::fetch_array($result)) {
         $files_to_download[] = $row['id'];
     }
     if (!is_array($files_to_download) || empty($files_to_download)) {
-        header('location: index.php?view='.Security::remove_XSS($_GET['sent_received']).'&error=ErrorNoFilesInFolder');
+        header('Location: index.php?'.api_get_cidreq().'&view='.Security::remove_XSS($_GET['sent_received']).'&error=ErrorNoFilesInFolder');
         exit;
     }
     zip_download($files_to_download);
@@ -80,7 +76,6 @@ if (user_can_download_file($_GET['id'], api_get_user_id())) {
 }
 
 /*		ERROR IF NOT ALLOWED TO DOWNLOAD */
-
 if (!$allowed_to_download) {
     api_not_allowed(
         true,
@@ -89,20 +84,27 @@ if (!$allowed_to_download) {
             'error'
         )
     );
-	exit;
+    exit;
 } else {
     /*      DOWNLOAD THE FILE */
     // the user is allowed to download the file
     $_SESSION['_seen'][$_course['id']][TOOL_DROPBOX][] = intval($_GET['id']);
 
     $work = new Dropbox_Work($_GET['id']);
-    $path = dropbox_cnf('sysPath') . '/' . $work -> filename; //path to file as stored on server
-
-    if (!Security::check_abs_path($path, dropbox_cnf('sysPath').'/')) {
-        exit;
+    //path to file as stored on server
+    $path = api_get_path(SYS_COURSE_PATH).$_course['path'].'/dropbox/'.$work->filename;
+    if (!Security::check_abs_path(
+        $path,
+        api_get_path(SYS_COURSE_PATH).$_course['path'].'/dropbox/'
+    )
+    ) {
+        api_not_allowed(true);
     }
     $file = $work->title;
-    DocumentManager::file_send_for_download($path, true, $file);
+    $result = DocumentManager::file_send_for_download($path, true, $file);
+    if ($result === false) {
+        api_not_allowed(true);
+    }
     exit;
 }
 //@todo clean this file the code below is useless there are 2 exits in previous conditions ... maybe a bad copy/paste/merge?

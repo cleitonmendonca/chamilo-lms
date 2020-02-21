@@ -1,32 +1,34 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use ChamiloSession as Session;
+
 /**
-* This file generates the ActionScript variables code used by the HotSpot .swf
-* @package chamilo.exercise
-* @author Toon Keppens
-*/
-require_once '../inc/global.inc.php';
+ * This file generates the ActionScript variables code used by the HotSpot .swf.
+ *
+ * @package chamilo.exercise
+ *
+ * @author Toon Keppens
+ */
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_course_script(false);
 
-$isAllowedToEdit = api_is_allowed_to_edit(null,true);
+$isAllowedToEdit = api_is_allowed_to_edit(null, true);
 
 if (!$isAllowedToEdit) {
     api_not_allowed(true);
     exit;
 }
 
-// set vars
-$questionId = intval($_GET['modifyAnswers']);
-$objQuestion = Question::read($questionId);
 $_course = api_get_course_info();
-
-$documentPath  = api_get_path(SYS_COURSE_PATH).$_course['path'].'/document';
-
+$questionId = isset($_GET['modifyAnswers']) ? (int) $_GET['modifyAnswers'] : 0;
+$objQuestion = Question::read($questionId);
+$documentPath = api_get_path(SYS_COURSE_PATH).$_course['path'].'/document';
 $picturePath = $documentPath.'/images';
-$pictureName = $objQuestion->selectPicture();
-$pictureSize = getimagesize($picturePath.'/'.$objQuestion->selectPicture());
+$pictureName = $objQuestion->getPictureFilename();
+
+$pictureSize = getimagesize($picturePath.'/'.$pictureName);
 $pictureWidth = $pictureSize[0];
 $pictureHeight = $pictureSize[1];
 
@@ -49,7 +51,7 @@ $data['lang'] = [
     'CloseDelineation' => get_lang('CloseDelineation'),
     'Oar' => get_lang('Oar'),
     'ClosePolygon' => get_lang('ClosePolygon'),
-    'DelineationStatus1' => get_lang('DelineationStatus1')
+    'DelineationStatus1' => get_lang('DelineationStatus1'),
 ];
 $data['image'] = $objQuestion->selectPicturePath();
 $data['image_width'] = $pictureWidth;
@@ -57,21 +59,19 @@ $data['image_height'] = $pictureHeight;
 $data['courseCode'] = $_course['path'];
 $data['hotspots'] = [];
 
-// Init
 $i = 0;
 $nmbrTries = 0;
 $answer_type = $objQuestion->type;
-
-$answers = $_SESSION['tmp_answers'];
+$answers = Session::read('tmp_answers');
 $nbrAnswers = count($answers['answer']);
 
-for ($i=1;$i <= $nbrAnswers; $i++) {
+for ($i = 1; $i <= $nbrAnswers; $i++) {
     $hotSpot = [];
     $hotSpot['id'] = null;
-    $hotSpot['answer']= $answers['answer'][$i];
+    $hotSpot['answer'] = $answers['answer'][$i];
 
     if ($answer_type == HOT_SPOT_DELINEATION) {
-        if ($i==1) {
+        if ($i == 1) {
             $hotSpot['type'] = 'delineation';
         } else {
             $hotSpot['type'] = 'oar';
@@ -98,10 +98,10 @@ for ($i=1;$i <= $nbrAnswers; $i++) {
         }*/
     }
 
-	// This is a good answer, count + 1 for nmbr of clicks
-	if ($answers['weighting'][$i] > 0) {
-		$nmbrTries++;
-	}
+    // This is a good answer, count + 1 for nmbr of clicks
+    if ($answers['weighting'][$i] > 0) {
+        $nmbrTries++;
+    }
 
     $hotSpot['coord'] = $answers['hotspot_coordinates'][$i];
     $data['hotspots'][] = $hotSpot;

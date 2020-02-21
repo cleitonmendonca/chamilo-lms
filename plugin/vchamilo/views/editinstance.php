@@ -6,7 +6,7 @@ define('CHAMILO_INTERNAL', true);
 
 global $plugin;
 
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 require_once api_get_path(SYS_PLUGIN_PATH).'vchamilo/views/editinstance_form.php';
 
 api_protect_admin_script();
@@ -20,16 +20,13 @@ $registeronly = isset($_REQUEST['registeronly']) ? $_REQUEST['registeronly'] : 0
 $plugin = VChamiloPlugin::create();
 $thisurl = api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php';
 
-$coursePath = Virtual::getConfig('vchamilo', 'course_real_root');
-$homePath = Virtual::getConfig('vchamilo', 'home_real_root');
-
 if ($id) {
     $mode = 'update';
 } else {
-    $mode = $registeronly ? 'register' : 'add' ;
+    $mode = $registeronly ? 'register' : 'add';
 }
 
-$vhost = (array)  Virtual::getInstance($id);
+$vhost = (array) Virtual::getInstance($id);
 
 $form = new InstanceForm($plugin, $mode, $vhost);
 
@@ -39,8 +36,7 @@ if ($data = $form->get_data()) {
         case 'registerinstance':
             Virtual::addInstance($data);
             echo '<a class="btn btn-primary" href="'.api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php'.'">Continue</a>';
-            // vchamilo_redirect(api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php');
-            die;
+            exit;
             break;
         case 'updateinstance':
             unset($data->what);
@@ -56,7 +52,7 @@ if ($data = $form->get_data()) {
             unset($data->testdatapath);
             unset($data->vid);
 
-            Database::update('vchamilo', (array) $data, array('id = ?' => $id), true);
+            Database::update('vchamilo', (array) $data, ['id = ?' => $id], false);
             Display::addFlash(Display::return_message(get_lang('Updated')));
             Virtual::redirect(api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php');
             break;
@@ -75,7 +71,7 @@ if ($id) {
 
 $content = $form->return_form();
 
-$interbreadcrumb[] = array('url' => 'manage.php', 'name' => get_lang('VChamilo'));
+$interbreadcrumb[] = ['url' => 'manage.php', 'name' => get_lang('VChamilo')];
 
 $tpl = new Template(get_lang('Instance'), true, true, false, true, false);
 $tpl->assign('content', $content);

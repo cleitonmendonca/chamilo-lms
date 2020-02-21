@@ -6,31 +6,31 @@
  */
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $this_section = SECTION_PLATFORM_ADMIN;
 api_protect_admin_script(true);
 api_protect_limit_for_session_admin();
 
 $form_sent = 0;
-$tbl_user                   = Database::get_main_table(TABLE_MAIN_USER);
-$tbl_course                 = Database::get_main_table(TABLE_MAIN_COURSE);
-$tbl_course_user            = Database::get_main_table(TABLE_MAIN_COURSE_USER);
-$tbl_session                = Database::get_main_table(TABLE_MAIN_SESSION);
-$tbl_session_user           = Database::get_main_table(TABLE_MAIN_SESSION_USER);
-$tbl_session_course         = Database::get_main_table(TABLE_MAIN_SESSION_COURSE);
-$tbl_session_course_user    = Database::get_main_table(TABLE_MAIN_SESSION_COURSE_USER);
+$tbl_user = Database::get_main_table(TABLE_MAIN_USER);
+$tbl_course = Database::get_main_table(TABLE_MAIN_COURSE);
+$tbl_course_user = Database::get_main_table(TABLE_MAIN_COURSE_USER);
+$tbl_session = Database::get_main_table(TABLE_MAIN_SESSION);
+$tbl_session_user = Database::get_main_table(TABLE_MAIN_SESSION_USER);
+$tbl_session_course = Database::get_main_table(TABLE_MAIN_SESSION_COURSE);
+$tbl_session_course_user = Database::get_main_table(TABLE_MAIN_SESSION_COURSE_USER);
 
 $tool_name = get_lang('ImportSessionListXMLCSV');
 
 //$interbreadcrumb[] = array('url' => 'index.php', 'name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => 'session_list.php','name' => get_lang('SessionList'));
+$interbreadcrumb[] = ['url' => 'session_list.php', 'name' => get_lang('SessionList')];
 
 set_time_limit(0);
 
 // Set this option to true to enforce strict purification for usenames.
 $purification_option_for_usernames = false;
-$inserted_in_course = array();
+$inserted_in_course = [];
 
 $warn = null;
 if (isset($_POST['formSent']) && $_POST['formSent']) {
@@ -40,15 +40,13 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
         $form_sent = $_POST['formSent'];
         $file_type = isset($_POST['file_type']) ? $_POST['file_type'] : null;
         $send_mail = isset($_POST['sendMail']) && $_POST['sendMail'] ? 1 : 0;
-        $isOverwrite = isset($_POST['overwrite']) && $_POST['overwrite'] ? true: false;
+        $isOverwrite = isset($_POST['overwrite']) && $_POST['overwrite'] ? true : false;
         $deleteUsersNotInList = isset($_POST['delete_users_not_in_list']) ? true : false;
-        $sessions = array();
+        $sessions = [];
         $session_counter = 0;
 
         if ($file_type == 'xml') {
-
             // XML
-
             // SimpleXML for PHP5 deals with various encodings, but how many they are, what are version issues, do we need to waste time with configuration options?
             // For avoiding complications we go some sort of "PHP4 way" - we convert the input xml-file into UTF-8 before passing it to the parser.
             // Instead of:
@@ -73,13 +71,13 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                                 $password = api_generate_password();
                             }
                             switch ($node_user->Status) {
-                                case 'student' :
+                                case 'student':
                                     $status = 5;
                                     break;
-                                case 'teacher' :
+                                case 'teacher':
                                     $status = 1;
                                     break;
-                                default :
+                                default:
                                     $status = 5;
                                     $error_message .= get_lang('StudentStatusWasGivenTo').' : '.$username.'<br />';
                             }
@@ -156,17 +154,17 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                 // Creating  courses from <Sessions> <Courses> base node.
                 if (count($root->Courses->Course) > 0) {
                     foreach ($root->Courses->Course as $courseNode) {
-                        $params = array();
+                        $params = [];
                         if (empty($courseNode->CourseTitle)) {
-                            $params['title']            = api_utf8_decode($courseNode->CourseCode);
+                            $params['title'] = api_utf8_decode($courseNode->CourseCode);
                         } else {
-                            $params['title']            = api_utf8_decode($courseNode->CourseTitle);
+                            $params['title'] = api_utf8_decode($courseNode->CourseTitle);
                         }
-                        $params['wanted_code']      = api_utf8_decode($courseNode->CourseCode);
-                        $params['tutor_name']       = null;
-                        $params['course_category']  = null;
-                        $params['course_language']  = api_utf8_decode($courseNode->CourseLanguage);
-                        $params['user_id']          = api_get_user_id();
+                        $params['wanted_code'] = api_utf8_decode($courseNode->CourseCode);
+                        $params['tutor_name'] = null;
+                        $params['course_category'] = null;
+                        $params['course_language'] = api_utf8_decode($courseNode->CourseLanguage);
+                        $params['user_id'] = api_get_user_id();
 
                         // Looking up for the teacher.
                         $username = trim(api_utf8_decode($courseNode->CourseTeacher));
@@ -265,7 +263,6 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                             $rs_session = Database::query($sql_session);
                             $session_id = Database::insert_id();
                             $session_counter++;
-
                         } else {
                             // Update the session if it is needed.
                             $my_session_result = SessionManager::get_session_by_name($session_name);
@@ -309,7 +306,6 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                             UrlManager::add_session_to_url($session_id, 1);
                         }
 
-
                         // Adding users to the new session.
                         foreach ($node_session->User as $node_user) {
                             $username = UserManager::purify_username(api_utf8_decode($node_user), $purification_option_for_usernames);
@@ -318,7 +314,7 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                                 $sql = "INSERT IGNORE INTO $tbl_session_user SET
                                         user_id ='$user_id',
                                         session_id = '$session_id',
-                                        registered_at = '" . api_get_utc_datetime() . "'";
+                                        registered_at = '".api_get_utc_datetime()."'";
                                 $rs_user = Database::query($sql);
                                 $user_counter++;
                             }
@@ -331,7 +327,7 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                             if (CourseManager::course_exists($course_code)) {
                                 // If the course exists we continue.
                                 $course_info = CourseManager::get_course_information($course_code);
-                                $courseId = $course_info['c_id'];
+                                $courseId = $course_info['real_id'];
 
                                 $session_course_relation = SessionManager::relation_session_course_exist($session_id, $courseId);
                                 if (!$session_course_relation) {
@@ -371,7 +367,7 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                                         $sql = "INSERT IGNORE INTO $tbl_session_user SET
                                                 user_id ='$user_id',
                                                 session_id = '$session_id',
-                                                registered_at = '" . api_get_utc_datetime() . "'";
+                                                registered_at = '".api_get_utc_datetime()."'";
                                         $rs_user = Database::query($sql);
                                         $user_counter++;
                                         // Adding to session_rel_user_rel_course table.
@@ -409,12 +405,12 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
                 $isOverwrite,
                 api_get_user_id(),
                 null,
-                array(),
+                [],
                 null,
                 null,
                 null,
                 1,
-                array(),
+                [],
                 $deleteUsersNotInList,
                 $updateCourseCoaches,
                 false,
@@ -463,19 +459,19 @@ if (count($inserted_in_course) > 1) {
         $msg .= ' '.$title.' ('.$title.'),';
     }
     $msg = substr($msg, 0, -1);
-    Display::display_warning_message($msg);
+    echo Display::return_message($msg, 'warning');
 }
 
 echo '<div class="actions">';
 echo '<a href="../session/session_list.php">'.
-    Display::return_icon('back.png', get_lang('BackTo').' '.get_lang('PlatformAdmin'),'',ICON_SIZE_MEDIUM).'</a>';
+    Display::return_icon('back.png', get_lang('BackTo').' '.get_lang('PlatformAdmin'), '', ICON_SIZE_MEDIUM).'</a>';
 echo '</div>';
 
 if (!empty($error_message)) {
-    Display::display_normal_message($error_message, false);
+    echo Display::return_message($error_message, 'normal', false);
 }
 
-$form = new FormValidator('import_sessions', 'post', api_get_self(), null, array('enctype' => 'multipart/form-data'));
+$form = new FormValidator('import_sessions', 'post', api_get_self(), null, ['enctype' => 'multipart/form-data']);
 $form->addElement('hidden', 'formSent', 1);
 $form->addElement('file', 'import_file', get_lang('ImportFileLocation'));
 $form->addElement(
@@ -485,9 +481,9 @@ $form->addElement(
         get_lang('FileType'),
         Display::url(
             get_lang('ExampleCSVFile'),
-            api_get_path(WEB_CODE_PATH) . 'admin/example_session.csv',
-            ['target' => '_blank']
-        )
+            api_get_path(WEB_CODE_PATH).'admin/example_session.csv',
+            ['target' => '_blank', 'download' => null]
+        ),
     ],
     'CSV',
     'csv'
@@ -499,9 +495,9 @@ $form->addElement(
         null,
         Display::url(
             get_lang('ExampleXMLFile'),
-            api_get_path(WEB_CODE_PATH) . 'admin/example_session.xml',
-            ['target' => '_blank']
-        )
+            api_get_path(WEB_CODE_PATH).'admin/example_session.xml',
+            ['target' => '_blank', 'download' => null]
+        ),
     ],
     'XML',
     'xml'
@@ -514,24 +510,32 @@ $form->addElement('checkbox', 'add_me_as_coach', null, get_lang('AddMeAsCoach'))
 $form->addElement('checkbox', 'sendMail', null, get_lang('SendMailToUsers'));
 $form->addButtonImport(get_lang('ImportSession'));
 
-$defaults = array('sendMail' => 'true','file_type' => 'csv');
+$defaults = ['sendMail' => 'true', 'file_type' => 'csv'];
+
+$options = api_get_configuration_value('session_import_settings');
+if (!empty($options) && isset($options['options'])) {
+    if (isset($options['options']['session_exists_default_option'])) {
+        $defaults['overwrite'] = $options['options']['session_exists_default_option'];
+    }
+    if (isset($options['options']['send_mail_default_option'])) {
+        $defaults['sendMail'] = $options['options']['send_mail_default_option'];
+    }
+}
+
 $form->setDefaults($defaults);
 
-Display::display_normal_message(get_lang('TheXMLImportLetYouAddMoreInfoAndCreateResources'));
+Display::return_message(get_lang('TheXMLImportLetYouAddMoreInfoAndCreateResources'));
 $form->display();
 
 ?>
 <p><?php echo get_lang('CSVMustLookLike').' ('.get_lang('MandatoryFields').')'; ?> :</p>
-<blockquote>
 <pre>
-<strong>SessionName</strong>;Coach;<strong>DateStart</strong>;<strong>DateEnd</strong>;Users;Courses;VisibilityAfterExpiration
-<strong>Example 1</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,username2,...]|course2[coach1][username1,username2,...];read_only
-<strong>Example 2</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,username2,...]|course2[coach1][username1,username2,...];accessible
-<strong>Example 3</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,username2,...]|course2[coach1][username1,username2,...];not_accessible
+<strong>SessionName</strong>;Coach;<strong>DateStart</strong>;<strong>DateEnd</strong>;Users;Courses;VisibilityAfterExpiration;DisplayStartDate;DisplayEndDate;CoachStartDate;CoachEndDate;Classes
+<strong>Example 1</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,...]|course2[coach1][username1,...];read_only;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;class1|class2
+<strong>Example 2</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,...]|course2[coach1][username1,...];accessible;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;class3|class4
+<strong>Example 3</strong>;username;<strong>yyyy/mm/dd;yyyy/mm/dd</strong>;username1|username2;course1[coach1][username1,...]|course2[coach1][username1,...];not_accessible;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;yyyy/mm/dd;class5|class6
 </pre>
-</blockquote>
 <p><?php echo get_lang('XMLMustLookLike').' ('.get_lang('MandatoryFields').')'; ?> :</p>
-<blockquote>
 <pre>
 &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
 &lt;Sessions&gt;
@@ -587,7 +591,6 @@ $form->display();
     &lt;/Session&gt;
 &lt;/Sessions&gt;
 </pre>
-</blockquote>
 
 <?php
 

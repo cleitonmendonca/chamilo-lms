@@ -53,7 +53,6 @@ window.HotspotQuestion = (function () {
                 this.set('height', y - startY);
             }
         };
-
         SquareModel.decode = function (hotspotInfo) {
             var coords = hotspotInfo.coord.split('|'),
                 position = coords[0].split(';'),
@@ -64,7 +63,7 @@ window.HotspotQuestion = (function () {
                     height: parseInt(coords[2])
                 });
 
-            hotspot.id = hotspotInfo.id;
+            hotspot.id = hotspotInfo.iid;
             hotspot.name = hotspotInfo.answer;
 
             return hotspot;
@@ -102,14 +101,12 @@ window.HotspotQuestion = (function () {
 
             if (x >= startX) {
                 width = x - startX;
-
                 this.set('radiusX', Math.round(width / 2));
                 this.set('centerX', startX + this.get('radiusX'));
             }
 
             if (y >= startY) {
                 height = y - startY;
-
                 this.set('radiusY', Math.round(height / 2));
                 this.set('centerY', startY + this.get('radiusY'));
             }
@@ -124,7 +121,7 @@ window.HotspotQuestion = (function () {
                     radiusY: parseInt(coords[2])
                 });
 
-            hotspot.id = hotspotInfo.id;
+            hotspot.id = hotspotInfo.iid;
             hotspot.name = hotspotInfo.answer;
 
             return hotspot;
@@ -170,7 +167,7 @@ window.HotspotQuestion = (function () {
             var hotspot = new PolygonModel({
                 points: points
             });
-            hotspot.id = hotspotInfo.id;
+            hotspot.id = hotspotInfo.iid;
             hotspot.name = hotspotInfo.answer;
 
             return hotspot;
@@ -259,17 +256,13 @@ window.HotspotQuestion = (function () {
 
         var HotspotSVG = function (modelModel, index) {
             var self = this;
-
             this.model = modelModel;
             this.hotspotIndex = index;
-
             this.el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-
             this.model.onChange(function (hotspotModel) {
                 self.render();
             });
         };
-
         HotspotSVG.prototype.render = function () {
             var newEl = null;
 
@@ -323,7 +316,6 @@ window.HotspotQuestion = (function () {
                 self.render();
             });
         };
-
         AnswerSVG.prototype.render = function () {
             this.circleEl.setAttribute('cx', this.model.get('x'));
             this.circleEl.setAttribute('cy', this.model.get('y'));
@@ -371,7 +363,6 @@ window.HotspotQuestion = (function () {
             </div>\n\
         ';
             $el.html(template);
-
             $el.find('select')
                 .on('change', function () {
                     selectedHotspotIndex = self.hotspotIndex;
@@ -507,6 +498,8 @@ window.HotspotQuestion = (function () {
         AdminHotspotsSVG.prototype.render = function () {
             this.el.setAttribute('version', '1.1');
             this.el.setAttribute('viewBox', '0 0 ' + this.image.width + ' ' + this.image.height);
+            this.el.setAttribute('width', this.image.width);
+            this.el.setAttribute('height', this.image.height);
 
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', this.image.src);
@@ -525,7 +518,7 @@ window.HotspotQuestion = (function () {
 
             this.el.appendChild(
                 hotspotSVG.render().el
-                );
+            );
 
             var hotspotSelect = new HotspotSelect(hotspotIndex, this.collection, hotspotSVG);
 
@@ -748,7 +741,6 @@ window.HotspotQuestion = (function () {
                     hotspotsSVG = new AdminHotspotsSVG(hotspotsCollection, this);
 
                 $(config.selector).css('width', this.width).append(hotspotsSVG.render().el);
-
                 $(config.selector).parent().prepend('\n\
                     <div id="hotspot-messages" class="alert alert-info">\n\
                         <h4><span class="fa fa-info-circle" aria-hidden="true"></span> ' + lang.HotspotStatus1 + '</h4>\n\
@@ -772,11 +764,9 @@ window.HotspotQuestion = (function () {
                         default:
                             hotspot = SquareModel.decode(hotspotInfo);
                             break;
-
                         case 'circle':
                             hotspot = EllipseModel.decode(hotspotInfo);
                             break;
-
                         case 'poly':
                             hotspot = PolygonModel.decode(hotspotInfo);
                             break;
@@ -805,6 +795,8 @@ window.HotspotQuestion = (function () {
         UserHotspotsSVG.prototype.render = function () {
             this.el.setAttribute('version', '1.1');
             this.el.setAttribute('viewBox', '0 0 ' + this.image.width + ' ' + this.image.height);
+            this.el.setAttribute('width', this.image.width);
+            this.el.setAttribute('height', this.image.height);
 
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', this.image.src);
@@ -878,26 +870,26 @@ window.HotspotQuestion = (function () {
                     if (self.answersCollection.length === self.hotspotsCollection.length) {
                         $(config.selector).parent()
                             .find('#hotspot-messages-' + config.questionId + ' span:not(.fa)').text(
-                                lang.HotspotExerciseFinished
-                            );
+                            lang.HotspotExerciseFinished
+                        );
 
                         return;
                     }
 
                     $(config.selector).parent()
                         .find('#hotspot-messages-' + config.questionId + ' span:not(.fa)').text(
-                            lang.NextAnswer + ' ' + self.hotspotsCollection.get(
-                                self.answersCollection.length
-                            ).name
-                        );
+                        lang.NextAnswer +
+                            ' ' +
+                            self.hotspotsCollection
+                                .get(self.answersCollection.length)
+                                .name
+                    );
 
                     isMoving = false;
                 })
                 .on('mousedown', 'circle, text', function (e) {
                     e.preventDefault();
-
                     isMoving = true;
-
                     if (e.target.tagName === 'circle') {
                         //Hack to move correctly the hot spots if there are more than one HS question in same page
                         answerIndex = $(e.target).next().html();
@@ -1019,6 +1011,8 @@ window.HotspotQuestion = (function () {
         SolutionHotspotsSVG.prototype.render = function () {
             this.el.setAttribute('version', '1.1');
             this.el.setAttribute('viewBox', '0 0 ' + this.image.width + ' ' + this.image.height);
+            this.el.setAttribute('width', this.image.width);
+            this.el.setAttribute('height', this.image.height);
 
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'href', this.image.src);
@@ -1106,13 +1100,13 @@ window.HotspotQuestion = (function () {
 
         var getPointOnImage = function (referenceElement, x, y) {
             var pointerPosition = {
-                left: x + window.scrollX,
-                top: y + window.scrollY
-            },
-            canvasOffset = {
-                x: referenceElement.getBoundingClientRect().left + window.scrollX,
-                y: referenceElement.getBoundingClientRect().top + window.scrollY
-            };
+                    left: x + window.scrollX,
+                    top: y + window.scrollY
+                },
+                canvasOffset = {
+                    x: referenceElement.getBoundingClientRect().left + window.scrollX,
+                    y: referenceElement.getBoundingClientRect().top + window.scrollY
+                };
 
             return {
                 x: Math.round(pointerPosition.left - canvasOffset.x),
@@ -1139,24 +1133,23 @@ window.HotspotQuestion = (function () {
 
         switch (config.for) {
             case 'admin':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_actionscript_admin.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_actionscript_admin.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId)
                 });
                 break;
-
             case 'user':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_actionscript.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_actionscript.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId),
                     exe_id: parseInt(config.exerciseId)
                 });
                 break;
-
             case 'solution':
                 //no break
             case 'preview':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_answers.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_answers.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId),
-                    exe_id: parseInt(config.exerciseId)
+                    exerciseId: parseInt(config.exerciseId),
+                    exeId: parseInt(config.exeId)
                 });
                 break;
         }
@@ -1166,13 +1159,11 @@ window.HotspotQuestion = (function () {
                 case 'admin':
                     startHotspotsAdmin(questionInfo);
                     break;
-
                 case 'user':
                     startHotspotsUser(questionInfo);
                     break;
-
                 case 'solution':
-                    //no break
+                    // no break
                 case 'preview':
                     startHotspotsSolution(questionInfo);
                     break;
@@ -1348,7 +1339,7 @@ window.DelineationQuestion = (function () {
             var type = this.model instanceof OarModel ? 'oar' : 'delineation';
 
             var template = '\n\
-                <div class="input-group hotspot-'  + this.model.id + ' active">\n\
+                <div class="input-group hotspot-' + this.model.id + ' active">\n\
                     <span class="input-group-addon" id="hotspot-' + this.model.id + '">\n\
                         <span class="fa fa-square fa-fw" data-hidden="true"></span>\n\
                         <span class="sr-only">' + (type === 'delineation' ? lang.Delineation : lang.Oar) + '</span>\n\
@@ -1431,11 +1422,13 @@ window.DelineationQuestion = (function () {
         this.render = function () {
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', image.src);
-            imageSvg.setAttributeNS(null, 'width', image.width);
-            imageSvg.setAttributeNS(null, 'height', image.height);
+            imageSvg.setAttribute('width', image.width);
+            imageSvg.setAttribute('height', image.height);
 
-            this.el.setAttributeNS(null, 'version', '1.1');
-            this.el.setAttributeNS(null, 'viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('version', '1.1');
+            this.el.setAttribute('viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('width', image.width);
+            this.el.setAttribute('height', image.height);
             this.el.appendChild(imageSvg);
 
             var isDrawing = false;
@@ -1452,37 +1445,37 @@ window.DelineationQuestion = (function () {
             });
 
             $el.on({
-                    'dragstart': function (e) {
-                        e.preventDefault();
-                    },
-                    'click': function (e) {
-                        e.preventDefault();
+                'dragstart': function (e) {
+                    e.preventDefault();
+                },
+                'click': function (e) {
+                    e.preventDefault();
 
-                        var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY),
-                            points = [];
+                    var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY),
+                        points = [];
 
-                        if (!isDrawing) {
-                            isDrawing = true;
-                        } else {
-                            points = self.collection.get(selectedPolygonIndex).get('points');
-                        }
-
-                        points.push([currentPoint.x, currentPoint.y]);
-
-                        self.collection.get(selectedPolygonIndex).set('points', points);
-                    },
-                    'contextmenu': function (e) {
-                        e.preventDefault();
-
-                        if (!contextMenu.el.parentNode) {
-                            $el.parent().append(contextMenu.render().el);
-                        }
-
-                        var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY);
-
-                        contextMenu.show(currentPoint.x, currentPoint.y);
+                    if (!isDrawing) {
+                        isDrawing = true;
+                    } else {
+                        points = self.collection.get(selectedPolygonIndex).get('points');
                     }
-                });
+
+                    points.push([currentPoint.x, currentPoint.y]);
+
+                    self.collection.get(selectedPolygonIndex).set('points', points);
+                },
+                'contextmenu': function (e) {
+                    e.preventDefault();
+
+                    if (!contextMenu.el.parentNode) {
+                        $el.parent().append(contextMenu.render().el);
+                    }
+
+                    var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY);
+
+                    contextMenu.show(currentPoint.x, currentPoint.y);
+                }
+            });
 
             return this;
         };
@@ -1551,11 +1544,13 @@ window.DelineationQuestion = (function () {
         this.render = function () {
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', image.src);
-            imageSvg.setAttributeNS(null, 'width', image.width);
-            imageSvg.setAttributeNS(null, 'height', image.height);
+            imageSvg.setAttribute('width', image.width);
+            imageSvg.setAttribute('height', image.height);
 
-            this.el.setAttributeNS(null, 'version', '1.1');
-            this.el.setAttributeNS(null, 'viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('version', '1.1');
+            this.el.setAttribute('viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('width', image.width);
+            this.el.setAttribute('height', image.height);
             this.el.appendChild(imageSvg);
 
             this.renderDelineation();
@@ -1588,37 +1583,37 @@ window.DelineationQuestion = (function () {
             });
 
             $el.on({
-                    'dragstart': function (e) {
-                        e.preventDefault();
-                    },
-                    'click': function (e) {
-                        e.preventDefault();
+                'dragstart': function (e) {
+                    e.preventDefault();
+                },
+                'click': function (e) {
+                    e.preventDefault();
 
-                        var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY),
-                            points = [];
+                    var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY),
+                        points = [];
 
-                        if (!isDrawing) {
-                            isDrawing = true;
-                        } else {
-                            points = self.model.get('points');
-                        }
-
-                        points.push([currentPoint.x, currentPoint.y]);
-
-                        self.model.set('points', points);
-                    },
-                    'contextmenu': function (e) {
-                        e.preventDefault();
-
-                        if (!contextMenu.el.parentNode) {
-                            $el.parent().append(contextMenu.render().el);
-                        }
-
-                        var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY);
-
-                        contextMenu.show(currentPoint.x, currentPoint.y);
+                    if (!isDrawing) {
+                        isDrawing = true;
+                    } else {
+                        points = self.model.get('points');
                     }
-                });
+
+                    points.push([currentPoint.x, currentPoint.y]);
+
+                    self.model.set('points', points);
+                },
+                'contextmenu': function (e) {
+                    e.preventDefault();
+
+                    if (!contextMenu.el.parentNode) {
+                        $el.parent().append(contextMenu.render().el);
+                    }
+
+                    var currentPoint = getPointOnImage(self.el, e.clientX, e.clientY);
+
+                    contextMenu.show(currentPoint.x, currentPoint.y);
+                }
+            });
 
             return this;
         };
@@ -1676,11 +1671,13 @@ window.DelineationQuestion = (function () {
         this.render = function () {
             var imageSvg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
             imageSvg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', image.src);
-            imageSvg.setAttributeNS(null, 'width', image.width);
-            imageSvg.setAttributeNS(null, 'height', image.height);
+            imageSvg.setAttribute('width', image.width);
+            imageSvg.setAttribute('height', image.height);
 
-            this.el.setAttributeNS(null, 'version', '1.1');
-            this.el.setAttributeNS(null, 'viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('version', '1.1');
+            this.el.setAttribute('viewBox', '0 0 ' + image.width + ' ' + image.height);
+            this.el.setAttribute('width', image.width);
+            this.el.setAttribute('height', image.height);
             this.el.appendChild(imageSvg);
         };
 
@@ -1754,32 +1751,31 @@ window.DelineationQuestion = (function () {
             return;
         }
 
-    $(config.selector).html('\n\
-        <span class="fa fa-spinner fa-spin fa-3x" aria-hidden="hidden"></span>\n\
-        <span class="sr-only">Loading</span>\n\
-    ');
+        $(config.selector).html('\n\
+            <span class="fa fa-spinner fa-spin fa-3x" aria-hidden="hidden"></span>\n\
+            <span class="sr-only">Loading</span>\n\
+        ');
 
         var xhrQuestion = null;
 
         switch (config.for) {
             case 'admin':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_actionscript_admin.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_actionscript_admin.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId)
                 });
                 break;
-
             case 'user':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_actionscript.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_actionscript.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId)
                 });
                 break;
-
             case 'solution':
-                //no break
+                // no break
             case 'preview':
-                xhrQuestion = $.getJSON(config.relPath+'main/exercise/hotspot_answers.as.php', {
+                xhrQuestion = $.getJSON(config.relPath + 'exercise/hotspot_answers.as.php?' + _p.web_cid_query, {
                     modifyAnswers: parseInt(config.questionId),
-                    exe_id: parseInt(config.exerciseId)
+                    exerciseId: parseInt(config.exerciseId),
+                    exeId: parseInt(config.exeId)
                 });
                 break;
         }
@@ -1789,13 +1785,11 @@ window.DelineationQuestion = (function () {
                 case 'admin':
                     startAdminSvg(questionInfo);
                     break;
-
                 case 'user':
                     startUserSvg(questionInfo);
                     break;
-
                 case 'solution':
-                //no break
+                    // no break
                 case 'preview':
                     startPreviewSvg(questionInfo);
                     break;

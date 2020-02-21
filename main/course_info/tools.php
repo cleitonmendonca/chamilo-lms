@@ -1,7 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 // The section for the tabs
 $this_section = SECTION_COURSES;
@@ -19,7 +19,7 @@ if (!api_is_allowed_to_edit()) {
 }
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
-$id = isset($_GET['id']) ? intval($_GET['id']) : '';
+$id = isset($_GET['id']) ? (int) $_GET['id'] : '';
 
 $toolName = get_lang('CustomizeIcons');
 
@@ -43,36 +43,44 @@ switch ($action) {
             api_not_allowed(true);
         }
 
-        $interbreadcrumb[] = array('url' => api_get_self().'?'.api_get_cidreq(), 'name' => get_lang('CustomizeIcons'));
+        $interbreadcrumb[] = [
+            'url' => api_get_self().'?'.api_get_cidreq(),
+            'name' => get_lang('CustomizeIcons'),
+        ];
         $toolName = Security::remove_XSS(stripslashes($tool['name']));
 
-        $currentUrl = api_get_self().'?action=edit_icon&id=' . $id.'&'.api_get_cidreq();
+        $currentUrl = api_get_self().'?action=edit_icon&id='.$id.'&'.api_get_cidreq();
 
         $form = new FormValidator('icon_edit', 'post', $currentUrl);
         $form->addHeader(get_lang('EditIcon'));
         $form->addHtml('<div class="col-md-7">');
         $form->addText('name', get_lang('Name'));
         $form->addText('link', get_lang('Links'));
-        $allowed_picture_types = array ('jpg', 'jpeg', 'png');
+        $allowedPictureTypes = ['jpg', 'jpeg', 'png'];
         $form->addFile('icon', get_lang('CustomIcon'));
-        $form->addRule('icon', get_lang('OnlyImagesAllowed').' ('.implode(',', $allowed_picture_types).')', 'filetype', $allowed_picture_types);
+        $form->addRule(
+            'icon',
+            get_lang('OnlyImagesAllowed').' ('.implode(',', $allowedPictureTypes).')',
+            'filetype',
+            $allowedPictureTypes
+        );
         $form->addSelect(
             'target',
             get_lang('LinkTarget'),
             [
                 '_self' => get_lang('LinkOpenSelf'),
-                '_blank' => get_lang('LinkOpenBlank')
+                '_blank' => get_lang('LinkOpenBlank'),
             ]
         );
         $form->addSelect(
             'visibility',
             get_lang('Visibility'),
-            array(1 => get_lang('Visible'), 0 => get_lang('Invisible'))
+            [1 => get_lang('Visible'), 0 => get_lang('Invisible')]
         );
         $form->addTextarea(
             'description',
             get_lang('Description'),
-            array('rows' => '3', 'cols' => '40')
+            ['rows' => '3', 'cols' => '40']
         );
         $form->addButtonUpdate(get_lang('Update'));
         $form->addHtml('</div>');
@@ -88,9 +96,7 @@ switch ($action) {
             $form->addCheckBox('delete_icon', null, get_lang('DeletePicture'));
         }
         $form->addHtml('</div>');
-
         $form->setDefaults($tool);
-
         $content = $form->returnForm();
 
         if ($form->validate()) {
@@ -116,21 +122,21 @@ switch ($action) {
         $iconsTools .= '<div class="row">';
         foreach ($toolList as $tool) {
             $tool['name'] = Security::remove_XSS(stripslashes($tool['name']));
-            $toolIconName = 'Tool' . api_underscore_to_camel_case($tool['name']);
+            $toolIconName = 'Tool'.api_underscore_to_camel_case($tool['name']);
             $toolIconName = isset($$toolIconName) ? get_lang($toolIconName) : $tool['name'];
 
             $iconsTools .= '<div class="col-md-2">';
             $iconsTools .= '<div class="items-tools">';
 
             if (!empty($tool['custom_icon'])) {
-                $image = getCustomWebIconPath().$tool['custom_icon'];
+                $image = CourseHome::getCustomWebIconPath().$tool['custom_icon'];
                 $icon = Display::img($image, $toolIconName);
             } else {
                 $image = (substr($tool['image'], 0, strpos($tool['image'], '.'))).'.png';
                 $icon = Display::return_icon(
                     $image,
                     $toolIconName,
-                    array('id' => 'tool_'.$tool['id']),
+                    ['id' => 'tool_'.$tool['id']],
                     ICON_SIZE_BIG,
                     false
                 );
@@ -138,13 +144,13 @@ switch ($action) {
 
             $delete = (!empty($tool['custom_icon'])) ? "<a class=\"btn btn-default\" onclick=\"javascript:
                 if(!confirm('".addslashes(api_htmlentities(get_lang('ConfirmYourChoice'), ENT_QUOTES, $charset)).
-                "')) return false;\" href=\"". api_get_self() . '?action=delete_icon&id=' . $tool['iid'] . '&'.api_get_cidreq()."\">
+                "')) return false;\" href=\"".api_get_self().'?action=delete_icon&id='.$tool['iid'].'&'.api_get_cidreq()."\">
             <em class=\"fa fa-trash-o\"></em></a>" : "";
-            $edit = '<a class="btn btn-default" href="' . api_get_self() . '?action=edit_icon&id=' . $tool['iid'] . '&'.api_get_cidreq().'"><em class="fa fa-pencil"></em></a>';
+            $edit = '<a class="btn btn-default" href="'.api_get_self().'?action=edit_icon&id='.$tool['iid'].'&'.api_get_cidreq().'"><em class="fa fa-pencil"></em></a>';
 
-            $iconsTools .= '<div class="icon-tools">'. $icon . '</div>';
-            $iconsTools .= '<div class="name-tools">' . $toolIconName . '</div>';
-            $iconsTools .= '<div class="toolbar">' . $edit . $delete . '</div>';
+            $iconsTools .= '<div class="icon-tools">'.$icon.'</div>';
+            $iconsTools .= '<div class="name-tools">'.$toolIconName.'</div>';
+            $iconsTools .= '<div class="toolbar">'.$edit.$delete.'</div>';
             $iconsTools .= '</div>';
             $iconsTools .= '</div>';
         }
@@ -154,20 +160,7 @@ switch ($action) {
         break;
 }
 
-/**
- * @return string
- */
-function getCustomWebIconPath()
-{
-    // Check if directory exists or create it if it doesn't
-    $dir = api_get_path(WEB_COURSE_PATH).api_get_course_path().'/upload/course_home_icons/';
-    
-    return $dir;
-}
 $tpl = new Template($toolName);
-
 $tpl->assign('content', $content);
 $template = $tpl->get_template('layout/layout_1_col.tpl');
 $tpl->display($template);
-
-

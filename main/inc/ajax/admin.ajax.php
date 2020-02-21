@@ -1,9 +1,14 @@
 <?php
 /* For licensing terms, see /license.txt */
+
+use Chamilo\CoreBundle\Entity\BranchSync;
+use Chamilo\CoreBundle\Entity\Repository\BranchSyncRepository;
+use GuzzleHttp\Client;
+
 /**
- * Responses to AJAX calls
+ * Responses to AJAX calls.
  */
-require_once '../global.inc.php';
+require_once __DIR__.'/../global.inc.php';
 
 api_protect_admin_script();
 
@@ -15,11 +20,11 @@ switch ($action) {
 
         if (api_is_global_platform_admin() && $url_id == 1) {
             if (isset($_GET['id']) && !empty($_GET['id'])) {
-                $params = array('variable = ? ' =>  array($_GET['id']));
+                $params = ['variable = ? ' => [$_GET['id']]];
                 $data = api_get_settings_params($params);
                 if (!empty($data)) {
                     foreach ($data as $item) {
-                        $params = array('id' =>$item['id'], 'access_url_changeable' => $_GET['changeable']);
+                        $params = ['id' => $item['id'], 'access_url_changeable' => $_GET['changeable']];
                         api_set_setting_simple($params);
                     }
                 }
@@ -27,11 +32,11 @@ switch ($action) {
             }
         }
         break;
-
     case 'version':
+        // Fix session block when loading admin/index.php and changing page
+        session_write_close();
         echo version_check();
         break;
-
     case 'get_extra_content':
         $blockName = isset($_POST['block']) ? Security::remove_XSS($_POST['block']) : null;
 
@@ -49,10 +54,9 @@ switch ($action) {
             $urlInfo = api_get_access_url($accessUrlId);
             $url = api_remove_trailing_slash(preg_replace('/https?:\/\//i', '', $urlInfo['url']));
             $cleanUrl = str_replace('/', '-', $url);
-
-            $newUrlDir = api_get_path(SYS_APP_PATH) . "home/$cleanUrl/admin/";
+            $newUrlDir = api_get_path(SYS_APP_PATH)."home/$cleanUrl/admin/";
         } else {
-            $newUrlDir = api_get_path(SYS_APP_PATH) . "home/admin/";
+            $newUrlDir = api_get_path(SYS_APP_PATH)."home/admin/";
         }
 
         if (!file_exists($newUrlDir)) {
@@ -69,20 +73,36 @@ switch ($action) {
 
         echo file_get_contents("{$newUrlDir}{$blockName}_extra.html");
         break;
+    case 'get_latest_news':
+        if (api_get_configuration_value('admin_chamilo_announcements_disable') === true) {
+            break;
+        }
+
+        try {
+            $latestNews = getLatestNews();
+            $latestNews = json_decode($latestNews, true);
+
+            echo Security::remove_XSS($latestNews['text'], COURSEMANAGER);
+            break;
+        } catch (Exception $e) {
+            break;
+        }
 }
 
-
 /**
- * Displays either the text for the registration or the message that the installation is (not) up to date
+ * Displays either the text for the registration or the message that the installation is (not) up to date.
  *
  * @return string html code
+ *
  * @author Patrick Cool <patrick.cool@UGent.be>, Ghent University
+ *
  * @version august 2006
+ *
  * @todo have a 6 monthly re-registration
  */
 function version_check()
 {
-    $tbl_settings = Database :: get_main_table(TABLE_MAIN_SETTINGS_CURRENT);
+    $tbl_settings = Database::get_main_table(TABLE_MAIN_SETTINGS_CURRENT);
     $sql = 'SELECT selected_value FROM '.$tbl_settings.' WHERE variable = "registered" ';
     $result = Database::query($sql);
     $row = Database::fetch_array($result, 'ASSOC');
@@ -100,39 +120,76 @@ function version_check()
         // site not registered. Call anyway
         $return .= check_system_version();
     }
+
     return $return;
 }
 
 /**
  * Check if the current installation is up to date
- * The code is borrowed from phpBB and slighlty modified
- * @author The phpBB Group <support@phpbb.com> (the code)
- * @author Patrick Cool <patrick.cool@UGent.be>, Ghent University (the modifications)
- * @author Yannick Warnier <ywarnier@beeznest.org> for the move to HTTP request
- * @copyright (C) 2001 The phpBB Group
+ * The code is borrowed from phpBB and slighlty modified.
+ *
+ * @throws \Exception
+ * @throws \InvalidArgumentException
+ *
  * @return string language string with some layout (color)
  */
 function check_system_version()
 {
+    // Check if curl is available.
+    if (!in_array('curl', get_loaded_extensions())) {
+        return '<span style="color:red">'.get_lang('ImpossibleToContactVersionServerPleaseTryAgain').'</span>';
+    }
+
+    $url = 'https://version.chamilo.org';
+    $options = [
+        'verify' => false,
+    ];
+
+    $urlValidated = false;
+
+    try {
+        $client = new GuzzleHttp\Client();
+        $res = $client->request('GET', $url, $options);
+        if ($res->getStatusCode() == '200' || $res->getStatusCode() == '301') {
+            $urlValidated = true;
+        }
+    } catch (Exception $e) {
+    }
+
     // the chamilo version of your installation
     $system_version = trim(api_get_configuration_value('system_version'));
 
-    if (ini_get('allow_url_fopen') == 1) {
+    if ($urlValidated) {
         // The number of courses
         $number_of_courses = Statistics::countCourses();
 
         // The number of users
         $number_of_users = Statistics::countUsers();
-        $number_of_active_users = Statistics::countUsers(null, null, null, true);
+        $number_of_active_users = Statistics::countUsers(
+            null,
+            null,
+            null,
+            true
+        );
 
         // The number of sessions
-        $number_of_sessions = Statistics::countSessions();
+        $number_of_sessions = SessionManager::count_sessions(api_get_current_access_url_id());
         $packager = api_get_configuration_value('packager');
         if (empty($packager)) {
             $packager = 'chamilo';
         }
 
-        $data = array(
+        $uniqueId = '';
+        $entityManager = Database::getManager();
+        /** @var BranchSyncRepository $branch */
+        $repository = $entityManager->getRepository('ChamiloCoreBundle:BranchSync');
+        /** @var BranchSync $branch */
+        $branch = $repository->getTopBranch();
+        if (is_a($branch, '\Chamilo\CoreBundle\Entity\BranchSync')) {
+            $uniqueId = $branch->getUniqueId();
+        }
+
+        $data = [
             'url' => api_get_path(WEB_PATH),
             'campus' => api_get_setting('siteName'),
             'contact' => api_get_setting('emailAdministrator'), // the admin's e-mail, with the only purpose of being able to contact admins to inform about critical security issues
@@ -153,89 +210,63 @@ function check_system_version()
             // the default config file (main/install/configuration.dist.php)
             // or in the installed config file. The default value is 'chamilo'
             'packager' => $packager,
-        );
-        $version = null;
-        // version.php has been updated to include the version in an HTTP header
-        // called "X-Chamilo-Version", so that we don't have to worry about
-        // issues with the content not being returned by fread for some reason
-        $res = _http_request('version.chamilo.org', 80, '/version.php', $data, 5, null, true);
-        $lines = preg_split('/\r\n/', $res);
-        foreach ($lines as $line) {
-            $elements = preg_split('/:/', $line);
-            // extract the X-Chamilo-Version header from the version.php response
-            if (strcmp(trim($elements[0]), 'X-Chamilo-Version') === 0) {
-                $version = trim($elements[1]);
-            }
-        }
-        if (substr($res, 0, 5) != 'Error') {
-            if (empty($version)) {
-                $version_info = $res;
-            } else {
-                $version_info = $version;
-            }
+            'unique_id' => $uniqueId,
+        ];
 
-            if ($system_version != $version_info) {
-                $output = '<br /><span style="color:red">' . get_lang('YourVersionNotUpToDate') . '. '.get_lang('LatestVersionIs').' <b>Chamilo '.$version_info.'</b>. '.get_lang('YourVersionIs').' <b>Chamilo '.$system_version. '</b>. '.str_replace('http://www.chamilo.org', '<a href="http://www.chamilo.org">http://www.chamilo.org</a>', get_lang('PleaseVisitOurWebsite')).'</span>';
-            } else {
-                $output = '<br /><span style="color:green">'.get_lang('VersionUpToDate').': Chamilo '.$version_info.'</span>';
-            }
-        } else {
-            $output = '<span style="color:red">' . get_lang('ImpossibleToContactVersionServerPleaseTryAgain') . '</span>';
+        $version = null;
+        $client = new GuzzleHttp\Client();
+        $url .= '?';
+        foreach ($data as $k => $v) {
+            $url .= urlencode($k).'='.urlencode($v).'&';
         }
-    } else {
-        $output = '<span style="color:red">' . get_lang('AllowurlfopenIsSetToOff') . '</span>';
+        $res = $client->request('GET', $url, $options);
+        if ($res->getStatusCode() == '200') {
+            $versionData = $res->getHeader('X-Chamilo-Version');
+            if (isset($versionData[0])) {
+                $version = trim($versionData[0]);
+            }
+        }
+
+        if (version_compare($system_version, $version, '<')) {
+            $output = '<span style="color:red">'.get_lang('YourVersionNotUpToDate').'<br />
+                       '.get_lang('LatestVersionIs').' <b>Chamilo '.$version.'</b>.  <br />
+                       '.get_lang('YourVersionIs').' <b>Chamilo '.$system_version.'</b>.  <br />'.str_replace('http://www.chamilo.org', '<a href="http://www.chamilo.org">http://www.chamilo.org</a>', get_lang('PleaseVisitOurWebsite')).'</span>';
+        } else {
+            $output = '<span style="color:green">'.get_lang('VersionUpToDate').': Chamilo '.$version.'</span>';
+        }
+
+        return $output;
     }
-    return $output;
+
+    return '<span style="color:red">'.get_lang('ImpossibleToContactVersionServerPleaseTryAgain').'</span>';
 }
 
 /**
- * Function to make an HTTP request through fsockopen (specialised for GET)
- * Derived from Jeremy Saintot: http://www.php.net/manual/en/function.fsockopen.php#101872
- * @param string $ip IP or hostname
- * @param int    $port Target port
- * @param string $uri URI (defaults to '/')
- * @param array  $getdata GET data
- * @param int    $timeout Timeout
- * @param bool   $req_hdr Include HTTP Request headers?
- * @param bool   $res_hdr Include HTTP Response headers?
- * @return string
+ * Display the latest news from the Chamilo Association for admins.
+ *
+ * @throws \GuzzleHttp\Exception\GuzzleException
+ * @throws Exception
+ *
+ * @return string|void
  */
-function _http_request($ip, $port = 80, $uri = '/', $getdata = array(), $timeout = 5, $req_hdr = false, $res_hdr = false)
+function getLatestNews()
 {
-    $verb = 'GET';
-    $ret = '';
-    $getdata_str = count($getdata) ? '?' : '';
+    $url = 'https://version.chamilo.org/news/latest.php';
 
-    foreach ($getdata as $k => $v) {
-                $getdata_str .= urlencode($k) .'='. urlencode($v) . '&';
+    $client = new Client();
+    $response = $client->request(
+        'GET',
+        $url,
+        [
+            'query' => [
+                'language' => api_get_interface_language(),
+            ],
+        ]
+    );
+
+    if ($response->getStatusCode() !== 200) {
+        throw new Exception(get_lang('DenyEntry'));
     }
 
-    $crlf = "\r\n";
-    $req = $verb .' '. $uri . $getdata_str .' HTTP/1.1' . $crlf;
-    $req .= 'Host: '. $ip . $crlf;
-    $req .= 'User-Agent: Mozilla/5.0 Firefox/3.6.12' . $crlf;
-    $req .= 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' . $crlf;
-    $req .= 'Accept-Language: en-us,en;q=0.5' . $crlf;
-    $req .= 'Accept-Encoding: deflate' . $crlf;
-    $req .= 'Accept-Charset: utf-8;q=0.7,*;q=0.7' . $crlf;
-
-    $req .= $crlf;
-
-    if ($req_hdr) {
-        $ret .= $req;
-    }
-    if (($fp = @fsockopen($ip, $port, $errno, $errstr, $timeout)) == false) {
-        return "Error $errno: $errstr\n";
-    }
-
-    stream_set_timeout($fp, $timeout);
-    $r = fwrite($fp, $req);
-    $line = @fread($fp, 512);
-    $ret .= $line;
-    fclose($fp);
-
-    if (!$res_hdr) {
-        $ret = substr($ret, strpos($ret, "\r\n\r\n") + 4);
-    }
-    return trim($ret);
+    return $response->getBody()->getContents();
 }

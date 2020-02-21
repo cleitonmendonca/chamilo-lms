@@ -13,6 +13,8 @@
 </p>
 {% endif %}
 
+{{ form }}
+
 {% if work.contains_file and work.show_content %}
 <h3>
     {{ 'Content' | get_lang }}
@@ -22,4 +24,4 @@
 </p>
 {% endif %}
 
-{% include template ~ '/work/comments.tpl' %}
+{% include 'work/comments.tpl'|get_template %}

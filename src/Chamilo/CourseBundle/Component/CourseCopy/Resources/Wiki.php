@@ -5,8 +5,10 @@ namespace Chamilo\CourseBundle\Component\CourseCopy\Resources;
 
 /**
  * Class for migrating the wiki
- * Wiki backup script
+ * Wiki backup script.
+ *
  * @package chamilo.backup
+ *
  * @author Matthias Crauwels <matthias.crauwels@UGent.be>, Ghent University
  */
 class Wiki extends Resource
@@ -24,6 +26,7 @@ class Wiki extends Resource
 
     /**
      * Wiki constructor.
+     *
      * @param int $id
      * @param int $page_id
      * @param $reflink
@@ -47,7 +50,7 @@ class Wiki extends Resource
         $progress,
         $version
     ) {
-        parent::__construct($id,RESOURCE_WIKI);
+        parent::__construct($id, RESOURCE_WIKI);
         $this->id = $id;
         $this->page_id = $page_id;
         $this->reflink = $reflink;
@@ -63,6 +66,6 @@ class Wiki extends Resource
     public function show()
     {
         parent::show();
-        echo $this->reflink.' ('. (empty($this->group_id) ? get_lang('Everyone') : get_lang('Group') . ' ' .  $this->group_id) .') ' . '<i>(' . $this->dtime . ')</i>';
+        echo $this->reflink.' ('.(empty($this->group_id) ? get_lang('Everyone') : get_lang('Group').' '.$this->group_id).') '.'<i>('.$this->dtime.')</i>';
     }
 }

@@ -1,20 +1,16 @@
 <?php
-
 /* For licensing terms, see /license.txt */
 
 /**
  *  @package chamilo.admin
  */
-
 $cidReset = true;
-
-require_once '../inc/global.inc.php';
-
+require_once __DIR__.'/../inc/global.inc.php';
 Display::display_header(null);
 
 $form = new FormValidator('export_certificate');
 $courses = CourseManager::get_courses_list(0, 0, 'title');
-$options = array();
+$options = [];
 foreach ($courses as $course) {
     $options[$course['id']] = $course['title'];
 }
@@ -28,7 +24,6 @@ if ($form->validate()) {
     if (isset($_FILES['file']['tmp_name']) &&
         !empty($_FILES['file']['tmp_name'])
     ) {
-
         $users = Import::csv_reader($_FILES['file']['tmp_name']);
         $courseId = $values['course'];
         $courseInfo = api_get_course_info_by_id($courseId);
@@ -46,7 +41,7 @@ if ($form->validate()) {
 
         if (isset($cats[0])) {
             /** @var Category $cat */
-            $userList = array();
+            $userList = [];
             foreach ($users as $user) {
                 $userInfo = api_get_user_info_from_official_code(
                     $user['official_code']
@@ -62,7 +57,6 @@ if ($form->validate()) {
             );
         }
     }
-
 }
 
 Display :: display_footer();

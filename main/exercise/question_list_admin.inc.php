@@ -4,18 +4,24 @@
 use ChamiloSession as Session;
 
 /**
- *	Code library for HotPotatoes integration.
- *	@package chamilo.exercise
- *	@author Olivier Brouckaert & Julio Montoya & Hubert Borderiou 21-10-2011 (Question by category)
-
- *	QUESTION LIST ADMINISTRATION
+ *    Code library for HotPotatoes integration.
  *
- *	This script allows to manage the question list
- *	It is included from the script admin.php
+ * @package chamilo.exercise
+ *
+ * @author Olivier Brouckaert & Julio Montoya & Hubert Borderiou 21-10-2011 (Question by category)
+ *    QUESTION LIST ADMINISTRATION
+ *
+ *    This script allows to manage the question list
+ *    It is included from the script admin.php
  */
+$limitTeacherAccess = api_get_configuration_value('limit_exercise_teacher_access');
 
 // deletes a question from the exercise (not from the data base)
 if ($deleteQuestion) {
+    if ($limitTeacherAccess && !api_is_platform_admin()) {
+        exit;
+    }
+
     // if the question exists
     if ($objQuestionTmp = Question::read($deleteQuestion)) {
         $objQuestionTmp->delete($exerciseId);
@@ -28,110 +34,122 @@ if ($deleteQuestion) {
     // destruction of the Question object
     unset($objQuestionTmp);
 }
-$ajax_url = api_get_path(WEB_AJAX_PATH)."exercise.ajax.php?".api_get_cidreq()."&exercise_id=".intval($exerciseId);
+$ajax_url = api_get_path(WEB_AJAX_PATH).'exercise.ajax.php?'.api_get_cidreq().'&exercise_id='.intval($exerciseId);
 ?>
-    <style>
-        .ui-state-highlight { height: 30px; line-height: 1.2em; }
-        /*Fixes edition buttons*/
-        .ui-accordion-icons .ui-accordion-header .edition a {
-            padding-left:4px;
-        }
-    </style>
-
-    <div id="dialog-confirm" title="<?php echo get_lang("ConfirmYourChoice"); ?>" style="display:none;">
-        <p>
-        <span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0; display:none;">
-        </span>
-            <?php echo get_lang("AreYouSureToDelete"); ?>
-        </p>
-    </div>
-
-    <script>
-        $(function() {
-            $( "#dialog:ui-dialog" ).dialog( "destroy" );
-            $( "#dialog-confirm" ).dialog({
-                autoOpen: false,
-                show: "blind",
-                resizable: false,
-                height:150,
-                modal: false
-            });
-
-            $(".opener").click(function() {
-                var targetUrl = $(this).attr("href");
-                $( "#dialog-confirm" ).dialog({
-                    modal: true,
-                    buttons: {
-                        "<?php echo get_lang("Yes"); ?>": function() {
-                            location.href = targetUrl;
-                            $( this ).dialog( "close" );
-
-                        },
-                        "<?php echo get_lang("No"); ?>": function() {
-                            $( this ).dialog( "close" );
-                        }
-                    }
-                });
-                $( "#dialog-confirm" ).dialog("open");
-                return false;
-            });
-
-            var stop = false;
-            $( "#question_list h3" ).click(function( event ) {
-                if ( stop ) {
-                    event.stopImmediatePropagation();
-                    event.preventDefault();
-                    stop = false;
-                }
-            });
-
-            var icons = {
-                header: "ui-icon-circle-arrow-e",
-                headerSelected: "ui-icon-circle-arrow-s"
-            };
-
-            /* We can add links in the accordion header */
-            $("div > div > div > .edition > div > a").click(function() {
-                //Avoid the redirecto when selecting the delete button
-                if (this.id.indexOf('delete') == -1) {
-                    newWind = window.open(this.href,"_self");
-                    newWind.focus();
-                    return false;
-                }
-            });
-
-            $( "#question_list" ).accordion({
-                icons: icons,
-                heightStyle: "content",
-                active: false, // all items closed by default
-                collapsible: true,
-                header: ".header_operations"
-            })
-            .sortable({
-                cursor: "move", // works?
-                update: function(event, ui) {
-                    var order = $(this).sortable("serialize") + "&a=update_question_order&exercise_id=<?php echo intval($_GET['exerciseId']);?>";
-                    $.post("<?php echo $ajax_url ?>", order, function(reponse){
-                        $("#message").html(reponse);
-                    });
-                },
-                axis: "y",
-                placeholder: "ui-state-highlight", //defines the yellow highlight
-                handle: ".moved", //only the class "moved"
-                stop: function() {
-                    stop = true;
-                }
-            });
+<div id="dialog-confirm"
+     title="<?php echo get_lang('ConfirmYourChoice'); ?>"
+     style="display:none;">
+    <p>
+        <?php echo get_lang('AreYouSureToDelete'); ?>
+    </p>
+</div>
+<script>
+    $(function () {
+        $("#dialog:ui-dialog").dialog("destroy");
+        $("#dialog-confirm").dialog({
+            autoOpen: false,
+            show: "blind",
+            resizable: false,
+            height: 150,
+            modal: false
         });
-    </script>
+
+        $(".opener").click(function () {
+            var targetUrl = $(this).attr("href");
+            $("#dialog-confirm").dialog({
+                modal: true,
+                buttons: {
+                    "<?php echo get_lang('Yes'); ?>": function () {
+                        location.href = targetUrl;
+                        $(this).dialog("close");
+
+                    },
+                    "<?php echo get_lang('No'); ?>": function () {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+            $("#dialog-confirm").dialog("open");
+            return false;
+        });
+
+        var stop = false;
+        $("#question_list h3").click(function (event) {
+            if (stop) {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+                stop = false;
+            }
+        });
+
+        /* We can add links in the accordion header */
+        $(".btn-actions .edition a.btn").click(function () {
+            //Avoid the redirecto when selecting the delete button
+            if (this.id.indexOf('delete') == -1) {
+                newWind = window.open(this.href, "_self");
+                newWind.focus();
+                return false;
+            }
+        });
+
+        $("#question_list").accordion({
+            icons: null,
+            heightStyle: "content",
+            active: false, // all items closed by default
+            collapsible: true,
+            header: ".header_operations",
+            beforeActivate: function (e, ui) {
+                var data = ui.newHeader.data();
+                if (typeof data === 'undefined') {
+                    return;
+                }
+
+                var exerciseId = data.exercise || 0,
+                    questionId = data.question || 0;
+
+                if (!questionId || !exerciseId) {
+                    return;
+                }
+
+                var $pnlQuestion = $('#pnl-question-' + questionId);
+
+                if ($pnlQuestion.html().trim().length) {
+                    return;
+                }
+
+                $pnlQuestion.html('<span class="fa fa-spinner fa-spin fa-3x fa-fw" aria-hidden="true"></span>');
+
+                $.get('<?php echo api_get_path(WEB_AJAX_PATH); ?>exercise.ajax.php?<?php echo api_get_cidreq(); ?>', {
+                    a: 'show_question',
+                    exercise: exerciseId,
+                    question: questionId
+                }, function (response) {
+                    $pnlQuestion.html(response)
+                });
+            }
+        })
+        .sortable({
+            cursor: "move", // works?
+            update: function (event, ui) {
+                var order = $(this).sortable("serialize") + "&a=update_question_order&exercise_id=<?php echo $exerciseId; ?>";
+                $.post("<?php echo $ajax_url; ?>", order, function (result) {
+                    $("#message").html(result);
+                });
+            },
+            axis: "y",
+            placeholder: "ui-state-highlight", //defines the yellow highlight
+            handle: ".moved", //only the class "moved"
+            stop: function () {
+                stop = true;
+            }
+        });
+    });
+</script>
 <?php
 
-//we filter the type of questions we can add
-Question :: display_type_menu($objExercise);
-// Re sets the question list
-$objExercise->setQuestionList();
+// Filter the type of questions we can add
+Question::displayTypeMenu($objExercise);
 
-echo '<div style="clear:both;"></div>';
 echo '<div id="message"></div>';
 $token = Security::get_token();
 //deletes a session when using don't know question type (ugly fix)
@@ -140,146 +158,217 @@ Session::erase('less_answer');
 // If we are in a test
 $inATest = isset($exerciseId) && $exerciseId > 0;
 if (!$inATest) {
-    echo "<div class='alert alert-warning'>".get_lang("ChoiceQuestionType")."</div>";
+    echo Display::return_message(get_lang('ChoiceQuestionType'), 'warning');
 } else {
-    // Title line
-    echo "<div class='table-responsive'>";
-    echo "<table class='table table-condensed'>";
-    echo "<tr>";
-    echo "<th style=\"width: 50%;\">" .get_lang('Questions'). "</th>";
-    echo "<th style=\"width: 6%;\">" .get_lang('Type'). "</th>";
-    echo "<th style=\"width: 22%; text-align:center;\">" .get_lang('Category'). "</th>";
-    echo "<th style=\"width: 6%;\">" .get_lang('Difficulty'). "</th>";
-    echo "<th style=\"width: 16%; float:left;\">" .get_lang('Score'). "</th>";
-    echo "</tr>";
-    echo "</table>";
-    echo "</div>";
-    echo "<div style='clear:both'>&nbsp;</div>";
-
-    echo '<div id="question_list">';
     if ($nbrQuestions) {
-        //Always getting list from DB
-        //$questionList = $objExercise->selectQuestionList(true);
-
+        // In the building exercise mode show question list ordered as is.
         $objExercise->setCategoriesGrouping(false);
 
-        // Show exercises as in category settings
-        //$questionList = $objExercise->getQuestionListWithMediasUncompressed();
+        // In building mode show all questions not render by teacher order.
+        $objExercise->questionSelectionType = EX_Q_SELECTION_ORDERED;
+        $allowQuestionOrdering = true;
+        $showPagination = api_get_configuration_value('show_question_pagination');
+        if (!empty($showPagination) && $nbrQuestions > $showPagination) {
+            $length = api_get_configuration_value('question_pagination_length');
+            $url = api_get_self().'?'.api_get_cidreq();
+            // Use pagination for exercise with more than 200 questions.
+            $allowQuestionOrdering = false;
+            $start = ($page - 1) * $length;
+            $questionList = $objExercise->getQuestionForTeacher($start, $length);
+            $paginator = new Knp\Component\Pager\Paginator();
+            $pagination = $paginator->paginate([]);
 
-        // Show all questions no matter the category settings.
-        $tempCategoryOrder = isset($objExercise->specialCategoryOrders) ? $objExercise->specialCategoryOrders : false;
-        $objExercise->specialCategoryOrders = false;
-        $questionList = $objExercise->selectQuestionList(true);
-        $objExercise->specialCategoryOrders = $tempCategoryOrder;
+            $pagination->setTotalItemCount($nbrQuestions);
+            $pagination->setItemNumberPerPage($length);
+            $pagination->setCurrentPageNumber($page);
+            $pagination->renderer = function ($data) use ($url) {
+                $render = '<ul class="pagination">';
+                for ($i = 1; $i <= $data['pageCount']; $i++) {
+                    $pageContent = '<li><a href="'.$url.'&page='.$i.'">'.$i.'</a></li>';
+                    if ($data['current'] == $i) {
+                        $pageContent = '<li class="active"><a href="#" >'.$i.'</a></li>';
+                    }
+                    $render .= $pageContent;
+                }
+                $render .= '</ul>';
 
-        // Style for columns
-        $styleQuestion = "width:50%; float:left; margin-left: 25px;";
-        $styleType = "width:4%; float:left; text-align:center;";
-        $styleCat = "width:22%; float:left; text-align:center;";
-        $styleLevel = "width:6%; float:left; text-align:center;";
-        $styleScore = "width:4%; float:left; text-align:center;";
+                return $render;
+            };
+            echo $pagination;
+        } else {
+            // Classic order
+            $questionList = $objExercise->selectQuestionList(true, true);
+        }
+
+        echo '
+            <div class="row hidden-xs">
+                <div class="col-sm-5"><strong>'.get_lang('Questions').'</strong></div>
+                <div class="col-sm-1 text-center"><strong>'.get_lang('Type').'</strong></div>
+                <div class="col-sm-2"><strong>'.get_lang('Category').'</strong></div>
+                <div class="col-sm-1 text-right"><strong>'.get_lang('Difficulty').'</strong></div>
+                <div class="col-sm-1 text-right"><strong>'.get_lang('MaximumScore').'</strong></div>
+                <div class="col-sm-2 text-right"><strong>'.get_lang('Actions').'</strong></div>
+            </div>
+            <div id="question_list">
+        ';
 
         $category_list = TestCategory::getListOfCategoriesNameForTest($objExercise->id, false);
 
         if (is_array($questionList)) {
             foreach ($questionList as $id) {
-                //To avoid warning messages
+                // To avoid warning messages.
                 if (!is_numeric($id)) {
                     continue;
                 }
                 /** @var Question $objQuestionTmp */
                 $objQuestionTmp = Question::read($id);
-                $question_class = get_class($objQuestionTmp);
 
-                $clone_link = '<a href="'.api_get_self().'?'.api_get_cidreq().'&clone_question='.$id.'">'.
-                    Display::return_icon('cd.gif',get_lang('Copy'), array(), ICON_SIZE_SMALL).'</a>';
-                $edit_link = ($objQuestionTmp->type == CALCULATED_ANSWER && $objQuestionTmp->isAnswered()) ?
-                    '<a>'.Display::return_icon(
-                        'edit_na.png',
-                        get_lang('QuestionEditionNotAvailableBecauseItIsAlreadyAnsweredHoweverYouCanCopyItAndModifyTheCopy'),
-                        array(),
-                        ICON_SIZE_SMALL
-                    ).'</a>' :
-                    '<a href="'.api_get_self().'?'.api_get_cidreq().'&type='.
-                    $objQuestionTmp->selectType().'&myid=1&editQuestion='.$id.'">'.
-                    Display::return_icon(
-                        'edit.png',
-                        get_lang('Modify'),
-                        array(),
-                        ICON_SIZE_SMALL
-                    ).'</a>';
-                $delete_link = null;
-                if ($objExercise->edit_exercise_in_lp == true) {
-                    $delete_link = '<a id="delete_'.$id.'" class="opener"  href="'.api_get_self().'?'.api_get_cidreq().'&exerciseId='.$exerciseId.'&deleteQuestion='.$id.'" >'.Display::return_icon('delete.png',get_lang('RemoveFromTest'), array(), ICON_SIZE_SMALL).'</a>';
+                if (empty($objQuestionTmp)) {
+                    continue;
                 }
 
-                $edit_link = Display::tag('div', $edit_link,   array('style'=>'float:left; padding:0px; margin:0px'));
-                $clone_link = Display::tag('div', $clone_link,  array('style'=>'float:left; padding:0px; margin:0px'));
-                $delete_link = Display::tag('div', $delete_link, array('style'=>'float:left; padding:0px; margin:0px'));
-                $actions = Display::tag(
-                    'div',
-                    $edit_link.$clone_link.$delete_link,
-                    array('class'=>'edition','style'=>'width:100px; right:10px; margin-top: 8px; position: absolute; top: 10%;')
+                $clone_link = Display::url(
+                    Display::return_icon(
+                        'cd.png',
+                        get_lang('Copy'),
+                        [],
+                        ICON_SIZE_TINY
+                    ),
+                    api_get_self().'?'.api_get_cidreq().'&clone_question='.$id.'&page='.$page,
+                    ['class' => 'btn btn-default btn-sm']
+                );
+
+                $edit_link = $objQuestionTmp->selectType() == CALCULATED_ANSWER && $objQuestionTmp->isAnswered()
+                    ? Display::span(
+                        Display::return_icon(
+                            'edit_na.png',
+                            get_lang('QuestionEditionNotAvailableBecauseItIsAlreadyAnsweredHoweverYouCanCopyItAndModifyTheCopy'),
+                            [],
+                            ICON_SIZE_TINY
+                        ),
+                        ['class' => 'btn btn-default btn-sm']
+                    )
+                    : Display::url(
+                        Display::return_icon(
+                            'edit.png',
+                            get_lang('Modify'),
+                            [],
+                            ICON_SIZE_TINY
+                        ),
+                        api_get_self().'?'.api_get_cidreq().'&'
+                            .http_build_query([
+                                'type' => $objQuestionTmp->selectType(),
+                                'editQuestion' => $id,
+                                'page' => $page,
+                            ]),
+                        ['class' => 'btn btn-default btn-sm']
+                    );
+                $delete_link = null;
+                if ($objExercise->edit_exercise_in_lp == true) {
+                    $delete_link = Display::url(
+                        Display::return_icon(
+                            'delete.png',
+                            get_lang('RemoveFromTest'),
+                            [],
+                            ICON_SIZE_TINY
+                        ),
+                        api_get_self().'?'.api_get_cidreq().'&'
+                            .http_build_query([
+                                'exerciseId' => $exerciseId,
+                                'deleteQuestion' => $id,
+                                'page' => $page,
+                            ]),
+                        [
+                            'id' => "delete_$id",
+                            'class' => 'opener btn btn-default btn-sm',
+                        ]
+                    );
+                }
+
+                if ($limitTeacherAccess && !api_is_platform_admin()) {
+                    $delete_link = '';
+                }
+
+                $btnActions = implode(
+                    PHP_EOL,
+                    [$edit_link, $clone_link, $delete_link]
                 );
 
                 $title = Security::remove_XSS($objQuestionTmp->selectTitle());
-                $move = Display::return_icon(
-                    'all_directions.png',
-                    get_lang('Move'),
-                    array('class'=>'moved', 'style'=>'margin-bottom:-0.5em;')
-                );
+                $title = strip_tags($title);
+                $move = '&nbsp;';
+                if ($allowQuestionOrdering) {
+                    $move = Display::returnFontAwesomeIcon('arrows moved', 1, true);
+                }
 
                 // Question name
-                $questionName = Display::tag(
-                    'div',
-                    '<a href="#" title = "'.Security::remove_XSS($title).'">'.$move.' '.cut($title, 42).'</a>',
-                    array('style' => $styleQuestion)
-                );
+                $questionName =
+                    '<a href="#" title = "'.Security::remove_XSS($title).'">
+                        '.$move.' '.cut($title, 42).'
+                    </a>';
 
                 // Question type
-                list($typeImg, $typeExpl) = $objQuestionTmp->get_type_icon_html();
-                $questionType = Display::tag('div', Display::return_icon($typeImg, $typeExpl, array(), ICON_SIZE_MEDIUM), array('style'=>$styleType));
+                $typeImg = $objQuestionTmp->getTypePicture();
+                $typeExpl = $objQuestionTmp->getExplanation();
+
+                $questionType = Display::return_icon($typeImg, $typeExpl);
 
                 // Question category
-                $txtQuestionCat = Security::remove_XSS(TestCategory::getCategoryNameForQuestion($objQuestionTmp->id));
+                $txtQuestionCat = Security::remove_XSS(
+                    TestCategory::getCategoryNameForQuestion($objQuestionTmp->id)
+                );
                 if (empty($txtQuestionCat)) {
-                    $txtQuestionCat = "-";
+                    $txtQuestionCat = '-';
                 }
-                $questionCategory = Display::tag('div', '<a href="#" style="padding:0px; margin:0px;" title="'.$txtQuestionCat.'">'.
-                    cut($txtQuestionCat, 42).'</a>', array('style'=>$styleCat));
 
                 // Question level
-                $txtQuestionLevel = $objQuestionTmp->level;
+                $txtQuestionLevel = $objQuestionTmp->getLevel();
                 if (empty($objQuestionTmp->level)) {
                     $txtQuestionLevel = '-';
                 }
-                $questionLevel = Display::tag('div', $txtQuestionLevel, array('style'=>$styleLevel));
+                $questionLevel = $txtQuestionLevel;
 
                 // Question score
-                $questionScore = Display::tag('div', $objQuestionTmp->selectWeighting(), array('style'=>$styleScore));
+                $questionScore = $objQuestionTmp->selectWeighting();
 
-                echo '<div id="question_id_list_'.$id.'" >';
-                echo '<div class="header_operations">';
-                echo $questionName;
-                echo $questionType;
-                echo $questionCategory;
-                echo $questionLevel;
-                echo $questionScore;
-                echo $actions;
-                echo '</div>';
-                echo '<div class="question-list-description-block">';
-                echo '<p class="lead">' . get_lang($question_class) . '</p>';
-                //echo get_lang('Level').': '.$objQuestionTmp->selectLevel();
-                ExerciseLib::showQuestion($id, false, null, null, false, true, false, true, $objExercise->feedback_type, true);
-                echo '</div>';
-                echo '</div>';
+                echo '<div id="question_id_list_'.$id.'">
+                        <div class="header_operations" data-exercise="'.$objExercise->selectId().'"
+                            data-question="'.$id.'">
+                            <div class="row">
+                                <div class="question col-sm-5 col-xs-12">'
+                                    .$questionName.'
+                                </div>
+                                <div class="type text-center col-sm-1 col-xs-12">
+                                    <span class="visible-xs-inline">'.get_lang('Type').' </span>'
+                                    .$questionType.'
+                                </div>
+                                <div class="category col-sm-2 col-xs-12" title="'.$txtQuestionCat.'">
+                                    <span class="visible-xs-inline">'.get_lang('Category').' </span>'
+                                    .cut($txtQuestionCat, 42).'
+                                </div>
+                                <div class="level text-right col-sm-1 col-xs-6">
+                                    <span class="visible-xs-inline">'.get_lang('Difficulty').' </span>'
+                                    .$questionLevel.'
+                                </div>
+                                <div class="score text-right col-sm-1 col-xs-6">
+                                    <span class="visible-xs-inline">'.get_lang('Score').' </span>'
+                                    .$questionScore.'
+                                </div>
+                                <div class="btn-actions text-right col-sm-2 col-xs-6">
+                                    <div class="edition">'.$btnActions.'</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="question-list-description-block" id="pnl-question-'.$id.'">
+                        </div>
+                    </div>
+                ';
                 unset($objQuestionTmp);
             }
         }
-    }
 
-    if (!$nbrQuestions) {
-        echo Display::display_warning_message(get_lang('NoQuestion'));
+        echo '</div>'; //question list div
+    } else {
+        echo Display::return_message(get_lang('NoQuestion'), 'warning');
     }
-    echo '</div>'; //question list div
 }

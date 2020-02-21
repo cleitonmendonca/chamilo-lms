@@ -10,7 +10,9 @@ use ChamiloSession as Session;
  * - personal course list
  * - menu bar
  * Search for CONFIGURATION parameters to modify settings
+ *
  * @package chamilo.main
+ *
  * @todo Shouldn't the CONFVAL_ constant be moved to the config page? Has anybody any idea what the are used for?
  *       If these are really configuration settings then we can add those to the dokeos config settings.
  * @todo check for duplication of functions with index.php (user_portal.php is orginally a copy of index.php)
@@ -32,12 +34,68 @@ $this_section = SECTION_COURSES;
 
 api_block_anonymous_users(); // Only users who are logged in can proceed.
 
+$logInfo = [
+    'tool' => SECTION_COURSES,
+    'tool_id' => 0,
+    'tool_id_detail' => 0,
+    'action' => '',
+    'info' => '',
+];
+Event::registerLog($logInfo);
+
 $userId = api_get_user_id();
+
+$collapsable = api_get_configuration_value('allow_user_session_collapsable');
+if ($collapsable) {
+    $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
+    $sessionId = isset($_REQUEST['session_id']) ? $_REQUEST['session_id'] : '';
+    $value = isset($_REQUEST['value']) ? (int) $_REQUEST['value'] : '';
+    switch ($action) {
+        case 'collapse_session':
+            if (!empty($sessionId)) {
+                $userRelSession = SessionManager::getUserSession($userId, $sessionId);
+                if ($userRelSession) {
+                    $table = Database::get_main_table(TABLE_MAIN_SESSION_USER);
+                    $sql = "UPDATE $table SET collapsed = $value WHERE id = ".$userRelSession['id'];
+                    Database::query($sql);
+                    Display::addFlash(Display::return_message(get_lang('Updated')));
+                }
+                header('Location: user_portal.php');
+                exit;
+            }
+            break;
+    }
+}
 
 /* Constants and CONFIGURATION parameters */
 $load_dirs = api_get_setting('show_documents_preview');
 $displayMyCourseViewBySessionLink = api_get_setting('my_courses_view_by_session') === 'true';
 $nameTools = get_lang('MyCourses');
+$loadHistory = isset($_GET['history']) && intval($_GET['history']) == 1 ? true : false;
+
+// Load course notification by ajax
+$loadNotificationsByAjax = api_get_configuration_value('user_portal_load_notification_by_ajax');
+if ($loadNotificationsByAjax) {
+    $htmlHeadXtra[] = '<script>
+    $(function() {
+        $(".course_notification").each(function(index) {
+            var div = $(this);
+            var id = $(this).attr("id");       
+            var idList = id.split("_");
+            var courseId = idList[1];
+            var sessionId = idList[2];
+            var status = idList[3];
+            $.ajax({			
+                type: "GET",
+                url: "'.api_get_path(WEB_AJAX_PATH).'course_home.ajax.php?a=get_notification&course_id="+courseId+"&session_id="+sessionId+"&status="+status,			
+                success: function(data) {			    
+                    div.append(data);			    
+                }
+            });
+        });
+    });
+    </script>';
+}
 
 /*
     Header
@@ -47,7 +105,7 @@ if ($load_dirs) {
     $url = api_get_path(WEB_AJAX_PATH).'document.ajax.php?a=document_preview';
     $folder_icon = api_get_path(WEB_IMG_PATH).'icons/22/folder.png';
     $close_icon = api_get_path(WEB_IMG_PATH).'loading1.gif';
-    $htmlHeadXtra[] =  '<script>
+    $htmlHeadXtra[] = '<script>
 	$(document).ready(function() {
 		$(".document_preview_container").hide();
 		$(".document_preview").click(function() {
@@ -79,19 +137,18 @@ if ($load_dirs) {
 if ($displayMyCourseViewBySessionLink) {
     $htmlHeadXtra[] = '
     <script>
-        userId = ' . $userId . '
+        userId = '.$userId.'
         $(document).ready(function() {
-            changeMyCoursesView($.cookie("defaultMyCourseView"+userId));
+            changeMyCoursesView($.cookie("defaultMyCourseView" + userId));
         });
     
         /**
         * Keep in cookie the last teacher view for the My Courses Tab. default view, or view by session
         * @param inView
         */
-        function changeMyCoursesView(inView)
-        {
+        function changeMyCoursesView(inView) {
             $.cookie("defaultMyCourseView"+userId, inView, { expires: 365 });
-            if (inView == ' . IndexManager::VIEW_BY_SESSION . ') {
+            if (inView == '.IndexManager::VIEW_BY_SESSION.') {
                 $("#viewBySession").addClass("btn-primary");
                 $("#viewByDefault").removeClass("btn-primary");
             } else {
@@ -102,38 +159,65 @@ if ($displayMyCourseViewBySessionLink) {
 	</script>';
 }
 
+$myCourseListAsCategory = api_get_configuration_value('my_courses_list_as_category');
+
 $controller = new IndexManager(get_lang('MyCourses'));
 
-// Main courses and session list
-//$courseAndSessions = $controller->returnCoursesAndSessions($userId);
+if (!$myCourseListAsCategory) {
+    // Main courses and session list
+    if (isset($_COOKIE['defaultMyCourseView'.$userId]) &&
+        $_COOKIE['defaultMyCourseView'.$userId] == IndexManager::VIEW_BY_SESSION &&
+        $displayMyCourseViewBySessionLink
+    ) {
+        $courseAndSessions = $controller->returnCoursesAndSessionsViewBySession($userId);
+        IndexManager::setDefaultMyCourseView(IndexManager::VIEW_BY_SESSION, $userId);
+    } else {
+        $courseAndSessions = $controller->returnCoursesAndSessions($userId, true, null, true, $loadHistory);
+        IndexManager::setDefaultMyCourseView(IndexManager::VIEW_BY_DEFAULT, $userId);
+    }
 
-// Main courses and session list
-if (isset($_COOKIE['defaultMyCourseView'.$userId]) &&
-    $_COOKIE['defaultMyCourseView'.$userId] == IndexManager::VIEW_BY_SESSION && $displayMyCourseViewBySessionLink
-) {
-    $courseAndSessions = $controller->returnCoursesAndSessionsViewBySession($userId);
-    IndexManager::setDefaultMyCourseView(IndexManager::VIEW_BY_SESSION, $userId);
+    // if teacher, session coach or admin, display the button to change te course view
+    if ($displayMyCourseViewBySessionLink &&
+        (
+            api_is_drh() ||
+            api_is_session_general_coach() ||
+            api_is_platform_admin() ||
+            api_is_session_admin() ||
+            api_is_teacher()
+        )
+    ) {
+        $courseAndSessions['html'] = "
+            <div class='view-by-session-link'>
+                <div class='btn-group pull-right'>
+                    <a class='btn btn-default' id='viewByDefault' href='user_portal.php'
+                        onclick='changeMyCoursesView(\"".IndexManager::VIEW_BY_DEFAULT."\")'>
+                        ".get_lang('MyCoursesDefaultView')."
+                    </a>
+                    <a class='btn btn-default' id='viewBySession' href='user_portal.php'
+                        onclick='changeMyCoursesView(\"".IndexManager::VIEW_BY_SESSION."\")'>
+                        ".get_lang('MyCoursesSessionView')."
+                    </a>
+                </div>
+            </div>
+            <br /><br />
+        ".$courseAndSessions['html'];
+    }
 } else {
-    $courseAndSessions = $controller->returnCoursesAndSessions($userId);
-    IndexManager::setDefaultMyCourseView(IndexManager::VIEW_BY_DEFAULT, $userId);
-}
+    $categoryCode = isset($_GET['category']) ? $_GET['category'] : '';
 
-// if teacher, session coach or admin, display the button to change te course view
-
-if ($displayMyCourseViewBySessionLink &&
-    (api_is_drh() || api_is_course_coach() || api_is_platform_admin() || api_is_session_admin() || api_is_teacher())
-) {
-    $courseAndSessions['html'] = "<div class='view-by-session-link'>
-		<div class='btn-group pull-right'>
-		<a class='btn btn-default' id='viewByDefault' href='user_portal.php' onclick='changeMyCoursesView(\"".IndexManager::VIEW_BY_DEFAULT."\")'>
-		".get_lang('MyCoursesDefaultView')."
-		</a>
-		<a class='btn btn-default' id='viewBySession' href='user_portal.php' onclick='changeMyCoursesView(\"".IndexManager::VIEW_BY_SESSION."\")'>
-		".get_lang('MyCoursesSessionView')."
-		</a>
-		</div>
-	</div><br /><br />
-	".$courseAndSessions['html'];
+    if (!$categoryCode) {
+        $courseAndSessions = $controller->returnCourseCategoryListFromUser($userId);
+    } else {
+        $courseAndSessions = $controller->returnCoursesAndSessions(
+            $userId,
+            false,
+            $categoryCode,
+            true,
+            $loadHistory
+        );
+        $getCategory = CourseCategory::getCategory($categoryCode);
+        $controller->tpl->assign('category', $getCategory);
+    }
 }
 
 // Check if a user is enrolled only in one course for going directly to the course after the login.
@@ -147,19 +231,21 @@ if (api_get_setting('go_to_course_after_login') == 'true') {
         if (isset($sessions[0])) {
             $sessionInfo = $sessions[0];
             // Session only has 1 course.
-            if (isset($sessionInfo['courses']) && count($sessionInfo['courses']) == 1) {
+            if (isset($sessionInfo['courses']) &&
+                count($sessionInfo['courses']) == 1
+            ) {
                 $courseCode = $sessionInfo['courses'][0]['code'];
                 $courseInfo = api_get_course_info_by_id($sessionInfo['courses'][0]['real_id']);
-                $courseUrl = $courseInfo['course_public_url'] . '?id_session=' . $sessionInfo['session_id'];
-                header('Location:' . $courseUrl);
+                $courseUrl = $courseInfo['course_public_url'].'?id_session='.$sessionInfo['session_id'];
+                header('Location:'.$courseUrl);
                 exit;
             }
 
             // Session has many courses.
             if (isset($sessionInfo['session_id'])) {
-                $url = api_get_path(WEB_CODE_PATH) . 'session/?session_id=' . $sessionInfo['session_id'];
+                $url = api_get_path(WEB_CODE_PATH).'session/index.php?session_id='.$sessionInfo['session_id'];
 
-                header('Location:' . $url);
+                header('Location:'.$url);
                 exit;
             }
         }
@@ -167,15 +253,15 @@ if (api_get_setting('go_to_course_after_login') == 'true') {
 
     // User is subscribed to 1 course.
     if (!isset($_SESSION['coursesAlreadyVisited']) &&
-        $count_of_sessions == 0 && $count_of_courses_no_sessions == 1
+        $count_of_sessions == 0 &&
+        $count_of_courses_no_sessions == 1
     ) {
         $courses = CourseManager::get_courses_list_by_user_id($userId);
-
         if (!empty($courses) && isset($courses[0]) && isset($courses[0]['code'])) {
             $courseInfo = api_get_course_info_by_id($courses[0]['real_id']);
             if (!empty($courseInfo)) {
                 $courseUrl = $courseInfo['course_public_url'];
-                header('Location:' . $courseUrl);
+                header('Location:'.$courseUrl);
                 exit;
             }
         }
@@ -184,7 +270,10 @@ if (api_get_setting('go_to_course_after_login') == 'true') {
 
 // Show the chamilo mascot
 if (empty($courseAndSessions['html']) && !isset($_GET['history'])) {
-	$controller->tpl->assign('welcome_to_course_block', $controller->return_welcome_to_course_block());
+    $controller->tpl->assign(
+        'welcome_to_course_block',
+        $controller->return_welcome_to_course_block()
+    );
 }
 
 $controller->tpl->assign('content', $courseAndSessions['html']);
@@ -224,17 +313,24 @@ $controller->tpl->assign('user_image_block', $controller->return_user_image_bloc
 $controller->tpl->assign('course_block', $controller->return_course_block());
 $controller->tpl->assign('navigation_course_links', $controller->return_navigation_links());
 $controller->tpl->assign('search_block', $controller->return_search_block());
-$controller->tpl->assign('classes_block', $controller->return_classes_block());
-//if (api_is_platform_admin() || api_is_drh()) {
-$controller->tpl->assign('skills_block', $controller->return_skills_links());
-//}
+$controller->tpl->assign('notice_block', $controller->return_notice());
+$controller->tpl->assign('classes_block', $controller->returnClassesBlock());
+$controller->tpl->assign('skills_block', $controller->returnSkillLinks());
+
 $historyClass = '';
 if (!empty($_GET['history'])) {
     $historyClass = 'courses-history';
 }
 $controller->tpl->assign('course_history_page', $historyClass);
+if ($myCourseListAsCategory) {
+    $controller->tpl->assign('header', get_lang('MyCourses'));
+}
+
+$controller->setGradeBookDependencyBar($userId);
 $controller->tpl->display_two_col_template();
 
 // Deleting the session_id.
 Session::erase('session_id');
-api_remove_in_gradebook('in_gradebook');
+Session::erase('id_session');
+Session::erase('studentview');
+api_remove_in_gradebook();

@@ -1,7 +1,7 @@
 <?php
 /* For license terms, see /license.txt */
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $token = isset($_GET['token']) ? $_GET['token'] : '';
 
@@ -9,17 +9,20 @@ if (!ctype_alnum($token)) {
     $token = '';
 }
 
-$tpl = new Template(null);
-
 // Build the form
 $form = new FormValidator('reset', 'POST', api_get_self().'?token='.$token);
 $form->addElement('header', get_lang('ResetPassword'));
 $form->addHidden('token', $token);
 $form->addElement('password', 'pass1', get_lang('Password'));
-$form->addElement('password', 'pass2', get_lang('Confirmation'), array('id' => 'pass2', 'size' => 20, 'autocomplete' => 'off'));
+$form->addElement(
+    'password',
+    'pass2',
+    get_lang('Confirmation'),
+    ['id' => 'pass2', 'size' => 20, 'autocomplete' => 'off']
+);
 $form->addRule('pass1', get_lang('ThisFieldIsRequired'), 'required');
 $form->addRule('pass2', get_lang('ThisFieldIsRequired'), 'required');
-$form->addRule(array('pass1', 'pass2'), get_lang('PassTwo'), 'compare');
+$form->addRule(['pass1', 'pass2'], get_lang('PassTwo'), 'compare');
 $form->addButtonSave(get_lang('Update'));
 
 $ttl = api_get_setting('user_reset_password_token_limit');
@@ -28,7 +31,6 @@ if (empty($ttl)) {
 }
 
 if ($form->validate()) {
-    $em = Database::getManager();
     $values = $form->exportValues();
     $password = $values['pass1'];
     $token = $values['token'];
@@ -62,8 +64,6 @@ if ($form->validate()) {
     }
 }
 
-$tpl->assign('form', $form->toHtml());
-$content = $tpl->get_template('auth/set_temp_password.tpl');
-$tpl->assign('content', $tpl->fetch($content));
+$tpl = new Template(null);
+$tpl->assign('content', $form->toHtml());
 $tpl->display_one_col_template();
-

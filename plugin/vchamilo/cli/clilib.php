@@ -2,17 +2,18 @@
 exit;
 
 /**
-* Opens and parses/checks a VChamilo instance definition file
-* @param string $location
-*
-*/
-function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
+ * Opens and parses/checks a VChamilo instance definition file
+ * @param string $nodelistlocation
+ * @param string $plugin
+ * @return mixed
+ */
+function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null) {
     global $_configuration;
 
     $vnodes = array();
 
-    if (empty($nodelistlocation)){
-        $nodelistlocation = $_configuratioh['root_sys'].'/plugin/vchamilo/nodelist.csv';
+    if (empty($nodelistlocation)) {
+        $nodelistlocation = $_configuration['root_sys'].'/plugin/vchamilo/nodelist.csv';
     }
 
     // decode file
@@ -20,35 +21,36 @@ function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
     $csv_delimiter2 = ";";
 
     // make arrays of valid fields for error checking
-    $required = array('root_web' => 1,
-            'sitename' => 1,
-            'institution' => 1,
-            'main_database' => 1,
-            'statistics_database' => 1,
-            'user_personal_database' => 1,
-            'db_user' => 1,
-            'db_password' => 1,
-            'course_folder' => 1,
-            );
+    $required = array(
+        'root_web' => 1,
+        'sitename' => 1,
+        'institution' => 1,
+        'main_database' => 1,
+        'statistics_database' => 1,
+        'user_personal_database' => 1,
+        'db_user' => 1,
+        'db_password' => 1,
+        'course_folder' => 1,
+    );
 
     $optional = array(
-            'db_host' => 1,
-            'template' => 1,
-            'table_prefix' => 1,
-            'single_database' => 1,
-            'tracking_enabled' => 1,
-            'visible' => 1,
-            );
+        'db_host' => 1,
+        'template' => 1,
+        'table_prefix' => 1,
+        'single_database' => 1,
+        'tracking_enabled' => 1,
+        'visible' => 1,
+    );
 
     $optionalDefaults = array(
-            'db_host' => $_configuration['db_host'],
-            'db_prefix' => 'chm_',
-            'table_prefix' => '',
-            'tracking_enabled' => 0,
-            'single_database' => 1,
-            'template' => '',
-            'visible' => 1,
-            );
+        'db_host' => $_configuration['db_host'],
+        'db_prefix' => 'chm_',
+        'table_prefix' => '',
+        'tracking_enabled' => 0,
+        'single_database' => 1,
+        'template' => '',
+        'visible' => 1
+    );
 
     $patterns = array();
 
@@ -69,7 +71,7 @@ function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
     // Jump any empty or comment line
     $text = fgets($fp, 1024);
     $i = 0;
-    while(vchamilo_is_empty_line_or_format($text, $i == 0)){
+    while (vchamilo_is_empty_line_or_format($text, $i == 0)) {
         $text = fgets($fp, 1024);
         $i++;
     }
@@ -79,7 +81,7 @@ function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
     // Check for valid field names
     foreach ($headers as $h) {
         $header[] = trim($h);
-        $patternized = implode('|', $patterns) . "\\d+";
+        $patternized = implode('|', $patterns)."\\d+";
         $metapattern = implode('|', $metas);
         if (!(isset($required[$h]) ||
                 isset($optionalDefaults[$h]) ||
@@ -108,7 +110,7 @@ function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
     $linenum = 2; // Since header is line 1.
 
     // Take some from admin profile, other fixed by hardcoded defaults.
-    while (!feof ($fp)) {
+    while (!feof($fp)) {
 
         // Make a new base record.
         $vnode = new StdClass();
@@ -161,9 +163,12 @@ function vchamilo_parse_csv_nodelist($nodelistlocation = '', $plugin = null){
 }
 
 /**
-* Check a CSV input line format for empty or commented lines
-* Ensures compatbility to UTF-8 BOM or unBOM formats
-*/
+ * Check a CSV input line format for empty or commented lines
+ * Ensures compatbility to UTF-8 BOM or unBOM formats
+ * @param resource $text
+ * @param bool $resetfirst
+ * @return bool
+ */
 function vchamilo_is_empty_line_or_format(&$text, $resetfirst = false) {
     global $CFG;
 
@@ -192,10 +197,10 @@ function vchamilo_is_empty_line_or_format(&$text, $resetfirst = false) {
  * @param string $prompt text prompt, should include possible options
  * @param string $default default value when enter pressed
  * @param array $options list of allowed options, empty means any text
- * @param bool $casesensitive true if options are case sensitive
+ * @param bool $casesensitiveoptions true if options are case sensitive
  * @return string entered text
  */
-function cli_input($prompt, $default='', array $options=null, $casesensitiveoptions=false) {
+function cli_input($prompt, $default = '', array $options = null, $casesensitiveoptions = false) {
     echo $prompt;
     echo "\n: ";
     $input = fread(STDIN, 2048);
@@ -221,8 +226,8 @@ function cli_input($prompt, $default='', array $options=null, $casesensitiveopti
  * @param array $shortmapping array describing mapping of short to long style options ex:('h'=>'help', 'v'=>'verbose')
  * @return array array of arrays, options, unrecognised as optionlongname=>value
  */
-function cli_get_params(array $longoptions, array $shortmapping=null) {
-    $shortmapping = (array)$shortmapping;
+function cli_get_params(array $longoptions, array $shortmapping = null) {
+    $shortmapping = (array) $shortmapping;
     $options      = array();
     $unrecognized = array();
 
@@ -291,7 +296,7 @@ function cli_get_params(array $longoptions, array $shortmapping=null) {
  * @param bool $return false means print, true return as string
  * @return mixed void or string
  */
-function cli_separator($return=false) {
+function cli_separator($return = false) {
     $separator = str_repeat('-', 79)."\n";
     if ($return) {
         return $separator;
@@ -306,7 +311,7 @@ function cli_separator($return=false) {
  * @param bool $return false means print, true return as string
  * @return mixed void or string
  */
-function cli_heading($string, $return=false) {
+function cli_heading($string, $return = false) {
     $string = "== $string ==\n";
     if ($return) {
         return $string;
@@ -328,11 +333,11 @@ function cli_problem($text) {
  * Write to standard out and error with exit in error.
  *
  * @param string $text
- * @param int $errorcode
+ * @param int $errorCode
  * @return void (does not return)
  */
-function cli_error($text, $errorcode = 1) {
+function cli_error($text, $errorCode = 1) {
     fwrite(STDERR, $text);
     fwrite(STDERR, "\n");
-    die($errorcode);
+    die($errorCode);
 }

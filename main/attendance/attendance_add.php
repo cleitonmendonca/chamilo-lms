@@ -2,8 +2,10 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * View (MVC patter) for adding a attendance
+ * View (MVC patter) for adding a attendance.
+ *
  * @author Christian Fasanando <christian1827@gmail.com>
+ *
  * @package chamilo.attendance
  */
 
@@ -12,7 +14,7 @@ api_protect_course_script(true);
 
 // error messages
 if (isset($error)) {
-    Display::display_error_message(get_lang('FormHasErrorsPleaseComplete'),false);
+    echo Display::return_message(get_lang('FormHasErrorsPleaseComplete'), 'error', false);
 }
 
 if (!isset($error)) {
@@ -28,20 +30,20 @@ $form->addElement('header', '', get_lang('CreateANewAttendance'));
 $form->addElement('hidden', 'sec_token', $token);
 
 $form->addText('title', get_lang('Title'), true);
-$form->applyFilter('title','html_filter');
+$form->applyFilter('title', 'html_filter');
 $form->addHtmlEditor(
     'description',
     get_lang('Description'),
     false,
     false,
-    array('ToolbarSet' => 'TrainingDescription', 'Width' => '100%', 'Height' => '150')
+    ['ToolbarSet' => 'Basic', 'Width' => '100%', 'Height' => '150']
 );
 
 // Advanced Parameters
 if ((api_get_session_id() != 0 && Gradebook::is_active()) || api_get_session_id() == 0) {
     $form->addButtonAdvancedSettings('id_qualify');
 
-    $form->addElement('html','<div id="id_qualify_options" style="display:none">');
+    $form->addElement('html', '<div id="id_qualify_options" style="display:none">');
 
     // Qualify Attendance for gradebook option
     $form->addElement(
@@ -51,7 +53,7 @@ if ((api_get_session_id() != 0 && Gradebook::is_active()) || api_get_session_id(
         get_lang('QualifyAttendanceGradebook'),
         'onclick="javascript: if(this.checked){document.getElementById(\'options_field\').style.display = \'block\';}else{document.getElementById(\'options_field\').style.display = \'none\';}"'
     );
-    $form->addElement('html','<div id="options_field" style="display:none">');
+    $form->addElement('html', '<div id="options_field" style="display:none">');
 
     GradebookUtils::load_gradebook_select_in_tool($form);
 
@@ -64,8 +66,11 @@ if ((api_get_session_id() != 0 && Gradebook::is_active()) || api_get_session_id(
         'value="0.00" Style="width:40px" onfocus="javascript: this.select();"'
     );
     $form->applyFilter('attendance_weight', 'html_filter');
-    $form->addElement('html','</div>');
-    $form->addElement('html','</div>');
+    $form->addElement('html', '</div>');
+
+    $skillList = Skill::addSkillsToForm($form, ITEM_TYPE_ATTENDANCE, 0);
+
+    $form->addElement('html', '</div>');
 }
 $form->addButtonCreate(get_lang('Save'));
 $form->display();

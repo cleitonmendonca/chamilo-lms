@@ -7,6 +7,8 @@ Chamilo LMS is an LAMP-based e-learning web platform that focuses on providing a
 environment for teachers to improve both the quality and availability of their
 educational material, and on providing students with an awesome learning platform.
 
+Before you report an issue, please check the [official Chamilo documentation](https://docs.chamilo.org) (not always up to date)
+
 We are a relatively small development team and greatly welcome any contribution
 from the outside world, although we will thoroughly review them before integration,
 to make sure they do not introduce security vulnerabilities or degrade the ease
@@ -32,6 +34,14 @@ If you'd like to contribute to this project, please read the following document:
 In short, we expect contributions to be sent through Pull Requests, a very clean feature of Github.
 We recommend you follow this guide to understand a little more about the way it works: 
 https://guides.github.com/activities/contributing-to-open-source/
+
+## Testing new features
+
+As new major features are added, automated tests should be added that ensure that the feature continues to work in the foreseeable future.
+
+In Chamilo, we rely on "Behat":http://docs.behat.org/en/latest/ to do Automated Behaviour Testing. You can find examples and information on how to run Behat tests in the tests/behat/ folder of your Chamilo installation.
+
+Tests are run automatically for every new contribution, courtesy of "Travis-CI":https://travis-ci.org/, so you can follow your feature in time and see whether something breaks it. Check the Chamilo tests URL here: https://travis-ci.org/chamilo/chamilo-lms
 
 # Making changes to the database
 

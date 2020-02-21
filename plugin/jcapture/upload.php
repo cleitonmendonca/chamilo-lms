@@ -1,12 +1,12 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../../main/inc/global.inc.php';
+require_once __DIR__.'/../../main/inc/global.inc.php';
 
 api_protect_course_script();
 
 $plugin = new AppPlugin();
-$pluginList = $plugin->get_installed_plugins();
+$pluginList = $plugin->getInstalledPlugins();
 $capturePluginInstalled = in_array('jcapture', $pluginList);
 if (!$capturePluginInstalled) {
     exit;
@@ -21,9 +21,9 @@ $folderName = 'captures';
 $documentId = DocumentManager::get_document_id($courseInfo, '/'.$folderName);
 $path = null;
 if (empty($documentId)) {
-    $course_dir = $courseInfo['path'] . '/document';
+    $course_dir = $courseInfo['path'].'/document';
     $sys_course_path = api_get_path(SYS_COURSE_PATH);
-    $dir = $sys_course_path . $course_dir;
+    $dir = $sys_course_path.$course_dir;
     $createdDir = create_unexisting_directory(
         $courseInfo,
         api_get_user_id(),
@@ -46,9 +46,9 @@ if (empty($path)) {
     exit;
 }
 
-$files = array(
-    'file' => $_FILES['Filedata']
-);
+$files = [
+    'file' => $_FILES['Filedata'],
+];
 
 DocumentManager::upload_document(
     $files,

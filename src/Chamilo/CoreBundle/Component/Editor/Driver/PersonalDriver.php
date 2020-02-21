@@ -4,8 +4,10 @@
 namespace Chamilo\CoreBundle\Component\Editor\Driver;
 
 /**
- * Class PersonalDriver
+ * Class PersonalDriver.
+ *
  * @todo add more checks in upload/rm
+ *
  * @package Chamilo\CoreBundle\Component\Editor\Driver
  */
 class PersonalDriver extends Driver implements DriverInterface
@@ -13,20 +15,19 @@ class PersonalDriver extends Driver implements DriverInterface
     public $name = 'PersonalDriver';
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function setup()
     {
         $userId = api_get_user_id();
         $dir = \UserManager::getUserPathById($userId, 'system');
         if (!empty($dir)) {
-
             if (!is_dir($dir)) {
                 mkdir($dir);
             }
 
-            if (!is_dir($dir . 'my_files')) {
-                mkdir($dir . 'my_files');
+            if (!is_dir($dir.'my_files')) {
+                mkdir($dir.'my_files');
             }
         }
     }
@@ -37,22 +38,20 @@ class PersonalDriver extends Driver implements DriverInterface
     public function getConfiguration()
     {
         if ($this->allow()) {
-
             $userId = api_get_user_id();
 
             if (!empty($userId)) {
-
                 // Adding user personal files
                 $dir = \UserManager::getUserPathById($userId, 'system');
                 $dirWeb = \UserManager::getUserPathById($userId, 'web');
 
-                $driver = array(
+                $driver = [
                     'driver' => 'PersonalDriver',
                     'alias' => get_lang('MyFiles'),
                     'path' => $dir.'my_files',
                     'URL' => $dirWeb.'my_files',
-                    'accessControl' => array($this, 'access'),
-                    'disabled' => array(
+                    'accessControl' => [$this, 'access'],
+                    'disabled' => [
                         'duplicate',
                         //'rename',
                         //'mkdir',
@@ -64,26 +63,24 @@ class PersonalDriver extends Driver implements DriverInterface
                         'extract',
                         'archive',
                         'help',
-                        'resize'
-                    ),
-                );
+                        'resize',
+                    ],
+                ];
 
                 return $driver;
             }
         }
 
-        return array();
+        return [];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function upload($fp, $dst, $name, $tmpname)
+    public function upload($fp, $dst, $name, $tmpname, $hashes = [])
     {
         $this->setConnectorFromPlugin();
-
         if ($this->allow()) {
-
             return parent::upload($fp, $dst, $name, $tmpname);
         }
     }
@@ -96,7 +93,6 @@ class PersonalDriver extends Driver implements DriverInterface
         $this->setConnectorFromPlugin();
 
         if ($this->allow()) {
-
             return parent::rm($hash);
         }
     }
@@ -107,7 +103,6 @@ class PersonalDriver extends Driver implements DriverInterface
     public function allow()
     {
         //if ($this->connector->security->isGranted('IS_AUTHENTICATED_FULLY')) {
-
         return !api_is_anonymous();
     }
 }

@@ -74,7 +74,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#2eaebb', end
   background: #3A4751;
 }
 .navbar-default .navbar-nav > li > .dropdown-menu {
-  background-color: #FE9A2E; ;
+  background-color: #FFF; ;
 }
 .navbar-default .navbar-nav > li > .dropdown-menu > li > a {
   color: #ffffff;
@@ -116,9 +116,6 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#2eaebb', end
 }
 
 @media (max-width: 767px) {
-  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: #ffffff;
-  }
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
     color: #ededed;
   }
@@ -137,14 +134,14 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#2eaebb', end
 .panel-default .panel-heading{
     background-color: #F9F9F9;
 }
-footer{
+footer.bgfooter{
   background: #258B96;
   color: #9DD0F1;
   border-top: 4px solid #CCC;
 }
-footer a{
+footer.bgfooter a{
   color: #ffffff;
 }
-footer a:hover{
+footer.bgfooter a:hover{
   color: #CCC;
 }

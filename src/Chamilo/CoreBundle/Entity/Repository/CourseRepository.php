@@ -4,22 +4,21 @@
 namespace Chamilo\CoreBundle\Entity\Repository;
 
 use Chamilo\CoreBundle\Entity\Course;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 
 /**
  * Class CourseRepository
- * The functions inside this class must return an instance of QueryBuilder
+ * The functions inside this class must return an instance of QueryBuilder.
  *
  * @package Chamilo\CoreBundle\Entity\Repository
  */
 class CourseRepository extends EntityRepository
 {
     /**
-     * Get all users that are registered in the course. No matter the status
-     *
-     * @param Course $course
+     * Get all users that are registered in the course. No matter the status.
      *
      * @return \Doctrine\ORM\QueryBuilder
      */
@@ -62,9 +61,7 @@ class CourseRepository extends EntityRepository
     }
 
     /**
-     * Gets students subscribed in the course
-     *
-     * @param Course $course
+     * Gets students subscribed in the course.
      *
      * @return QueryBuilder
      */
@@ -74,8 +71,7 @@ class CourseRepository extends EntityRepository
     }
 
     /**
-     * Gets the students subscribed in the course
-     * @param Course $course
+     * Gets the students subscribed in the course.
      *
      * @return QueryBuilder
      */
@@ -87,9 +83,7 @@ class CourseRepository extends EntityRepository
     }
 
     /**
-     *
-     * Gets the teachers subscribed in the course
-     * @param Course $course
+     * Gets the teachers subscribed in the course.
      *
      * @return QueryBuilder
      */
@@ -99,8 +93,8 @@ class CourseRepository extends EntityRepository
     }
 
     /**
-     * @param Course $course
      * @param int $status use legacy chamilo constants COURSEMANAGER|STUDENT
+     *
      * @return QueryBuilder
      */
     public function getSubscribedUsersByStatus(Course $course, $status)
@@ -110,5 +104,41 @@ class CourseRepository extends EntityRepository
         $wherePart->add($queryBuilder->expr()->eq('c.status', $status));
 
         return $queryBuilder;
+    }
+
+    public function getCoursesWithNoSession($urlId)
+    {
+        $queryBuilder = $this->createQueryBuilder('c');
+        $criteria = Criteria::create();
+        $queryBuilder = $queryBuilder
+            ->select('c')
+            ->leftJoin('c.urls', 'u')
+            ->leftJoin('c.sessions', 's')
+            /*->leftJoin(
+                'ChamiloCoreBundle:SessionRelCourse',
+                'sc',
+                Join::WITH,
+                'c != sc.course'
+            )->leftJoin(
+                'ChamiloCoreBundle:AccessUrlRelCourse',
+                'ac',
+                Join::WITH,
+                'c = ac.course'
+            )*/
+            ->where($queryBuilder->expr()->isNull('s'))
+            //->where($queryBuilder->expr()->eq('s', 0))
+            ->where($queryBuilder->expr()->eq('u.url', $urlId))
+            ->getQuery();
+
+        $courses = $queryBuilder->getResult();
+        $courseList = [];
+        /** @var Course $course */
+        foreach ($courses as $course) {
+            if (empty($course->getSessions()->count() == 0)) {
+                $courseList[] = $course;
+            }
+        }
+
+        return $courseList;
     }
 }

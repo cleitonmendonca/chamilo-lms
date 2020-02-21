@@ -4,24 +4,22 @@
 namespace Chamilo\ContactBundle\Admin;
 
 use Sonata\AdminBundle\Admin\Admin;
+use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
-use Sonata\AdminBundle\Datagrid\DatagridMapper;
 
 /**
- * Class UserAdmin
+ * Class UserAdmin.
+ *
  * @package Chamilo\ContactBundle\Admin
  */
 class CategoryAdmin extends Admin
 {
-    /**
-     * @param ListMapper $listMapper
-     */
     protected function configureListFields(ListMapper $listMapper)
     {
         $listMapper
             //->add('headline', null, array('identifier' => true))
-            ->add('name', null, array('identifier' => true))
+            ->add('name', null, ['identifier' => true])
             ->add('email')
         ;
     }
@@ -37,9 +35,6 @@ class CategoryAdmin extends Admin
         ;
     }
 
-    /**
-     * @param DatagridMapper $datagridMapper
-     */
     protected function configureDatagridFilters(DatagridMapper $datagridMapper)
     {
         $datagridMapper
@@ -48,4 +43,3 @@ class CategoryAdmin extends Admin
         ;
     }
 }
-

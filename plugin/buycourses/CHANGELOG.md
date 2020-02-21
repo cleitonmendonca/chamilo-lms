@@ -1,4 +1,26 @@
-v3.0
+v5.0 - 2019-02-06
+====
+
+This version includes two additional modules (taxes and invoices), 
+which can be enabled from the configuration.
+
+The file update.php must be executed to update the structure of the tables
+ in the database.
+ 
+
+v4.0 - 2017-04-25
+====
+
+This version includes the Culqi payment gateway and introduces an additional
+option to show the Buy Courses tab to anonymous users.
+
+To enable these features, if you have already installed this plugin on your
+portal prior to this version, you will need to add the corresponding settings
+to your settings_current table. No documentation is available at this time on
+how to do that, so please check up the code. Sorry about that. 
+
+
+v3.0 - 2015-09-25
 ====
 
 This version has been fixed and improved for Chamilo LMS 1.10.x.

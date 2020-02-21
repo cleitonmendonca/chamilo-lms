@@ -3,42 +3,45 @@
 
 /**
  * @package chamilo.admin
+ *
  * @todo use formvalidator
  */
-
-// resetting the course id.
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
-$sessionId = isset($_GET['id_session']) ? intval($_GET['id_session']) : null;
+$sessionId = isset($_GET['id_session']) ? (int) $_GET['id_session'] : 0;
 $add = isset($_GET['add']) ? Security::remove_XSS($_GET['add']) : null;
 
 SessionManager::protectSession($sessionId);
 
 $xajax = new xajax();
-$xajax->registerFunction(array('search_courses', 'AddCourseToSession', 'search_courses'));
+$xajax->registerFunction(['search_courses', 'AddCourseToSession', 'search_courses']);
 
 // Setting the section (for the tabs)
 $this_section = SECTION_PLATFORM_ADMIN;
 
 // setting breadcrumbs
-//$interbreadcrumb[] = array('url' => 'index.php', 'name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => 'session_list.php','name' => get_lang('SessionList'));
-$interbreadcrumb[] = array('url' => "resume_session.php?id_session=".$sessionId, "name" => get_lang('SessionOverview'));
+$interbreadcrumb[] = [
+    'url' => 'session_list.php',
+    'name' => get_lang('SessionList'),
+];
+$interbreadcrumb[] = [
+    'url' => "resume_session.php?id_session=$sessionId",
+    'name' => get_lang('SessionOverview'),
+];
 
 // Database Table Definitions
-$tbl_session_rel_course_rel_user = Database::get_main_table(TABLE_MAIN_SESSION_COURSE_USER);
 $tbl_session = Database::get_main_table(TABLE_MAIN_SESSION);
 $tbl_session_rel_user = Database::get_main_table(TABLE_MAIN_SESSION_USER);
 $tbl_session_rel_course = Database::get_main_table(TABLE_MAIN_SESSION_COURSE);
 $tbl_course = Database::get_main_table(TABLE_MAIN_COURSE);
 
 // setting the name of the tool
-$tool_name= get_lang('SubscribeCoursesToSession');
+$tool_name = get_lang('SubscribeCoursesToSession');
 
 $add_type = 'multiple';
-if (isset($_GET['add_type']) && $_GET['add_type']!=''){
+if (isset($_GET['add_type']) && $_GET['add_type'] != '') {
     $add_type = Security::remove_XSS($_REQUEST['add_type']);
 }
 
@@ -74,37 +77,38 @@ function remove_item(origin)
 }
 </script>';
 
-$errorMsg = '';
-$CourseList = $SessionList = array();
-$courses = $sessions = array();
+$CourseList = $SessionList = [];
+$courses = $sessions = [];
 
 if (isset($_POST['formSent']) && $_POST['formSent']) {
-
     $courseList = $_POST['SessionCoursesList'];
     $copyEvaluation = isset($_POST['copy_evaluation']);
+    $copyCourseTeachersAsCoach = isset($_POST['import_teachers_as_course_coach']);
 
     SessionManager::add_courses_to_session(
         $sessionId,
         $courseList,
         true,
-        $copyEvaluation
+        $copyEvaluation,
+        $copyCourseTeachersAsCoach
     );
 
     Display::addFlash(Display::return_message(get_lang('Updated')));
 
+    $url = api_get_path(WEB_CODE_PATH).'session/';
     if (isset($add)) {
-        header('Location: add_users_to_session.php?id_session='.$sessionId.'&add=true');
+        header('Location: '.$url.'add_users_to_session.php?id_session='.$sessionId.'&add=true');
     } else {
-        header('Location: resume_session.php?id_session='.$sessionId);
+        header('Location: '.$url.'resume_session.php?id_session='.$sessionId);
     }
 
     exit;
 }
 
-// display the header
+// Display the header
 Display::display_header($tool_name);
 
-if ($add_type == 'multiple') {
+if ($add_type === 'multiple') {
     $link_add_type_unique = '<a href="'.api_get_self().'?id_session='.$sessionId.'&add='.$add.'&add_type=unique">'.
         Display::return_icon('single.gif').get_lang('SessionAddTypeUnique').'</a>';
     $link_add_type_multiple = Display::return_icon('multiple.gif').get_lang('SessionAddTypeMultiple').' ';
@@ -120,39 +124,36 @@ echo '<div class="actions">';
 echo $link_add_type_unique.$link_add_type_multiple;
 echo '</div>';
 
-$ajax_search = $add_type == 'unique' ? true : false;
-$nosessionCourses = $sessionCourses = array();
+$ajax_search = $add_type === 'unique' ? true : false;
+$nosessionCourses = $sessionCourses = [];
 if ($ajax_search) {
-
-    $sql="SELECT course.id, code, title, visual_code, session_id
+    $sql = "SELECT course.id, code, title, visual_code, session_id
 			FROM $tbl_course course
 			INNER JOIN $tbl_session_rel_course session_rel_course
             ON
                 course.id = session_rel_course.c_id AND
-                session_rel_course.session_id = ".intval($sessionId)."
-			ORDER BY ".(sizeof($courses)?"(code IN(".implode(',', $courses).")) DESC,":"")." title";
+                session_rel_course.session_id = $sessionId
+			ORDER BY ".(count($courses) ? "(code IN (".implode(',', $courses).")) DESC," : '')." title";
 
     if (api_is_multiple_url_enabled()) {
         $tbl_course_rel_access_url = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_COURSE);
         $access_url_id = api_get_current_access_url_id();
-        if ($access_url_id != -1){
+        if ($access_url_id != -1) {
             $sql = "SELECT course.id, code, title, visual_code, session_id
                     FROM $tbl_course course
                     INNER JOIN $tbl_session_rel_course session_rel_course
-                        ON course.id = session_rel_course.c_id
-                        AND session_rel_course.session_id = ".intval($sessionId)."
-                        INNER JOIN $tbl_course_rel_access_url url_course
-                        ON (url_course.c_id = course.id)
+                    ON course.id = session_rel_course.c_id AND session_rel_course.session_id = $sessionId
+                    INNER JOIN $tbl_course_rel_access_url url_course
+                    ON (url_course.c_id = course.id)
                     WHERE access_url_id = $access_url_id
-                    ORDER BY ".(sizeof($courses)?"(code IN(".implode(',',$courses).")) DESC,":"")." title";
+                    ORDER BY ".(count($courses) ? " (code IN(".implode(',', $courses).")) DESC," : '')." title";
         }
     }
 
     $result = Database::query($sql);
     $Courses = Database::store_result($result);
-
     foreach ($Courses as $course) {
-        $sessionCourses[$course['id']] = $course ;
+        $sessionCourses[$course['id']] = $course;
     }
 } else {
     $sql = "SELECT course.id, code, title, visual_code, session_id
@@ -160,32 +161,32 @@ if ($ajax_search) {
 			LEFT JOIN $tbl_session_rel_course session_rel_course
             ON
                 course.id = session_rel_course.c_id AND
-                session_rel_course.session_id = ".intval($sessionId)."
-			ORDER BY ".(sizeof($courses)?"(code IN(".implode(',',$courses).")) DESC,":"")." title";
+                session_rel_course.session_id = $sessionId
+			ORDER BY ".(count($courses) ? "(code IN(".implode(',', $courses).")) DESC," : '')." title";
 
     if (api_is_multiple_url_enabled()) {
         $tbl_course_rel_access_url = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_COURSE);
         $access_url_id = api_get_current_access_url_id();
-        if ($access_url_id != -1){
+        if ($access_url_id != -1) {
             $sql = "SELECT course.id, code, title, visual_code, session_id
                     FROM $tbl_course course
                     LEFT JOIN $tbl_session_rel_course session_rel_course
                     ON
                         course.id = session_rel_course.c_id AND
-                        session_rel_course.session_id = ".intval($sessionId)."
+                        session_rel_course.session_id = $sessionId
                     INNER JOIN $tbl_course_rel_access_url url_course
                     ON (url_course.c_id = course.id)
                     WHERE access_url_id = $access_url_id
-                    ORDER BY ".(sizeof($courses)?"(code IN(".implode(',',$courses).")) DESC,":"")." title";
+                    ORDER BY ".(count($courses) ? "(code IN(".implode(',', $courses).")) DESC," : '')." title";
         }
     }
     $result = Database::query($sql);
     $Courses = Database::store_result($result);
     foreach ($Courses as $course) {
         if ($course['session_id'] == $sessionId) {
-            $sessionCourses[$course['id']] = $course ;
+            $sessionCourses[$course['id']] = $course;
         } else {
-            $nosessionCourses[$course['id']] = $course ;
+            $nosessionCourses[$course['id']] = $course;
         }
     }
 }
@@ -207,33 +208,37 @@ if (!api_is_platform_admin() && api_is_teacher()) {
 
 unset($Courses);
 ?>
-<form name="formulaire" method="post" action="<?php echo api_get_self(); ?>?page=<?php echo $page; ?>&id_session=<?php echo $sessionId; ?><?php if(!empty($_GET['add'])) echo '&add=true' ; ?>" style="margin:0px;" <?php if($ajax_search){echo ' onsubmit="valide();"';}?>>
+<form name="formulaire"
+      method="post" action="<?php echo api_get_self(); ?>?page=<?php echo $page; ?>&id_session=<?php echo $sessionId; if (!empty($_GET['add'])) {
+    echo '&add=true';
+} ?>" style="margin:0px;" <?php if ($ajax_search) {
+    echo ' onsubmit="valide();"';
+}?>>
     <legend><?php echo $tool_name.' ('.$session_info['name'].')'; ?></legend>
     <input type="hidden" name="formSent" value="1" />
-
-    <?php
-    if (!empty($errorMsg)) {
-        Display::display_normal_message($errorMsg); //main API
-    }
-    ?>
     <div id="multiple-add-session" class="row">
         <div class="col-md-4">
-            <label><?php echo get_lang('CourseListInPlatform') ?> :</label>
+            <label><?php echo get_lang('CourseListInPlatform'); ?> :</label>
             <?php
             if (!($add_type == 'multiple')) {
                 ?>
-                <input type="text" id="course_to_add" onkeyup="xajax_search_courses(this.value,'single')" class="form-control"/>
+                <input type="text" id="course_to_add" onkeyup="xajax_search_courses(this.value, 'single', <?php echo $sessionId; ?>)" class="form-control"/>
                 <div id="ajax_list_courses_single"></div>
             <?php
             } else {
                 ?>
                 <div id="ajax_list_courses_multiple">
                     <select id="origin" name="NoSessionCoursesList[]" multiple="multiple" size="20" class="form-control">
-                        <?php foreach ($nosessionCourses as $enreg) { ?>
-                            <option value="<?php echo $enreg['id']; ?>" <?php echo 'title="'.htmlspecialchars($enreg['title'].' ('.$enreg['visual_code'].')',ENT_QUOTES).'"'; if(in_array($enreg['code'],$CourseList)) echo 'selected="selected"'; ?>>
+                        <?php foreach ($nosessionCourses as $enreg) {
+                    ?>
+                            <option value="<?php echo $enreg['id']; ?>" <?php echo 'title="'.htmlspecialchars($enreg['title'].' ('.$enreg['visual_code'].')', ENT_QUOTES).'"';
+                    if (in_array($enreg['code'], $CourseList)) {
+                        echo 'selected="selected"';
+                    } ?>>
                                 <?php echo $enreg['title'].' ('.$enreg['visual_code'].')'; ?>
                             </option>
-                        <?php } ?>
+                        <?php
+                } ?>
                     </select>
                 </div>
             <?php
@@ -242,19 +247,20 @@ unset($Courses);
             ?>
         </div>
         <div class="col-md-4">
-            <?php if($add_type == 'multiple') { ?>
+            <?php if ($add_type == 'multiple') {
+                ?>
                 <div class="code-course">
                     <?php echo get_lang('FirstLetterCourse'); ?> :
 
-                    <select name="firstLetterCourse" onchange = "xajax_search_courses(this.value,'multiple')" class="selectpicker show-tick form-control">
+                    <select name="firstLetterCourse" onchange = "xajax_search_courses(this.value,'multiple', <?php echo $sessionId; ?>)" class="selectpicker form-control">
                         <option value="%">--</option>
                         <?php
                         echo Display :: get_alphabet_options();
-                        echo Display :: get_numeric_options(0,9,'');
-                        ?>
+                echo Display :: get_numeric_options(0, 9, ''); ?>
                     </select>
                 </div>
-            <?php } ?>
+            <?php
+            } ?>
             <div class="control-course">
             <?php
             if ($ajax_search) {
@@ -268,41 +274,45 @@ unset($Courses);
             } else {
                 ?>
                 <div class="separate-action">
-                    <button class="btn btn-primary" type="button" onclick="moveItem(document.getElementById('origin'), document.getElementById('destination'))" onclick="moveItem(document.getElementById('origin'), document.getElementById('destination'))">
+                    <button name="add_course" class="btn btn-primary" type="button" onclick="moveItem(document.getElementById('origin'), document.getElementById('destination'))" onclick="moveItem(document.getElementById('origin'), document.getElementById('destination'))">
                         <em class="fa fa-chevron-right"></em>
                     </button>
                 </div>
                 <div class="separate-action">
-                    <button class="btn btn-primary" type="button" onclick="moveItem(document.getElementById('destination'), document.getElementById('origin'))" onclick="moveItem(document.getElementById('destination'), document.getElementById('origin'))">
+                    <button name="remove_course" class="btn btn-primary" type="button" onclick="moveItem(document.getElementById('destination'), document.getElementById('origin'))" onclick="moveItem(document.getElementById('destination'), document.getElementById('origin'))">
                         <em class="fa fa-chevron-left"></em>
                     </button>
                 </div>
-            <?php } ?>
+            <?php
+            } ?>
                 <div class="separate-action">
                     <label>
                         <input type="checkbox" name="copy_evaluation">
                         <?php echo get_lang('ImportGradebookInCourse'); ?>
                     </label>
+                    <label>
+                        <input type="checkbox" name="import_teachers_as_course_coach">
+                        <?php echo get_lang('ImportCourseTeachersAsCourseCoach'); ?>
+                    </label>
                 </div>
             <?php
             echo '<div class="separate-action">';
             if (isset($_GET['add'])) {
-                echo '<button class="btn btn-success" type="button" value="" onclick="valide()" >'.get_lang('NextStep').'</button>';
+                echo '<button name="next" class="btn btn-success" type="button" value="" onclick="valide()" >'.get_lang('NextStep').'</button>';
             } else {
-                echo '<button class="btn btn-success" type="button" value="" onclick="valide()" >'.get_lang('SubscribeCoursesToSession').'</button>';
+                echo '<button name="next" class="btn btn-success" type="button" value="" onclick="valide()" >'.get_lang('SubscribeCoursesToSession').'</button>';
             }
             echo '</div>';
             ?>
             </div>
         </div>
         <div class="col-md-4">
-            <label><?php echo get_lang('CourseListInSession') ?> :</label>
+            <label><?php echo get_lang('CourseListInSession'); ?> :</label>
             <select id='destination' name="SessionCoursesList[]" multiple="multiple" size="20" class="form-control">
-
                 <?php
-                foreach($sessionCourses as $enreg) {
+                foreach ($sessionCourses as $enreg) {
                     ?>
-                    <option value="<?php echo $enreg['id']; ?>" title="<?php echo htmlspecialchars($enreg['title'].' ('.$enreg['visual_code'].')',ENT_QUOTES); ?>">
+                    <option value="<?php echo $enreg['id']; ?>" title="<?php echo htmlspecialchars($enreg['title'].' ('.$enreg['visual_code'].')', ENT_QUOTES); ?>">
                         <?php echo $enreg['title'].' ('.$enreg['visual_code'].')'; ?>
                     </option>
                 <?php
@@ -341,10 +351,10 @@ unset($Courses);
     }
 
     function mysort(a, b) {
-        if(a.text.toLowerCase() > b.text.toLowerCase()){
+        if (a.text.toLowerCase() > b.text.toLowerCase()){
             return 1;
         }
-        if(a.text.toLowerCase() < b.text.toLowerCase()){
+        if (a.text.toLowerCase() < b.text.toLowerCase()){
             return -1;
         }
         return 0;

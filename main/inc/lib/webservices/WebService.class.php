@@ -1,42 +1,85 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\UserBundle\Entity\User;
+
 /**
- * Base class for Web Services
+ * Base class for Web Services.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.webservices
  */
-abstract class WebService
+class WebService
 {
+    /**
+     * @var User
+     */
+    protected $user;
+    /**
+     * @var string
+     */
     protected $apiKey;
 
     /**
-     * Class constructor
+     * Class constructor.
+     *
+     * @param $username
+     * @param $apiKey
      */
-    public function __construct()
+    protected function __construct($username, $apiKey)
     {
-        $this->apiKey = null;
-    }
-
-    /**
-     * Set the api key
-     * @param string $apiKey The api key
-     */
-    public function setApiKey($apiKey)
-    {
+        /** @var User user */
+        $this->user = UserManager::getManager()->findUserByUsername($username);
         $this->apiKey = $apiKey;
     }
 
     /**
-     * @abstract
+     * @param string $username
+     * @param string $apiKeyToValidate
+     *
+     * @return WebService
      */
-    abstract public function getApiKey($username);
+    public static function validate($username, $apiKeyToValidate)
+    {
+        return new self($username, $apiKeyToValidate);
+    }
 
     /**
-     * Check whether the username and password are valid
-     * @param string $username The username
-     * @param string $password the password
-     * @return boolean Whether the password belongs to the username return true. Otherwise return false
+     * Find the api key for a user. If the api key does not exists is created.
+     *
+     * @param string $username
+     * @param string $serviceName
+     *
+     * @return string
+     */
+    public static function findUserApiKey($username, $serviceName)
+    {
+        $user = UserManager::getManager()->findUserByUsername($username);
+        if ($user) {
+            $apiKeys = UserManager::get_api_keys($user->getId(), $serviceName);
+
+            if (empty($apiKeys)) {
+                UserManager::add_api_key($user->getId(), $serviceName);
+            }
+
+            $apiKeys = UserManager::get_api_keys($user->getId(), $serviceName);
+
+            return current($apiKeys);
+        }
+
+        return '';
+    }
+
+    /**
+     * Check whether the username and password are valid.
+     *
+     * @param string $username
+     * @param string $password
+     *
+     * @throws Exception
+     *
+     * @return bool Return true if the password belongs to the username. Otherwise return false
      */
     public static function isValidUser($username, $password)
     {
@@ -44,15 +87,24 @@ abstract class WebService
             return false;
         }
 
-        /** @var \Chamilo\UserBundle\Entity\User $user */
-        $user = UserManager::getRepository()
-            ->findOneBy(['username' => $username]);
+        $user = UserManager::getManager()->findUserByUsername($username);
 
-        if (empty($user)) {
+        if (!$user) {
             return false;
         }
 
-        return UserManager::isPasswordValid($user->getPassword(), $password, $user->getSalt());
+        return UserManager::isPasswordValid(
+            $user->getPassword(),
+            $password,
+            $user->getSalt()
+        );
     }
 
+    /**
+     * @return User
+     */
+    public function getUser()
+    {
+        return $this->user;
+    }
 }

@@ -1,19 +1,21 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
 /**
- * Chamilo LMS
+ * Chamilo LMS.
  *
  * Updates the Chamilo files from version 1.9.0 to version 1.10.0
  * This script operates only in the case of an update, and only to change the
  * active version number (and other things that might need a change) in the
  * current configuration file.
+ *
  * @package chamilo.install
  */
-error_log("Starting " . basename(__FILE__));
+error_log("Starting ".basename(__FILE__));
 
 global $debug;
 
@@ -25,7 +27,7 @@ if (defined('SYSTEM_INSTALLATION')) {
     // Delete the "chat" file in all language directories, as variables have been moved to the trad4all file
     $langPath = api_get_path(SYS_CODE_PATH).'lang/';
     // Only erase files from Chamilo languages (not sublanguages defined by the users)
-    $officialLanguages = array(
+    $officialLanguages = [
         'arabic',
         'asturian',
         'basque',
@@ -87,9 +89,9 @@ if (defined('SYSTEM_INSTALLATION')) {
         'vietnamese',
         'xhosa',
         'yoruba',
-    );
+    ];
 
-    $filesToDelete = array(
+    $filesToDelete = [
         'accessibility',
         'admin',
         'agenda',
@@ -138,16 +140,16 @@ if (defined('SYSTEM_INSTALLATION')) {
         'videoconf',
         'wiki',
         'work',
-    );
+    ];
 
     $list = scandir($langPath);
     foreach ($list as $entry) {
-        if (is_dir($langPath . $entry) &&
+        if (is_dir($langPath.$entry) &&
             in_array($entry, $officialLanguages)
         ) {
             foreach ($filesToDelete as $file) {
-                if (is_file($langPath . $entry . '/' . $file . '.inc.php')) {
-                    unlink($langPath . $entry . '/' . $file . '.inc.php');
+                if (is_file($langPath.$entry.'/'.$file.'.inc.php')) {
+                    unlink($langPath.$entry.'/'.$file.'.inc.php');
                 }
             }
         }
@@ -172,12 +174,12 @@ if (defined('SYSTEM_INSTALLATION')) {
 
     // Move dirs into new structures.
     $movePathList = [
-        api_get_path(SYS_CODE_PATH).'upload/users/groups' => api_get_path(SYS_UPLOAD_PATH) . 'groups',
-        api_get_path(SYS_CODE_PATH).'upload/users' => api_get_path(SYS_UPLOAD_PATH) . 'users',
-        api_get_path(SYS_CODE_PATH).'upload/badges' => api_get_path(SYS_UPLOAD_PATH) . 'badges',
-        api_get_path(SYS_PATH).'courses' => api_get_path(SYS_APP_PATH) . 'courses',
+        api_get_path(SYS_CODE_PATH).'upload/users/groups' => api_get_path(SYS_UPLOAD_PATH).'groups',
+        api_get_path(SYS_CODE_PATH).'upload/users' => api_get_path(SYS_UPLOAD_PATH).'users',
+        api_get_path(SYS_CODE_PATH).'upload/badges' => api_get_path(SYS_UPLOAD_PATH).'badges',
+        api_get_path(SYS_PATH).'courses' => api_get_path(SYS_APP_PATH).'courses',
         api_get_path(SYS_PATH).'searchdb' => api_get_path(SYS_UPLOAD_PATH).'plugins/xapian/',
-        api_get_path(SYS_PATH).'home' => api_get_path(SYS_APP_PATH) . 'home'
+        api_get_path(SYS_PATH).'home' => api_get_path(SYS_APP_PATH).'home',
     ];
 
     if ($debug) {
@@ -194,7 +196,12 @@ if (defined('SYSTEM_INSTALLATION')) {
                 error_log("Renaming: '$origin' to '$destination'");
             }
 
-            $fs->remove($origin);
+            try {
+                $fs->remove($origin);
+            } catch (IOException $e) {
+                // If removing the directory doesn't work, just log an error and continue
+                error_log('Could not move '.$origin.' to '.$destination.'('.$e->getMessage().'). Please move it manually.');
+            }
         }
     }
 
@@ -238,7 +245,6 @@ if (defined('SYSTEM_INSTALLATION')) {
 
     // Remove archive
     @rrmdir(api_get_path(SYS_PATH).'archive');
-
 } else {
-    echo 'You are not allowed here !'. __FILE__;
+    echo 'You are not allowed here !'.__FILE__;
 }

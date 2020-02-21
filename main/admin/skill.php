@@ -8,17 +8,17 @@ use Chamilo\CoreBundle\Entity\Skill;
  *
  * @package chamilo.skill
  */
-
 $cidReset = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 api_protect_admin_script();
 $em = Database::getManager();
 $profiles = $em->getRepository('ChamiloSkillBundle:Profile')->findAll();
 $list = $em->getRepository('ChamiloCoreBundle:Skill')->findAll();
 
 $listAction = api_get_self();
+$toolbarAction = '';
 
-$action =  '';
+$action = '';
 if (isset($_GET['action']) && in_array($_GET['action'], ['add', 'edit', 'delete'])) {
     $action = $_GET['action'];
 }
@@ -53,30 +53,31 @@ if (!empty($item)) {
 }
 $formToDisplay = $form->returnForm();
 
-$interbreadcrumb[] = array ('url' => 'index.php', 'name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array ('url' => api_get_self(), 'name' => get_lang('ManageSkillsLevels'));
+$interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
+$interbreadcrumb[] = ['url' => api_get_self(), 'name' => get_lang('ManageSkillsLevels')];
 
 $tpl = new Template($action);
 switch ($action) {
     case 'edit':
         $tpl->assign('form', $formToDisplay);
-        $tpl->assign('actions', Display::url(get_lang('List'), $listAction));
+        $toolbarAction = Display::toolbarAction('toolbar', [Display::url(get_lang('List'), $listAction)]);
 
         if ($form->validate()) {
             $values = $form->exportValues();
-
             $profile = $em->getRepository('ChamiloSkillBundle:Profile')->find($values['profile_id']);
-            $item->setProfile($profile);
-
-            $em->persist($item);
-            $em->flush();
+            if ($profile) {
+                $item->setProfile($profile);
+                $em->persist($item);
+                $em->flush();
+                Display::addFlash(Display::return_message(get_lang('Updated')));
+            }
             header('Location: '.$listAction);
             exit;
         }
-
         break;
     case 'delete':
-        $tpl->assign('actions', Display::url(get_lang('List'), $listAction));
+        $toolbarAction = Display::toolbarAction('toolbar', [Display::url(get_lang('List'), $listAction)]);
+
         $em->remove($item);
         $em->flush();
         header('Location: '.$listAction);
@@ -88,7 +89,8 @@ switch ($action) {
 }
 
 $tpl->assign('list', $list);
-
-$contentTemplate = $tpl->fetch('default/admin/skill.tpl');
+$view = $tpl->get_template('admin/skill.tpl');
+$contentTemplate = $tpl->fetch($view);
+$tpl->assign('actions', $toolbarAction);
 $tpl->assign('content', $contentTemplate);
 $tpl->display_one_col_template();

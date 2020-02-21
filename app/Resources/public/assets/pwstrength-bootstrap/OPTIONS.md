@@ -56,6 +56,16 @@ Let's see the options of each section.
   This handler will also be called when the `change` or the `onpaste` events
   happen.
 
+* __onScore__:
+
+  Default: `undefined` (Function)
+
+  A callback function that will be called when the score is calculted by the
+  rules engine, allowing for a final modification before rendering the result.
+
+  The options, the word and the score will be passed as arguments, in that
+  order.
+
 * __zxcvbn__:
 
   Default: `false` (Boolean)
@@ -193,6 +203,28 @@ Let's see the options of each section.
   Default: `true` (Boolean)
 
   Displays the password strength in a progress bar.
+
+* __progressExtraCssClasses__: (Bootstrap 3&4 only)
+
+  Default: `""` (String)
+
+  CSS classes to be added to the generated progress wrapper of the progress-bar. It is meant to make
+  use of the extra classes provided by Bootstrap. The classes will be added to
+  the proper DOM element depending of which version of Bootstrap is being
+  used.
+  
+  E.g.
+  ```css
+    div.progress.custom-class {
+        height: 4px;
+        border-radius: 0px;
+        background-color: transparent;
+    }
+    div.progress.custom-class > .progress-bar {
+        line-height: 4px;
+        font-size: 2px;
+    }
+  ```
 
 * __progressBarEmptyPercentage__:
 
@@ -352,7 +384,7 @@ Let's see the options of each section.
 ```javascript
 var options = {};
 options.common = {
-    minChar: 8;
+    minChar: 8
 };
 options.rules = {
     activated: {

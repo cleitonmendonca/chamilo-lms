@@ -4,16 +4,17 @@
 namespace Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar;
 
 /**
- * AgendaStudent toolbar configuration
+ * AgendaStudent toolbar configuration.
  *
  * @package Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar *
  */
 class AgendaStudent extends Basic
 {
-    public $plugins = array();
+    public $plugins = [];
 
     /**
-     * Get the toolbar config
+     * Get the toolbar config.
+     *
      * @return array
      */
     public function getConfig()
@@ -30,14 +31,15 @@ class AgendaStudent extends Basic
     }
 
     /**
-     * Get the toolbar configuration when CKEditor is maximized
+     * Get the toolbar configuration when CKEditor is maximized.
+     *
      * @return array
      */
     protected function getMaximizedToolbar()
     {
         return [
             ['Save', 'NewPage', 'Templates', '-', 'Preview', 'Print'],
-            ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord'],
+            ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', 'inserthtml'],
             ['Undo', 'Redo', '-', 'SelectAll', 'Find', '-', 'RemoveFormat'],
             ['Link', 'Unlink', 'Anchor', 'Glossary'],
             [
@@ -52,13 +54,32 @@ class AgendaStudent extends Basic
                 'Smiley',
                 'SpecialChar',
                 'Asciimath',
-                'Asciisvg'
+                'Asciisvg',
             ],
             '/',
             ['Table', '-', 'CreateDiv'],
-            ['BulletedList', 'NumberedList', 'HorizontalRule', '-', 'Outdent', 'Indent', 'Blockquote'],
+            [
+                'BulletedList',
+                'NumberedList',
+                'HorizontalRule',
+                '-',
+                'Outdent',
+                'Indent',
+                'Blockquote',
+            ],
             ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Bold', 'Italic', 'Underline', 'Strike', '-', 'Subscript', 'Superscript', '-', 'TextColor', 'BGColor'],
+            [
+                'Bold',
+                'Italic',
+                'Underline',
+                'Strike',
+                '-',
+                'Subscript',
+                'Superscript',
+                '-',
+                'TextColor',
+                'BGColor',
+            ],
             [api_get_setting('allow_spellcheck') == 'true' ? 'Scayt' : ''],
             ['Styles', 'Format', 'Font', 'FontSize'],
             ['PageBreak', 'ShowBlocks'],
@@ -67,14 +88,15 @@ class AgendaStudent extends Basic
     }
 
     /**
-     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false
+     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false.
+     *
      * @return array
      */
     protected function getNormalToolbar()
     {
         return [
             ['Save', 'Maximize', 'PasteFromWord', '-', 'Undo', 'Redo'],
-            ['Link', 'Unlink', 'Anchor'],
+            ['Link', 'Unlink', 'Anchor', 'inserthtml'],
             ['Image', 'Video', 'Flash', 'Oembed', 'Youtube', 'Audio'],
             ['Table', 'SpecialChar'],
             '/',
@@ -92,26 +114,27 @@ class AgendaStudent extends Basic
                 'Indent',
                 '-',
                 'TextColor',
-                'BGColor'
+                'BGColor',
             ],
-            ['ShowBlocks']
+            ['ShowBlocks'],
         ];
     }
 
     /**
-     * Get the toolbar configuration when CKEditor is minimized
+     * Get the toolbar configuration when CKEditor is minimized.
+     *
      * @return array
      */
     protected function getMinimizedToolbar()
     {
         return [
-            ['Save', 'NewPage', 'Templates', '-', 'PasteFromWord'],
+            ['Save', 'NewPage', 'Templates', '-', 'PasteFromWord', 'inserthtml'],
             ['Undo', 'Redo'],
             ['Link', 'Image', 'Video', 'Flash', 'Youtube', 'Audio', 'Table', 'Asciimath', 'Asciisvg'],
             ['BulletedList', 'NumberedList', 'HorizontalRule'],
-            ['JustifyLeft', 'JustifyCenter'],
+            ['JustifyLeft', 'JustifyCenter', 'JustifyRight'],
             ['Format', 'Font', 'Bold', 'Italic', 'Underline', 'TextColor', 'BGColor'],
-            ['Toolbarswitch']
+            ['Toolbarswitch'],
         ];
     }
 }

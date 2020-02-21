@@ -3,7 +3,6 @@
 
 namespace Chamilo\ThemeBundle\Controller;
 
-use Chamilo\ThemeBundle\Event\SidebarMenuEvent;
 use Chamilo\ThemeBundle\Event\SidebarMenuKnpEvent;
 use Chamilo\ThemeBundle\Event\ThemeEvents;
 use Chamilo\ThemeBundle\Model\MenuItemInterface;
@@ -12,12 +11,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Controller to handle breadcrumb display inside the layout
- *
+ * Controller to handle breadcrumb display inside the layout.
  */
-class BreadcrumbController extends Controller {
-
-
+class BreadcrumbController extends Controller
+{
     /**
      * Controller Reference action to be called inside the layout.
      *
@@ -25,11 +22,9 @@ class BreadcrumbController extends Controller {
      *
      * If there are no listeners attached for this event, the return value is an empty response.
      *
-     * @param Request $request
-     * @param string  $title
+     * @param string $title
      *
      * @return Response
-     *
      */
     public function breadcrumbAction(Request $request, $title = '')
     {
@@ -55,21 +50,20 @@ class BreadcrumbController extends Controller {
             )
         );*/
 
-        $list = array();
+        $list = [];
         if ($active) {
             $list[] = $active;
-            while(null !== ($item = $active->getActiveChild())) {
+            while (null !== ($item = $active->getActiveChild())) {
                 $list[] = $item;
                 $active = $item;
             }
         }
 
-        return $this->render('ChamiloThemeBundle:Breadcrumb:breadcrumb.html.twig', array(
+        return $this->render('ChamiloThemeBundle:Breadcrumb:breadcrumb.html.twig', [
             'active' => $list,
-            'title'  => $title
-        ));
+            'title' => $title,
+        ]);
     }
-
 
     /**
      * @return EventDispatcher
@@ -78,5 +72,4 @@ class BreadcrumbController extends Controller {
     {
         return $this->get('event_dispatcher');
     }
-
 }

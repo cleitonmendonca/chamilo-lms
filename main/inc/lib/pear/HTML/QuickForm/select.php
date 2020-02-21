@@ -1,5 +1,4 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
  * Class to dynamically create an HTML SELECT
@@ -53,8 +52,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
      * @since     1.0
      * @access    private
      */
-    protected $_values;
-    private $columnsSize;
+    protected $_values = [];
 
     /**
      * Class constructor
@@ -78,8 +76,21 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
             if (!empty($attributes['class'])) {
                 $oldClass = $attributes['class'];
             }
-            $attributes['class'] = $oldClass . ' selectpicker show-tick form-control';
+            if (empty($attributes)) {
+                $attributes = []; // Initialize variable to avoid warning in PHP 7.1
+            }
+            $attributes['class'] = $oldClass . ' selectpicker form-control';
             $attributes['data-live-search'] = 'true';
+
+            if (isset($attributes['disable_js']) && $attributes['disable_js']) {
+                $attributes['class'] = 'form-control';
+                $attributes['data-live-search'] = '';
+            }
+
+            if (isset($attributes['extra_class']) && $attributes['extra_class']) {
+                $attributes['class'] .= ' '.$attributes['extra_class'];
+                unset($attributes['extra_class']);
+            }
 
             if (isset($attributes['placeholder'])) {
                 $addBlank =  $attributes['placeholder'];
@@ -122,7 +133,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
      * @return    PEAR_Error on error or true
      * @throws    PEAR_Error
      */
-    private function load(&$options, $param1=null, $param2=null, $param3=null, $param4=null)
+    protected function load(&$options, $param1=null, $param2=null, $param3=null, $param4=null)
     {
         switch (true) {
             case is_array($options):
@@ -172,10 +183,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function apiVersion()
     {
         return 2.3;
-    } //end func apiVersion
-
-    // }}}
-    // {{{ setSelected()
+    }
 
     /**
      * Sets the default values of the select box
@@ -188,32 +196,14 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function setSelected($values)
     {
         if (is_string($values) && $this->getMultiple()) {
-            $values = explode("[ ]?,[ ]?", $values);
+            $values = explode('[ ]?,[ ]?', $values);
         }
         if (is_array($values)) {
             $this->_values = array_values($values);
         } else {
             $this->_values = array($values);
         }
-    } //end func setSelected
-
-    // }}}
-    // {{{ getSelected()
-
-    /**
-     * Returns an array of the selected values
-     *
-     * @since     1.0
-     * @access    public
-     * @return    array of selected values
-     */
-    function getSelected()
-    {
-        return $this->_values;
-    } // end func getSelected
-
-    // }}}
-    // {{{ setName()
+    }
 
     /**
      * Sets the input field name
@@ -226,10 +216,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function setName($name)
     {
         $this->updateAttributes(array('name' => $name));
-    } //end func setName
-
-    // }}}
-    // {{{ getName()
+    }
 
     /**
      * Returns the element name
@@ -241,10 +228,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function getName()
     {
         return $this->getAttribute('name');
-    } //end func getName
-
-    // }}}
-    // {{{ getPrivateName()
+    }
 
     /**
      * Returns the element name (possibly with brackets appended)
@@ -260,10 +244,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
         } else {
             return $this->getName();
         }
-    } //end func getPrivateName
-
-    // }}}
-    // {{{ setValue()
+    }
 
     /**
      * Sets the value of the form element
@@ -276,10 +257,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function setValue($value)
     {
         $this->setSelected($value);
-    } // end func setValue
-
-    // }}}
-    // {{{ getValue()
+    }
 
     /**
      * Returns an array of the selected values
@@ -291,10 +269,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function getValue()
     {
         return $this->_values;
-    } // end func getValue
-
-    // }}}
-    // {{{ setSize()
+    }
 
     /**
      * Sets the select field size, only applies to 'multiple' selects
@@ -307,10 +282,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function setSize($size)
     {
         $this->updateAttributes(array('size' => $size));
-    } //end func setSize
-
-    // }}}
-    // {{{ getSize()
+    }
 
     /**
      * Returns the select field size
@@ -322,25 +294,6 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function getSize()
     {
         return $this->getAttribute('size');
-    } //end func getSize
-
-    // }}}
-    // {{{ setMultiple()
-
-    /**
-     * @return null
-     */
-    public function getColumnsSize()
-    {
-        return $this->columnsSize;
-    }
-
-    /**
-     * @param null $columnsSize
-     */
-    public function setColumnsSize($columnsSize)
-    {
-        $this->columnsSize = $columnsSize;
     }
 
     /**
@@ -358,10 +311,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
         } else {
             $this->removeAttribute('multiple');
         }
-    } //end func setMultiple
-
-    // }}}
-    // {{{ getMultiple()
+    }
 
     /**
      * Returns the select mutiple attribute
@@ -373,10 +323,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     function getMultiple()
     {
         return (bool)$this->getAttribute('multiple');
-    } //end func getMultiple
-
-    // }}}
-    // {{{ addOption()
+    }
 
     /**
      * Adds a new OPTION to the SELECT
@@ -411,10 +358,9 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
         } else {
             $this->_options[] = array('text' => $text, 'attr' => $attributes);
         }
-    } // end func addOption
+    }
 
-
-        /**
+    /**
      * Adds a new OPTION to the SELECT
      *
      * @param     string    $text       Display text for the OPTION
@@ -462,13 +408,10 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
                 $this->setName($myName);
             }
 
-
             $strHtml .= $tabs . '<select ' . $attrString . ">\n";
-
             $strValues = is_array($this->_values)? array_map('strval', $this->_values): array();
 
             foreach ($this->_options as $option) {
-
                 if (!empty($strValues) && in_array($option['attr']['value'], $strValues, true)) {
                     $option['attr']['selected'] = 'selected';
                 }
@@ -492,7 +435,6 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
             return $strHtml . $tabs . '</select>';
         }
     }
-
 
     /**
      * Returns the value of field without HTML tags
@@ -533,10 +475,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
             }
         }
         return $html;
-    } //end func getFrozenHtml
-
-    // }}}
-    // {{{ exportValue()
+    }
 
    /**
     * We check the options and return only the values that _could_ have been
@@ -564,6 +503,10 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
             $cleanValue = $value;
         }
         if (is_array($cleanValue) && !$this->getMultiple()) {
+            if (empty($cleanValue)) {
+                return $this->_prepareValue(null, $assoc);
+            }
+
             return $this->_prepareValue($cleanValue[0], $assoc);
         } else {
             return $this->_prepareValue($cleanValue, $assoc);
@@ -592,28 +535,31 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
     }
 
     /**
+     * @param FormValidator $form
+     */
+    public function updateSelectWithSelectedOption(FormValidator $form)
+    {
+        $id = $this->getAttribute('id');
+        $form->addHtml('<script>
+                $(function(){
+                    var optionClass = $("#'.$id.'").find("option:checked").attr("class"); 
+                    $("#'.$id.'").attr("class", "form-control " + optionClass);                    
+                    $("#'.$id.'").on("change", function() {
+                        var optionClass = ($(this).find("option:checked").attr("class")); 
+                        $(this).attr("class", "form-control " + optionClass);
+                    });
+                });
+            </script>');
+    }
+
+    /**
      * @param string $layout
      *
      * @return string
      */
     public function getTemplate($layout)
     {
-        $size = $this->getColumnsSize();
-
-        if (empty($size)) {
-            $size = array(2, 8, 2);
-        } else {
-            if (is_array($size)) {
-                if (count($size) == 1) {
-                    $size = array(2, intval($size[0]), 2);
-                } elseif (count($size) != 3) {
-                    $size = array(2, 8, 2);
-                }
-                // else just keep the $size array as received
-            } else {
-                $size = array(2, intval($size), 2);
-            }
-        }
+        $size = $this->calculateSize();
 
         switch ($layout) {
             case FormValidator::LAYOUT_INLINE:
@@ -622,8 +568,8 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
                     <label {label-for} >
                         <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
                         {label}
-                    </label>
-                    {element}
+                    </label>                                          
+                    {element}   
                 </div>';
                 break;
             case FormValidator::LAYOUT_HORIZONTAL:
@@ -642,7 +588,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element
                         <!-- END label_2 -->
 
                         <!-- BEGIN error -->
-                            <span class="help-inline">{error}</span>
+                            <span class="help-inline help-block">{error}</span>
                         <!-- END error -->
                     </div>
                     <div class="col-sm-'.$size[2].'">

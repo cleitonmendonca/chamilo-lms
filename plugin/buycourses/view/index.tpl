@@ -28,7 +28,8 @@
             </a>
             <div class="caption">
                 <p class="text-center">
-                    <a class="btn btn-default btn-sm" href="src/course_catalog.php">{{ 'BuyCourses'|get_plugin_lang('BuyCoursesPlugin') }}</a>
+                    <a class="btn btn-default btn-sm"
+                       href="src/course_catalog.php">{{ 'BuyCourses'|get_plugin_lang('BuyCoursesPlugin') }}</a>
                 </p>
             </div>
         </div>
@@ -37,12 +38,13 @@
     {% if _u.is_admin %}
         <div class="col-md-3">
             <div class="thumbnail">
-                <a href="src/configuration.php">
+                <a href="src/list.php">
                     <img src="resources/img/128/settings.png">
                 </a>
                 <div class="caption">
                     <p class="text-center">
-                        <a class="btn btn-default btn-sm" href="src/configuration.php">{{ 'ConfigurationOfCoursesAndPrices'|get_plugin_lang('BuyCoursesPlugin') }}</a>
+                        <a class="btn btn-default btn-sm"
+                           href="src/list.php">{{ 'ConfigurationOfCoursesAndPrices'|get_plugin_lang('BuyCoursesPlugin') }}</a>
                     </p>
                 </div>
             </div>
@@ -54,7 +56,8 @@
                 </a>
                 <div class="caption">
                     <p class="text-center">
-                        <a class="btn btn-default btn-sm" href="src/paymentsetup.php">{{ 'PaymentsConfiguration'|get_plugin_lang('BuyCoursesPlugin') }}</a>
+                        <a class="btn btn-default btn-sm"
+                           href="src/paymentsetup.php">{{ 'PaymentsConfiguration'|get_plugin_lang('BuyCoursesPlugin') }}</a>
                     </p>
                 </div>
             </div>
@@ -66,7 +69,8 @@
                 </a>
                 <div class="caption">
                     <p class="text-center">
-                        <a class="btn btn-default btn-sm" href="src/sales_report.php"> {{ 'SalesReport'|get_plugin_lang('BuyCoursesPlugin') }}</a>
+                        <a class="btn btn-default btn-sm"
+                           href="src/sales_report.php"> {{ 'SalesReport'|get_plugin_lang('BuyCoursesPlugin') }}</a>
                     </p>
                 </div>
             </div>

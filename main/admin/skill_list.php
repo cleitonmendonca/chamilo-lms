@@ -1,28 +1,25 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-use ChamiloSession as Session;
-
 /**
- * Skill list for management
+ * Skill list for management.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.admin
  */
-
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $this_section = SECTION_PLATFORM_ADMIN;
 
 api_protect_admin_script();
 
-if (api_get_setting('allow_skills_tool') != 'true') {
-    api_not_allowed();
-}
+Skill::isAllowed();
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
-$skillId = isset($_GET['id']) ? intval($_GET['id']): 0;
+$skillId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $entityManager = Database::getManager();
 
@@ -40,7 +37,7 @@ switch ($action) {
         } else {
             $updatedAt = new DateTime(
                 api_get_utc_datetime(),
-                new DateTimeZone(_api_get_timezone())
+                new DateTimeZone(api_get_timezone())
             );
 
             $skill->setStatus(1);
@@ -57,10 +54,11 @@ switch ($action) {
             );
         }
 
-        header('Location: ' . api_get_self());
+        header('Location: '.api_get_self());
         exit;
         break;
     case 'disable':
+        /** @var \Chamilo\CoreBundle\Entity\Skill $skill */
         $skill = $entityManager->find('ChamiloCoreBundle:Skill', $skillId);
 
         if (is_null($skill)) {
@@ -73,7 +71,7 @@ switch ($action) {
         } else {
             $updatedAt = new DateTime(
                 api_get_utc_datetime(),
-                new DateTimeZone(_api_get_timezone())
+                new DateTimeZone(api_get_timezone())
             );
 
             $skill->setStatus(0);
@@ -82,12 +80,12 @@ switch ($action) {
             $entityManager->persist($skill);
 
             $skillObj = new Skill();
-            $childrens = $skillObj->get_children($skill->getId());
+            $children = $skillObj->getChildren($skill->getId());
 
-            foreach ($childrens as $children) {
+            foreach ($children as $child) {
                 $skill = $entityManager->find(
                     'ChamiloCoreBundle:Skill',
-                    $children['id']
+                    $child['id']
                 );
 
                 if (empty($skill)) {
@@ -96,7 +94,6 @@ switch ($action) {
 
                 $skill->setStatus(0);
                 $skill->setUpdatedAt($updatedAt);
-
                 $entityManager->persist($skill);
             }
 
@@ -110,41 +107,44 @@ switch ($action) {
             );
         }
 
-        header('Location: ' . api_get_self());
+        header('Location: '.api_get_self());
         exit;
         break;
     case 'list':
-        //no break
     default:
-        $interbreadcrumb[] = array ("url" => 'index.php', "name" => get_lang('PlatformAdmin'));
+        $interbreadcrumb[] = ['url' => 'index.php', 'name' => get_lang('PlatformAdmin')];
 
-        $toolbar = Display::toolbarButton(
-            get_lang('CreateSkill'),
-            api_get_path(WEB_CODE_PATH) . 'admin/skill_create.php',
-            'plus',
-            'success',
+        $toolbar = Display::url(
+            Display::return_icon(
+                'add.png',
+                get_lang('CreateSkill'),
+                null,
+                ICON_SIZE_MEDIUM
+            ),
+            api_get_path(WEB_CODE_PATH).'admin/skill_create.php',
             ['title' => get_lang('CreateSkill')]
         );
-        $toolbar .= Display::toolbarButton(
-            get_lang('SkillsWheel'),
-            api_get_path(WEB_CODE_PATH) . 'admin/skills_wheel.php',
-            'bullseye',
-            'primary',
-            ['title' => get_lang('CreateSkill')]
+
+        $toolbar .= Display::url(
+            Display::return_icon(
+                'wheel_skill.png',
+                get_lang('SkillsWheel'),
+                null,
+                ICON_SIZE_MEDIUM
+            ),
+            api_get_path(WEB_CODE_PATH).'admin/skills_wheel.php',
+            ['title' => get_lang('SkillsWheel')]
         );
-        $toolbar .= Display::toolbarButton(
-            get_lang('BadgesManagement'),
-            api_get_path(WEB_CODE_PATH) . 'admin/skill_badge_list.php',
-            'shield',
-            'warning',
-            ['title' => get_lang('BadgesManagement')]
-        );
-        $toolbar .= Display::toolbarButton(
-            get_lang('ImportSkillsListCSV'),
-            api_get_path(WEB_CODE_PATH) . 'admin/skills_import.php',
-            'arrow-up',
-            'info',
-            ['title' => get_lang('BadgesManagement')]
+
+        $toolbar .= Display::url(
+            Display::return_icon(
+                'import_csv.png',
+                get_lang('ImportSkillsListCSV'),
+                null,
+                ICON_SIZE_MEDIUM
+            ),
+            api_get_path(WEB_CODE_PATH).'admin/skills_import.php',
+            ['title' => get_lang('ImportSkillsListCSV')]
         );
 
         $extraField = new ExtraField('skill');
@@ -164,7 +164,6 @@ switch ($action) {
 
         if ($extraFieldSearchTagId) {
             $skills = [];
-
             $skillsFiltered = $extraField->getAllSkillPerTag($arrayVals['id'], $extraFieldSearchTagId);
             foreach ($skillList as $index => $value) {
                 if (array_search($index, $skillsFiltered)) {
@@ -178,12 +177,14 @@ switch ($action) {
         $tpl->assign('skills', $skillList);
         $tpl->assign('current_tag_id', $extraFieldSearchTagId);
         $tpl->assign('tags', $tags);
+        $templateName = $tpl->get_template('skill/list.tpl');
+        $content = $tpl->fetch($templateName);
 
-        $content = $tpl->fetch('default/skill/list.tpl');
-
-        $tpl->assign('actions', $toolbar);
+        $tpl->assign(
+            'actions',
+            Display::toolbarAction('toolbar', [$toolbar], [12])
+        );
         $tpl->assign('content', $content);
         $tpl->display_one_col_template();
-
         break;
 }

@@ -6,11 +6,12 @@
  *
  * @package vchamilo
  * @category plugin
+ *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL
  */
 
 // Loading configuration.
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
 api_protect_admin_script();
 
@@ -20,7 +21,7 @@ $plugin = VChamiloPlugin::create();
 $dataroot = $_REQUEST['dataroot'];
 
 $absalternatecourse = Virtual::getConfig('vchamilo', 'course_real_root');
-if (!empty($absalternatecourse)){
+if (!empty($absalternatecourse)) {
     // this is the relocated case
     $coursedir = str_replace('//', '/', $absalternatecourse.'/'.$dataroot);
 } else {

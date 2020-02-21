@@ -4,7 +4,8 @@
 namespace Chamilo\CoreBundle\Component\Editor\Driver;
 
 /**
- * Class HomeDriver
+ * Class HomeDriver.
+ *
  * @package Chamilo\CoreBundle\Component\Editor\Driver
  */
 class HomeDriver extends Driver implements DriverInterface
@@ -12,11 +13,10 @@ class HomeDriver extends Driver implements DriverInterface
     public $name = 'HomeDriver';
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function setup()
     {
-
     }
 
     /**
@@ -27,16 +27,16 @@ class HomeDriver extends Driver implements DriverInterface
         if ($this->allow()) {
             $home = api_get_path(SYS_APP_PATH).'home';
 
-            return array(
+            return [
                 'driver' => 'HomeDriver',
                 'alias' => get_lang('Portal'),
                 'path' => $home,
-                'URL' => api_get_path(WEB_PATH) . 'home',
-                'accessControl' => array($this, 'access'),
-            );
+                'URL' => api_get_path(WEB_PATH).'home',
+                'accessControl' => [$this, 'access'],
+            ];
         }
 
-        return array();
+        return [];
     }
 
     /**
@@ -47,7 +47,6 @@ class HomeDriver extends Driver implements DriverInterface
         $this->setConnectorFromPlugin();
 
         if ($this->allow()) {
-
             return parent::upload($fp, $dst, $name, $tmpname);
         }
     }
@@ -60,7 +59,6 @@ class HomeDriver extends Driver implements DriverInterface
         $this->setConnectorFromPlugin();
 
         if ($this->allow()) {
-
             return parent::rm($hash);
         }
     }

@@ -1,15 +1,18 @@
 <?php
 /**
- * This script is a configuration file for the vchamilo plugin. You can use it as a master for other platform plugins (course plugins are slightly different).
- * These settings will be used in the administration interface for plugins (Chamilo configuration settings->Plugins)
+ * This script is a configuration file for the vchamilo plugin.
+ * You can use it as a master for other platform plugins (course plugins are slightly different).
+ * These settings will be used in the administration interface for plugins
+ * (Chamilo configuration settings->Plugins).
+ *
  * @package chamilo.plugin
+ *
  * @author Julio Montoya <gugli100@gmail.com>
  */
-
 global $_configuration;
 
 /**
- * Plugin details (must be present)
+ * Plugin details (must be present).
  */
 
 /* Plugin config */
@@ -19,7 +22,7 @@ $plugin_info['title'] = 'Chamilo Virtualization';
 //the comments that go with the plugin
 $plugin_info['comment'] = "Holds chamilo virtualisation tools";
 //the plugin version
-$plugin_info['version'] = '1.0';
+$plugin_info['version'] = '1.2';
 //the plugin author
 $plugin_info['author'] = 'Valery Fremaux, Julio Montoya';
 
@@ -34,7 +37,7 @@ $form = new FormValidator('vchamilo_form');
 
 $plugin = VChamiloPlugin::create();
 
-$form_settings = array(
+$form_settings = [
     'enable_virtualisation' => Virtual::getConfig('vchamilo', 'enable_virtualisation', true),
     'httpproxyhost' => Virtual::getConfig('vchamilo', 'httpproxyhost', true),
     'httpproxyport' => Virtual::getConfig('vchamilo', 'httpproxyport', true),
@@ -46,14 +49,15 @@ $form_settings = array(
     'course_real_root' => Virtual::getConfig('vchamilo', 'course_real_root', true),
     'archive_real_root' => Virtual::getConfig('vchamilo', 'archive_real_root', true),
     'home_real_root' => Virtual::getConfig('vchamilo', 'home_real_root', true),
-);
+    'upload_real_root' => Virtual::getConfig('vchamilo', 'upload_real_root', true),
+];
 
 $form->setDefaults($form_settings);
 
 $wwwroot = $_configuration['root_web'];
 
 //A simple select
-$options = array(0 => $plugin->get_lang('no'), 1 => $plugin->get_lang('yes'));
+$options = [0 => $plugin->get_lang('no'), 1 => $plugin->get_lang('yes')];
 $form->addLabel(
     '',
     '<a class="btn btn-primary" href="'.api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/manage.php">'.
@@ -77,6 +81,12 @@ $form->addElement(
     [$plugin->get_lang('homerealroot'), 'Example: '.api_get_path(SYS_PATH).'var/home/']
 );
 
+$form->addElement(
+    'text',
+    'upload_real_root',
+    [$plugin->get_lang('UploadRealRoot'), 'Example: '.api_get_path(SYS_PATH).'var/upload/']
+);
+
 $form->addElement('header', $plugin->get_lang('mysqlcmds'));
 $form->addElement('text', 'cmd_mysql', [$plugin->get_lang('mysqlcmd'), 'Example: /usr/bin/mysql']);
 $form->addElement('text', 'cmd_mysqldump', [$plugin->get_lang('mysqldumpcmd'), 'Example: /usr/bin/mysqldump']);
@@ -90,5 +100,7 @@ $form->addButtonSave($plugin->get_lang('Save'));
 
 $plugin_info['settings_form'] = $form;
 
-//set the templates that are going to be used
-$plugin_info['templates'] = array('template.tpl');
+// Set the templates that are going to be used
+$plugin_info['templates'] = ['template.tpl'];
+
+$plugin_info['plugin_class'] = get_class($plugin);

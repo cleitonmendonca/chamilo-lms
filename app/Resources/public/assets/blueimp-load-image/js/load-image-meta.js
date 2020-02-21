@@ -10,10 +10,10 @@
  * Achim Stöhr.
  *
  * Licensed under the MIT license:
- * http://www.opensource.org/licenses/MIT
+ * https://opensource.org/licenses/MIT
  */
 
-/*global define, module, require, window, DataView, Blob, Uint8Array, console */
+/* global define, Blob */
 
 ;(function (factory) {
   'use strict'
@@ -29,7 +29,7 @@
 }(function (loadImage) {
   'use strict'
 
-  var hasblobSlice = window.Blob && (Blob.prototype.slice ||
+  var hasblobSlice = typeof Blob !== 'undefined' && (Blob.prototype.slice ||
   Blob.prototype.webkitSlice || Blob.prototype.mozSlice)
 
   loadImage.blobSlice = hasblobSlice && function () {
@@ -49,13 +49,13 @@
   // The options arguments accepts an object and supports the following properties:
   // * maxMetaDataSize: Defines the maximum number of bytes to parse.
   // * disableImageHead: Disables creating the imageHead property.
-  loadImage.parseMetaData = function (file, callback, options) {
+  loadImage.parseMetaData = function (file, callback, options, data) {
     options = options || {}
+    data = data || {}
     var that = this
     // 256 KiB should contain all EXIF/ICC/IPTC segments:
     var maxMetaDataSize = options.maxMetaDataSize || 262144
-    var data = {}
-    var noMetaData = !(window.DataView && file && file.size >= 12 &&
+    var noMetaData = !(typeof DataView !== 'undefined' && file && file.size >= 12 &&
                       file.type === 'image/jpeg' && loadImage.blobSlice)
     if (noMetaData || !loadImage.readFile(
         loadImage.blobSlice.call(file, 0, maxMetaDataSize),
@@ -138,6 +138,22 @@
         'readAsArrayBuffer'
       )) {
       callback(data)
+    }
+  }
+
+  // Determines if meta data should be loaded automatically:
+  loadImage.hasMetaOption = function (options) {
+    return options && options.meta
+  }
+
+  var originalTransform = loadImage.transform
+  loadImage.transform = function (img, options, callback, file, data) {
+    if (loadImage.hasMetaOption(options)) {
+      loadImage.parseMetaData(file, function (data) {
+        originalTransform.call(loadImage, img, options, callback, file, data)
+      }, options, data)
+    } else {
+      originalTransform.apply(loadImage, arguments)
     }
   }
 }))

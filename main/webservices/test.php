@@ -1,7 +1,7 @@
 <?php
 exit;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 require_once '../inc/conf/configuration.php';
 
 ?>
@@ -15,16 +15,16 @@ $serversys = api_get_path(SYS_CODE_PATH).'webservices/';
 $script = isset($_POST['script']) ? $_POST['script'] : false;
 $function = isset($_POST['function']) ? $_POST['function'] : false;
 
-$contact= $server.$script.'?wsdl';
+$contact = $server.$script.'?wsdl';
 
 $client = new nusoap_client($contact);
 $err = $client->getError();
 if ($err) {
     // Display the error
-    echo '<h2>Constructor error</h2><pre>' . $err . '</pre>';
+    echo '<h2>Constructor error</h2><pre>'.$err.'</pre>';
     // At this point, you know the call that follows will fail
 }
-$response = array();
+$response = [];
 if (!empty($function)) {
     $response = $client->call($function);
     echo '<pre>';
@@ -35,10 +35,12 @@ if (!empty($function)) {
 }
 
 $list = scandir($serversys);
-$scripts = array();
+$scripts = [];
 foreach ($list as $item) {
-    if (substr($item,0,1) == '.') { continue; }
-    if (substr($item,-8)=='soap.php') {
+    if (substr($item, 0, 1) == '.') {
+        continue;
+    }
+    if (substr($item, -8) == 'soap.php') {
         $scripts[] = $item;
     }
 }
@@ -55,7 +57,7 @@ foreach ($scripts as $script) {
 ?>
 </select><br />
 <label for="function">Function</label>
-<input type="text" name="function" value="<?php echo $function;?>"></input><br />
+<input type="text" name="function" value="<?php echo $function; ?>"></input><br />
 <label for="param[0]">Param 0</label>
 <input type="text" name="param[0]" ></input><br />
 <input type="submit" name="submit" value="Send"/>

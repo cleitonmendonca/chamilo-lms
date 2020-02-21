@@ -3,11 +3,15 @@
 
 /**
  * Code for HotPotatoes integration.
+ *
  * @package chamilo.exercise
+ *
  * @author Istvan Mandak (original author)
  */
+require_once __DIR__.'/../inc/global.inc.php';
 
-require_once '../inc/global.inc.php';
+api_protect_course_script(true);
+
 require_once 'hotpotatoes.lib.php';
 
 // Section (for the tabs).
@@ -19,27 +23,24 @@ if (!api_is_allowed_to_edit(null, true)) {
     api_not_allowed();
 }
 
-if (isset($_SESSION['gradebook'])) {
-    $gradebook = $_SESSION['gradebook'];
-}
-
-if (!empty($gradebook) && $gradebook == 'view') {
-    $interbreadcrumb[] = array(
-        'url' => '../gradebook/'.$_SESSION['gradebook_dest'],
-        'name' => get_lang('ToolGradebook')
-    );
+if (api_is_in_gradebook()) {
+    $interbreadcrumb[] = [
+        'url' => Category::getUrl(),
+        'name' => get_lang('ToolGradebook'),
+    ];
 }
 // The breadcrumbs.
-$interbreadcrumb[] = array(
-    'url' => api_get_path(WEB_CODE_PATH) . '.exercise/exercise.php?' . api_get_cidreq(),
-    'name' => get_lang('Exercises')
-);
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'exercise/exercise.php?'.api_get_cidreq(),
+    'name' => get_lang('Exercises'),
+];
 
 $is_allowedToEdit = api_is_allowed_to_edit(null, true);
 
 // Database table definitions.
 $dbTable = Database::get_course_table(TABLE_DOCUMENT);
-$course_id = api_get_course_int_id();
+$course_id = $_course['real_id'];
+$sessionId = api_get_session_id();
 
 // Setting some variables.
 $document_sys_path = api_get_path(SYS_COURSE_PATH).$_course['path'].'/document';
@@ -92,7 +93,7 @@ $form = new FormValidator(
     'post',
     api_get_self()."?".api_get_cidreq(),
     null,
-    array('enctype' => 'multipart/form-data')
+    ['enctype' => 'multipart/form-data']
 );
 $form->addElement('header', $nameTools);
 $form->addElement('hidden', 'uploadPath');
@@ -100,7 +101,7 @@ $form->addElement('hidden', 'fld', $fld);
 $form->addElement('hidden', 'imgcount', $imgcount);
 $form->addElement('hidden', 'finish', $finish);
 $form->addElement('html', GenerateHiddenList($imgparams));
-$form->addElement('label', '', Display::return_icon('hotpotatoes.jpg', get_lang('HotPotatoes')));
+$form->addElement('label', '', Display::return_icon('hotpotatoes.jpg', 'HotPotatoes'));
 $label = get_lang('DownloadImg').' : ';
 if ($finish == 0) {
     $label = get_lang('DownloadFile').' : ';
@@ -111,10 +112,8 @@ $form->addButtonSend(get_lang('SendFile'));
 
 // If finish is set; it's because the user came from this script in the first place (displaying hidden "finish" field).
 if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) {
-
     // Moved this down here as the upload handling functions give output.
     if ($form->validate()) {
-
         // Initialise $finish
         if (!isset($finish)) {
             $finish = 0;
@@ -153,7 +152,7 @@ if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) 
                 $_course,
                 $_FILES['userFile'],
                 $document_sys_path,
-                $uploadPath . '/' . $fld,
+                $uploadPath.'/'.$fld,
                 api_get_user_id(),
                 null,
                 null,
@@ -165,7 +164,7 @@ if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) 
                     $imgparams = $_POST['imgparams'];
                     $checked = CheckImageName($imgparams, $filename);
                     if ($checked) {
-                        $imgcount = $imgcount-1;
+                        $imgcount = $imgcount - 1;
                     } else {
                         $dialogBox .= $filename.' '.get_lang('NameNotEqual');
                         my_delete($document_sys_path.$uploadPath.'/'.$fld.'/'.$filename);
@@ -190,6 +189,7 @@ if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) 
                     }
                 }
 
+                // Set the HotPotatoes title in the document record's "comment" field
                 $title = @htmlspecialchars(
                     GetQuizName(
                         $filename,
@@ -198,17 +198,34 @@ if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) 
                     ENT_COMPAT,
                     api_get_system_encoding()
                 );
-                $query = "UPDATE $dbTable
+                $sessionAnd = ' AND session_id IS NULL ';
+                if ($sessionId) {
+                    $sessionAnd = " AND session_id = $sessionId ";
+                }
+                $path = $uploadPath.'/'.$fld.'/'.$filename;
+                // Find the proper record
+                $select = "SELECT iid FROM $dbTable
+                          WHERE c_id = $course_id
+                          $sessionAnd
+                          AND path = '$path'";
+                $query = Database::query($select);
+                if (Database::num_rows($query)) {
+                    $row = Database::fetch_array($query);
+                    $hotPotatoesDocumentId = $row['iid'];
+                    // Update the record with the 'comment' (HP title)
+                    $query = "UPDATE $dbTable
                           SET comment='".Database::escape_string($title)."'
-                          WHERE c_id = $course_id AND path=\"".$uploadPath."/".$fld."/".$filename."\"";
-                Database::query($query);
-                api_item_property_update(
-                    $_course,
-                    TOOL_QUIZ,
-                    $id,
-                    'QuizAdded',
-                    api_get_user_id()
-                );
+                          WHERE iid = $hotPotatoesDocumentId";
+                    Database::query($query);
+                    // Mark the addition of the HP quiz in the item_property table
+                    api_item_property_update(
+                        $_course,
+                        TOOL_QUIZ,
+                        $hotPotatoesDocumentId,
+                        'QuizAdded',
+                        api_get_user_id()
+                    );
+                }
             } else {
                 $finish = 0;
             }
@@ -225,20 +242,20 @@ if ((api_is_allowed_to_edit(null, true)) && (($finish == 0) || ($finish == 2))) 
 
     echo '<div class="actions">';
     echo '<a href="exercise.php?show=test">'.
-        Display :: return_icon('back.png', get_lang('BackToExercisesList'), '', ICON_SIZE_MEDIUM).
+        Display::return_icon('back.png', get_lang('BackToExercisesList'), '', ICON_SIZE_MEDIUM).
         '</a>';
     echo '</div>';
 
     if ($finish == 2) {
         // If we are in the img upload process.
         $dialogBox .= get_lang('ImgNote_st').$imgcount.get_lang('ImgNote_en').'<br />';
-        while (list($key, $string) = each($imgparams)) {
+        foreach ($imgparams as $key => $string) {
             $dialogBox .= $string.'; ';
         }
     }
 
     if ($dialogBox) {
-        Display::display_normal_message($dialogBox, false);
+        echo Display::return_message($dialogBox, 'normal', false);
     }
 
     $form->display();

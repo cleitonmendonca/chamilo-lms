@@ -31,12 +31,12 @@
     "test"
   ],
   "homepage": "https://github.com/dropbox/zxcvbn",
-  "version": "4.3.0",
-  "_release": "4.3.0",
+  "version": "4.4.2",
+  "_release": "4.4.2",
   "_resolution": {
     "type": "version",
-    "tag": "4.3.0",
-    "commit": "62aca144af8c6ca9651ceaa981a52cce1df4fef1"
+    "tag": "v4.4.2",
+    "commit": "0b7f691c370d922399fe60927433338c062dde23"
   },
   "_source": "https://github.com/dropbox/zxcvbn.git",
   "_target": ">=4.2.0",

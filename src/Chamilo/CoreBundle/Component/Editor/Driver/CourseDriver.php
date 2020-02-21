@@ -4,10 +4,9 @@
 namespace Chamilo\CoreBundle\Component\Editor\Driver;
 
 /**
- * Class CourseDriver
+ * Class CourseDriver.
  *
  * @package Chamilo\CoreBundle\Component\Editor\Driver
- *
  */
 class CourseDriver extends Driver implements DriverInterface
 {
@@ -16,7 +15,7 @@ class CourseDriver extends Driver implements DriverInterface
     private $coursePath;
 
     /**
-     * Setups the folder
+     * Setups the folder.
      */
     public function setup()
     {
@@ -27,14 +26,12 @@ class CourseDriver extends Driver implements DriverInterface
 
         if (!empty($courseInfo)) {
             $coursePath = api_get_path(SYS_COURSE_PATH);
-            $courseDir = $courseInfo['directory'] . '/document';
-            $baseDir = $coursePath . $courseDir;
-
+            $courseDir = $courseInfo['directory'].'/document';
+            $baseDir = $coursePath.$courseDir;
             $this->coursePath = $baseDir;
 
             // Creates shared folder
-
-            if (!file_exists($baseDir . '/shared_folder')) {
+            if (!file_exists($baseDir.'/shared_folder')) {
                 $title = get_lang('UserFolders');
                 $folderName = '/shared_folder';
                 //$groupId = 0;
@@ -53,9 +50,9 @@ class CourseDriver extends Driver implements DriverInterface
             }
 
             // Creates user-course folder
-            if (!file_exists($baseDir . '/shared_folder/sf_user_' . $userId)) {
+            if (!file_exists($baseDir.'/shared_folder/sf_user_'.$userId)) {
                 $title = $userInfo['complete_name'];
-                $folderName = '/shared_folder/sf_user_' . $userId;
+                $folderName = '/shared_folder/sf_user_'.$userId;
                 $visibility = 1;
                 create_unexisting_directory(
                     $courseInfo,
@@ -83,64 +80,115 @@ class CourseDriver extends Driver implements DriverInterface
             $courseCode = $this->connector->course['code'];
             $alias = $courseCode.' '.get_lang('Documents');
             $userId = api_get_user_id();
-
-            $config = array(
+            $config = [
                 'driver' => 'CourseDriver',
                 'path' => $this->getCourseDocumentSysPath(),
                 'URL' => $this->getCourseDocumentRelativeWebPath(),
-                'accessControl' => array($this, 'access'),
+                'accessControl' => [$this, 'access'],
                 'alias' => $alias,
-                'attributes' => array(
+                'attributes' => [
                     // Hide shared_folder
-                    array(
+                    [
                         'pattern' => '/shared_folder/',
                         'read' => false,
                         'write' => false,
                         'hidden' => true,
-                        'locked' => false
-                    )
-                )
+                        'locked' => false,
+                    ],
+                    [
+                        'pattern' => '/^\/index.html$/',
+                        'read' => false,
+                        'write' => false,
+                        'hidden' => true,
+                        'locked' => false,
+                    ],
+                ],
+            ];
+
+            // admin/teachers can create dirs from ckeditor
+            if ($this->allowToEdit()) {
+                $config['attributes'][] = [
+                    'pattern' => '/^\/learning_path$/', // block delete learning_path
+                    'read' => true,
+                    'write' => false,
+                    'hidden' => false,
+                    'locked' => true,
+                ];
+                $config['attributes'][] = [
+                    'pattern' => '/learning_path\/(.*)/', // allow edit/delete inside learning_path
+                    'read' => true,
+                    'write' => true,
+                    'hidden' => false,
+                    'locked' => false,
+                ];
+
+                $defaultDisabled = $this->connector->getDefaultDriverSettings()['disabled'];
+                $defaultDisabled = array_flip($defaultDisabled);
+                unset($defaultDisabled['mkdir']);
+                $defaultDisabled = array_flip($defaultDisabled);
+                $config['disabled'] = $defaultDisabled;
+            } else {
+                $protectedFolders = \DocumentManager::getProtectedFolderFromStudent();
+                foreach ($protectedFolders as $folder) {
+                    $config['attributes'][] = [
+                        'pattern' => $folder.'/',
+                        'read' => false,
+                        'write' => false,
+                        'hidden' => true,
+                        'locked' => false,
+                    ];
+                }
+            }
+
+            $foldersToHide = \DocumentManager::get_all_document_folders(
+                $this->connector->course,
+                null,
+                false,
+                true
             );
 
-            $folders = \DocumentManager::get_all_document_folders($this->connector->course, null, false, true);
-            if (!empty($folders)) {
-                foreach ($folders as $folder) {
-                    //$folder = str_replace('-', "", $folder);
-                    //\/
+            // Teachers can see all files and folders see #1425
+            if ($this->allowToEdit()) {
+                $foldersToHide = [];
+            }
+
+            if (!empty($foldersToHide)) {
+                foreach ($foldersToHide as $folder) {
                     $config['attributes'][] = [
                         'pattern' => '!'.$folder.'!',
                         'read' => false,
                         'write' => false,
                         'hidden' => true,
-                        'locked' => false
+                        'locked' => false,
                     ];
                 }
             }
 
-            // Blocking all groups
-
-            // hide all groups folders
+            // Hide all groups folders
             $config['attributes'][] = [
                 'pattern' => '!_groupdocs_!',
                 'read' => false,
                 'write' => false,
                 'hidden' => true,
-                'locked' => false
+                'locked' => false,
             ];
-
 
             // Allow only the groups I have access
             $allGroups = \GroupManager::getAllGroupPerUserSubscription($userId);
             if (!empty($allGroups)) {
                 foreach ($allGroups as $groupInfo) {
                     $groupId = $groupInfo['iid'];
-                    if (\GroupManager::user_has_access($userId, $groupId, \GroupManager::GROUP_TOOL_DOCUMENTS)) {
+                    if (\GroupManager::user_has_access(
+                        $userId,
+                        $groupId,
+                        \GroupManager::GROUP_TOOL_DOCUMENTS
+                    )) {
                         $config['attributes'][] = [
                             'pattern' => '!'.$groupInfo['secret_directory'].'!',
                             'read' => true,
                             'write' => false,
                             'hidden' => false,
-                            'locked' => false
+                            'locked' => false,
                         ];
                     }
                 }
@@ -149,17 +197,18 @@ class CourseDriver extends Driver implements DriverInterface
             return $config;
         }
 
-        return array();
+        return [];
     }
 
     /**
      * This is the absolute document course path like
-     * /var/www/portal/data/courses/XXX/document/
+     * /var/www/portal/data/courses/XXX/document/.
+     *
      * @return string
      */
     public function getCourseDocumentSysPath()
     {
-        $url = null;
+        $url = '';
         if ($this->allow()) {
             $directory = $this->getCourseDirectory();
             $coursePath = $this->connector->paths['sys_course_path'];
@@ -183,7 +232,6 @@ class CourseDriver extends Driver implements DriverInterface
         return $url;
     }
 
-
     /**
      * @return string
      */
@@ -199,7 +247,6 @@ class CourseDriver extends Driver implements DriverInterface
     }
 
     /**
-     *
      * @return string
      */
     public function getCourseDirectory()
@@ -210,12 +257,12 @@ class CourseDriver extends Driver implements DriverInterface
     /**
      * {@inheritdoc}
      */
-    public function upload($fp, $dst, $name, $tmpname)
+    public function upload($fp, $dst, $name, $tmpname, $hashes = [])
     {
+        // Needed to load course information in elfinder
         $this->setConnectorFromPlugin();
 
         if ($this->allowToEdit()) {
-
             // upload file by elfinder.
             $result = parent::upload($fp, $dst, $name, $tmpname);
             $name = $result['name'];
@@ -241,7 +288,7 @@ class CourseDriver extends Driver implements DriverInterface
                     $this->connector->course,
                     $realPath,
                     'file',
-                    intval($result['size']),
+                    (int) $result['size'],
                     $result['name']
                 );
             }
@@ -262,7 +309,6 @@ class CourseDriver extends Driver implements DriverInterface
         $this->setConnectorFromPlugin();
 
         if ($this->allowToEdit()) {
-
             $path = $this->decode($hash);
             $stat = $this->stat($path);
             $stat['realpath'] = $path;
@@ -290,14 +336,16 @@ class CourseDriver extends Driver implements DriverInterface
     public function allow()
     {
         //if ($this->connector->security->isGranted('ROLE_ADMIN')) {
-
         if (api_is_anonymous()) {
+            return false;
+        }
 
+        $block = api_get_configuration_value('block_editor_file_manager_for_students');
+        if ($block && !api_is_allowed_to_edit()) {
             return false;
         }
 
         if (isset($this->connector->course) && !empty($this->connector->course)) {
-
             return true;
         }
 
@@ -305,7 +353,7 @@ class CourseDriver extends Driver implements DriverInterface
     }
 
     /**
-     * Allow to upload/delete folder or files
+     * Allow to upload/delete folder or files.
      *
      * @return bool
      */
@@ -317,6 +365,53 @@ class CourseDriver extends Driver implements DriverInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function mkdir($path, $name)
+    {
+        // Needed to load course information in elfinder
+        $this->setConnectorFromPlugin();
+
+        if ($this->allowToEdit() === false) {
+            return false;
+        }
+
+        $result = parent::mkdir($path, $name);
+
+        if ($result && isset($result['hash'])) {
+            $_course = $this->connector->course;
+            $realPathRoot = $this->getCourseDocumentSysPath();
+            $realPath = $this->realpath($result['hash']);
+
+            // Removing course path
+            $newPath = str_replace($realPathRoot, '/', $realPath);
+            $documentId = add_document(
+                $_course,
+                $newPath,
+                'folder',
+                0,
+                $name,
+                null,
+                0,
+                true,
+                api_get_group_id(),
+                api_get_session_id(),
+                api_get_user_id()
+            );
+
+            if (empty($documentId)) {
+                $this->rm($result['hash']);
+
+                return false;
+            }
+
+            return $result;
+        }
+
+        return false;
+    }
+
+    /**
      * @param string $attr
      * @param string $path
      * @param $data
@@ -324,6 +419,8 @@ class CourseDriver extends Driver implements DriverInterface
      */
     /*public function access($attr, $path, $data, $volume)
     {
+        error_log($path);
+        return true;
         if ($path == $this->coursePath) {
 
             return true;
@@ -349,6 +446,5 @@ class CourseDriver extends Driver implements DriverInterface
         }
 
         return false;
-
     }*/
 }

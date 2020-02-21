@@ -6,7 +6,7 @@ namespace Chamilo\CoreBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * TrackEAttempt
+ * TrackEAttempt.
  *
  * @ORM\Table(
  *  name="track_e_attempt",
@@ -23,104 +23,96 @@ use Doctrine\ORM\Mapping as ORM;
 class TrackEAttempt
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="exe_id", type="integer", nullable=true)
      */
-    private $exeId;
+    protected $exeId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="user_id", type="integer", nullable=false)
      */
-    private $userId;
+    protected $userId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="question_id", type="integer", nullable=false)
      */
-    private $questionId;
+    protected $questionId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="answer", type="text", nullable=false)
      */
-    private $answer;
+    protected $answer;
 
     /**
      * @var string
      *
      * @ORM\Column(name="teacher_comment", type="text", nullable=false)
      */
-    private $teacherComment;
+    protected $teacherComment;
 
     /**
      * @var float
      *
      * @ORM\Column(name="marks", type="float", precision=6, scale=2, nullable=false)
      */
-    private $marks;
+    protected $marks;
 
     /**
-     * @var string
-     *
-     * @ORM\Column(name="course_code", type="string", length=40, nullable=false)
-     */
-    private $courseCode;
-
-    /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="c_id", type="integer", nullable=false)
      */
-    private $cId;
+    protected $cId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="position", type="integer", nullable=true)
      */
-    private $position;
+    protected $position;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="tms", type="datetime", nullable=true)
      */
-    private $tms;
+    protected $tms;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="session_id", type="integer", nullable=false)
      */
-    private $sessionId;
+    protected $sessionId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="filename", type="string", length=255, nullable=true)
      */
-    private $filename;
+    protected $filename;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
-    private $id;
-
-
+    protected $id;
 
     /**
-     * Set exeId
+     * Set exeId.
      *
-     * @param integer $exeId
+     * @param int $exeId
+     *
      * @return TrackEAttempt
      */
     public function setExeId($exeId)
@@ -131,9 +123,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get exeId
+     * Get exeId.
      *
-     * @return integer
+     * @return int
      */
     public function getExeId()
     {
@@ -141,9 +133,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set userId
+     * Set userId.
      *
-     * @param integer $userId
+     * @param int $userId
+     *
      * @return TrackEAttempt
      */
     public function setUserId($userId)
@@ -154,9 +147,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get userId
+     * Get userId.
      *
-     * @return integer
+     * @return int
      */
     public function getUserId()
     {
@@ -164,9 +157,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set questionId
+     * Set questionId.
      *
-     * @param integer $questionId
+     * @param int $questionId
+     *
      * @return TrackEAttempt
      */
     public function setQuestionId($questionId)
@@ -177,9 +171,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get questionId
+     * Get questionId.
      *
-     * @return integer
+     * @return int
      */
     public function getQuestionId()
     {
@@ -187,9 +181,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set answer
+     * Set answer.
      *
      * @param string $answer
+     *
      * @return TrackEAttempt
      */
     public function setAnswer($answer)
@@ -200,7 +195,7 @@ class TrackEAttempt
     }
 
     /**
-     * Get answer
+     * Get answer.
      *
      * @return string
      */
@@ -210,9 +205,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set teacherComment
+     * Set teacherComment.
      *
      * @param string $teacherComment
+     *
      * @return TrackEAttempt
      */
     public function setTeacherComment($teacherComment)
@@ -223,7 +219,7 @@ class TrackEAttempt
     }
 
     /**
-     * Get teacherComment
+     * Get teacherComment.
      *
      * @return string
      */
@@ -233,9 +229,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set marks
+     * Set marks.
      *
      * @param float $marks
+     *
      * @return TrackEAttempt
      */
     public function setMarks($marks)
@@ -246,7 +243,7 @@ class TrackEAttempt
     }
 
     /**
-     * Get marks
+     * Get marks.
      *
      * @return float
      */
@@ -256,32 +253,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set courseCode
+     * Set cId.
      *
-     * @param string $courseCode
-     * @return TrackEAttempt
-     */
-    public function setCourseCode($courseCode)
-    {
-        $this->courseCode = $courseCode;
-
-        return $this;
-    }
-
-    /**
-     * Get courseCode
+     * @param int $cId
      *
-     * @return string
-     */
-    public function getCourseCode()
-    {
-        return $this->courseCode;
-    }
-
-    /**
-     * Set cId
-     *
-     * @param integer $cId
      * @return TrackEAttempt
      */
     public function setCId($cId)
@@ -292,9 +267,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get cId
+     * Get cId.
      *
-     * @return integer
+     * @return int
      */
     public function getCId()
     {
@@ -302,9 +277,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set position
+     * Set position.
      *
-     * @param integer $position
+     * @param int $position
+     *
      * @return TrackEAttempt
      */
     public function setPosition($position)
@@ -315,9 +291,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get position
+     * Get position.
      *
-     * @return integer
+     * @return int
      */
     public function getPosition()
     {
@@ -325,9 +301,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set tms
+     * Set tms.
      *
      * @param \DateTime $tms
+     *
      * @return TrackEAttempt
      */
     public function setTms($tms)
@@ -338,7 +315,7 @@ class TrackEAttempt
     }
 
     /**
-     * Get tms
+     * Get tms.
      *
      * @return \DateTime
      */
@@ -348,9 +325,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set sessionId
+     * Set sessionId.
      *
-     * @param integer $sessionId
+     * @param int $sessionId
+     *
      * @return TrackEAttempt
      */
     public function setSessionId($sessionId)
@@ -361,9 +339,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get sessionId
+     * Get sessionId.
      *
-     * @return integer
+     * @return int
      */
     public function getSessionId()
     {
@@ -371,9 +349,10 @@ class TrackEAttempt
     }
 
     /**
-     * Set filename
+     * Set filename.
      *
      * @param string $filename
+     *
      * @return TrackEAttempt
      */
     public function setFilename($filename)
@@ -384,7 +363,7 @@ class TrackEAttempt
     }
 
     /**
-     * Get filename
+     * Get filename.
      *
      * @return string
      */
@@ -394,9 +373,9 @@ class TrackEAttempt
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {

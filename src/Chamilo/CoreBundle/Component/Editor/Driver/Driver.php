@@ -6,7 +6,7 @@ namespace Chamilo\CoreBundle\Component\Editor\Driver;
 use Chamilo\CoreBundle\Component\Editor\Connector;
 
 /**
- * Class Driver
+ * Class Driver.
  *
  * @package Chamilo\CoreBundle\Component\Editor\Driver
  */
@@ -20,6 +20,7 @@ class Driver extends \elFinderVolumeLocalFileSystem
 
     /**
      * Gets driver name.
+     *
      * @return string
      */
     public function getName()
@@ -29,6 +30,7 @@ class Driver extends \elFinderVolumeLocalFileSystem
 
     /**
      * Gets driver name.
+     *
      * @param string $name
      */
     public function setName($name)
@@ -37,8 +39,7 @@ class Driver extends \elFinderVolumeLocalFileSystem
     }
 
     /**
-     * Set connector
-     * @param Connector $connector
+     * Set connector.
      */
     public function setConnector(Connector $connector)
     {
@@ -64,8 +65,8 @@ class Driver extends \elFinderVolumeLocalFileSystem
 
     /**
      * This is a copy of rename function only to be used when uploading a file
-     * @inheritdoc
-     **/
+     * {@inheritdoc}
+     */
     public function customRename($hash, $name)
     {
         if (!$this->nameAccepted($name)) {
@@ -85,7 +86,7 @@ class Driver extends \elFinderVolumeLocalFileSystem
         }
 
         $path = $this->decode($hash);
-        $dir  = $this->dirnameCE($path);
+        $dir = $this->dirnameCE($path);
         $stat = $this->stat($this->joinPathCE($dir, $name));
 
         if ($stat) {
@@ -98,11 +99,12 @@ class Driver extends \elFinderVolumeLocalFileSystem
 
         $this->rmTmb($file); // remove old name tmbs, we cannot do this after dir move
 
-
         if ($path = $this->convEncOut($this->_move($this->convEncIn($path), $this->convEncIn($dir), $this->convEncIn($name)))) {
             $this->clearcache();
+
             return $this->stat($path);
         }
+
         return false;
     }
 }

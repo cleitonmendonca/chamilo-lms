@@ -4,14 +4,16 @@
 namespace Chamilo\CourseBundle\Component\CourseCopy\Resources;
 
 /**
- * A forum-post
+ * A forum-post.
+ *
  * @author Bart Mollet <bart.mollet@hogent.be>
+ *
  * @package chamilo.backup
  */
 class ForumPost extends Resource
 {
     /**
-     * Create a new ForumPost
+     * Create a new ForumPost.
      */
     public function __construct($obj)
     {
@@ -20,11 +22,11 @@ class ForumPost extends Resource
     }
 
     /**
-     * Show this resource
+     * Show this resource.
      */
     public function show()
     {
         parent::show();
-        echo $this->obj->title . ' (' . $this->obj->poster_name . ', ' . $this->obj->post_date . ')';
+        echo $this->obj->title.' ('.$this->obj->poster_name.', '.$this->obj->post_date.')';
     }
 }

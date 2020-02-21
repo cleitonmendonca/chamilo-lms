@@ -1,55 +1,86 @@
 <?php
-require dirname(__FILE__) . '/../../../main/inc/global.inc.php';
-require_once dirname(__FILE__) . '/../../../main/auth/external_login/functions.inc.php';
+/* For license terms, see /license.txt */
 
-if (isset($_POST['error']) || empty($_REQUEST)) {
-    header('Location: ' . api_get_path(WEB_PATH) . 'index.php?logout=logout');
+require __DIR__.'/../../../main/inc/global.inc.php';
+
+$plugin = AzureActiveDirectory::create();
+
+$provider = $plugin->getProvider();
+
+if (!isset($_GET['code'])) {
+    // If we don't have an authorization code then get one
+    $authUrl = $provider->getAuthorizationUrl();
+
+    ChamiloSession::write('oauth2state', $provider->getState());
+
+    header('Location: '.$authUrl);
     exit;
 }
 
-list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $_REQUEST['id_token']);
+// Check given state against previously stored one to mitigate CSRF attack
+if (empty($_GET['state']) || ($_GET['state'] !== ChamiloSession::read('oauth2state'))) {
+    ChamiloSession::erase('oauth2state');
 
-$jwtHeader = json_decode(
-    base64_decode($jwtHeader)
-);
-
-$jwtPayload = json_decode(
-    base64_decode($jwtPayload)
-);
-
-$u = array(
-    'firstname' => $jwtPayload->given_name,
-    'lastname' => $jwtPayload->family_name,
-    'status' => STUDENT,
-    'email' => $jwtPayload->emails[0],
-    'username' => $jwtPayload->emails[0],
-    'language' => 'en',
-    'password' => 'azure_active_directory',
-    'auth_source' => 'azure_active_directory ' . $jwtPayload->idp,
-    'extra' => array()
-);
-
-$userInfo = api_get_user_info_from_email($jwtPayload->emails[0]);
-
-if ($userInfo === false) {
-    // we have to create the user
-    $chamilo_uid = external_add_user($u);
-
-    if ($chamilo_uid !== false) {
-        $_user['user_id'] = $chamilo_uid;
-        $_user['uidReset'] = true;
-        $_SESSION['_user'] = $_user;
-    }
-} else {
-    // User already exists, update info and login
-    $chamilo_uid = $userInfo['user_id'];
-    $u['user_id'] = $chamilo_uid;
-    external_update_user($u);
-
-    $_user['user_id'] = $chamilo_uid;
-    $_user['uidReset'] = true;
-    $_SESSION['_user'] = $_user;
+    exit;
 }
 
-header('Location: ' . api_get_path(WEB_PATH));
-exit;
+// Try to get an access token (using the authorization code grant)
+$token = $provider->getAccessToken('authorization_code', [
+    'code' => $_GET['code'],
+    'resource' => 'https://graph.windows.net',
+]);
+
+$me = null;
+
+try {
+    $me = $provider->get("me", $token);
+
+    if (empty($me['mail']) || empty($me['mailNickname'])) {
+        throw new Exception();
+    }
+
+    $extraFieldValue = new ExtraFieldValue('user');
+    $organisationValue = $extraFieldValue->get_item_id_from_field_variable_and_field_value(
+        AzureActiveDirectory::EXTRA_FIELD_ORGANISATION_EMAIL,
+        $me['mail']
+    );
+    $azureValue = $extraFieldValue->get_item_id_from_field_variable_and_field_value(
+        AzureActiveDirectory::EXTRA_FIELD_AZURE_ID,
+        $me['mailNickname']
+    );
+
+    $emptyValues = empty($organisationValue['item_id']) || empty($azureValue['item_id']);
+    $differentValues = !$emptyValues && $organisationValue['item_id'] != $azureValue['item_id'];
+
+    if ($emptyValues || $differentValues) {
+        throw new Exception();
+    }
+
+    $userInfo = api_get_user_info($organisationValue['item_id']);
+
+    if (empty($userInfo)) {
+        throw new Exception();
+    }
+
+    if ($userInfo['active'] != '1') {
+        throw new Exception('account_inactive');
+    }
+} catch (Exception $exception) {
+    $message = Display::return_message($plugin->get_lang('InvalidId'), 'error');
+
+    if ($exception->getMessage() === 'account_inactive') {
+        $message = Display::return_message(get_lang('AccountInactive'), 'error');
+    }
+
+    Display::addFlash($message);
+    header('Location: '.api_get_path(WEB_PATH));
+    exit;
+}
+
+$_user['user_id'] = $userInfo['user_id'];
+$_user['uidReset'] = true;
+
+ChamiloSession::write('_user', $_user);
+ChamiloSession::write('_user_auth_source', 'azure_active_directory');
+
+Redirect::session_request_uri(true, $userInfo['user_id']);

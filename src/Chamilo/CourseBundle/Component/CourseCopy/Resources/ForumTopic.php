@@ -4,14 +4,16 @@
 namespace Chamilo\CourseBundle\Component\CourseCopy\Resources;
 
 /**
- * A forum-topic/thread
+ * A forum-topic/thread.
+ *
  * @author Bart Mollet <bart.mollet@hogent.be>
+ *
  * @package chamilo.backup
  */
 class ForumTopic extends Resource
 {
     /**
-     * Create a new ForumTopic
+     * Create a new ForumTopic.
      */
     /* function ForumTopic($id, $title, $time, $topic_poster_id, $topic_poster_name, $forum_id, $last_post, $replies, $views = 0, $sticky = 0, $locked = 0,
       $time_closed = null, $weight = 0, $title_qualify = null, $qualify_max = 0) */
@@ -37,7 +39,7 @@ class ForumTopic extends Resource
     }
 
     /**
-     * Show this resource
+     * Show this resource.
      */
     public function show()
     {
@@ -47,6 +49,6 @@ class ForumTopic extends Resource
             $user_info = api_get_user_info($this->obj->thread_poster_id);
             $extra = $user_info['complete_name'].', '.$extra;
         }
-        echo $this->obj->thread_title . ' (' . $extra . ')';
+        echo $this->obj->thread_title.' ('.$extra.')';
     }
 }

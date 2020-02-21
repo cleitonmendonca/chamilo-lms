@@ -1,14 +1,25 @@
 <?php
-
 /* For licensing terms, see /license.txt */
+
 /**
- * List of achieved certificates by the current user
+ * List of achieved certificates by the current user.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.gradebook
  */
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
+
+$logInfo = [
+    'tool' => 'MyCertificates',
+    'tool_id' => 0,
+    'tool_id_detail' => 0,
+    'action' => '',
+    'action_details' => '',
+];
+Event::registerLog($logInfo);
 
 if (api_is_anonymous()) {
     api_not_allowed(true);
@@ -29,14 +40,15 @@ $template = new Template(get_lang('MyCertificates'));
 
 $template->assign('course_list', $courseList);
 $template->assign('session_list', $sessionList);
-$content = $template->fetch('default/gradebook/my_certificates.tpl');
+$templateName = $template->get_template('gradebook/my_certificates.tpl');
+$content = $template->fetch($templateName);
 
-if (api_get_setting('allow_public_certificates') == 'true') {
+if (api_get_setting('allow_public_certificates') === 'true') {
     $template->assign(
         'actions',
         Display::toolbarButton(
             get_lang('SearchCertificates'),
-            api_get_path(WEB_CODE_PATH) . "gradebook/search.php",
+            api_get_path(WEB_CODE_PATH).'gradebook/search.php',
             'search',
             'info'
         )

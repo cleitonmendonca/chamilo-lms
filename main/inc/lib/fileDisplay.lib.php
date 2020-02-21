@@ -1,11 +1,13 @@
 <?php
 /* See license terms in /license.txt */
 /**
-*	This is the file display library for Dokeos.
-*	Include/require it in your code to use its functionality.
-*
-*	@package chamilo.library
-*/
+ * This is the file display library for Dokeos.
+ * Include/require it in your code to use its functionality.
+ *
+ * @todo move this file to DocumentManager
+ *
+ * @package chamilo.library
+ */
 
 /* FILE DISPLAY FUNCTIONS */
 /**
@@ -13,7 +15,9 @@
  * This needs an existing image repository to work.
  *
  * @author - Hugues Peeters <peeters@ipm.ucl.ac.be>
- * @param  string $file_name (string) - Name of a file
+ *
+ * @param string $file_name (string) - Name of a file
+ *
  * @return string The gif image to chose
  */
 function choose_image($file_name)
@@ -22,7 +26,7 @@ function choose_image($file_name)
 
     /* TABLES INITIALISATION */
     if (!$type || !$image) {
-        $type['word'] = array(
+        $type['word'] = [
             'doc',
             'dot',
             'rtf',
@@ -33,8 +37,8 @@ function choose_image($file_name)
             'docx',
             'dotm',
             'dotx',
-        );
-        $type['web'] = array(
+        ];
+        $type['web'] = [
             'htm',
             'html',
             'htx',
@@ -42,8 +46,8 @@ function choose_image($file_name)
             'xsl',
             'php',
             'xhtml',
-        );
-        $type['image'] = array(
+        ];
+        $type['image'] = [
             'gif',
             'jpg',
             'png',
@@ -51,9 +55,9 @@ function choose_image($file_name)
             'jpeg',
             'tif',
             'tiff',
-        );
-        $type['image_vect'] = array('svg', 'svgz');
-        $type['audio'] = array(
+        ];
+        $type['image_vect'] = ['svg', 'svgz'];
+        $type['audio'] = [
             'wav',
             'mid',
             'mp2',
@@ -65,8 +69,8 @@ function choose_image($file_name)
             'oga',
             'au',
             'wma',
-        );
-        $type['video'] = array(
+        ];
+        $type['video'] = [
             'mp4',
             'mov',
             'rm',
@@ -85,8 +89,8 @@ function choose_image($file_name)
             'ogg',
             'ogx',
             'webm',
-        );
-        $type['excel'] = array(
+        ];
+        $type['excel'] = [
             'xls',
             'xlt',
             'xls',
@@ -98,9 +102,9 @@ function choose_image($file_name)
             'xlsb',
             'xltm',
             'xltx',
-        );
-        $type['compressed'] = array('zip', 'tar', 'rar', 'gz');
-        $type['code'] = array(
+        ];
+        $type['compressed'] = ['zip', 'tar', 'rar', 'gz'];
+        $type['code'] = [
             'js',
             'cpp',
             'c',
@@ -110,9 +114,9 @@ function choose_image($file_name)
             'asp',
             'aspx',
             'cfm',
-        );
-        $type['acrobat'] = array('pdf');
-        $type['powerpoint'] = array(
+        ];
+        $type['acrobat'] = ['pdf'];
+        $type['powerpoint'] = [
             'ppt',
             'pps',
             'pptm',
@@ -122,40 +126,40 @@ function choose_image($file_name)
             'ppam',
             'ppsm',
             'ppsx',
-        );
-        $type['flash'] = array('fla', 'swf');
-        $type['text'] = array('txt', 'log');
-        $type['oo_writer'] = array('odt', 'ott', 'sxw', 'stw');
-        $type['oo_calc'] = array('ods', 'ots', 'sxc', 'stc');
-        $type['oo_impress'] = array('odp', 'otp', 'sxi', 'sti');
-        $type['oo_draw'] = array('odg', 'otg', 'sxd', 'std');
-        $type['epub'] = array('epub');
-        $type['java'] = array('class', 'jar');
-        $type['freemind'] = array('mm');
+        ];
+        $type['flash'] = ['fla', 'swf'];
+        $type['text'] = ['txt', 'log'];
+        $type['oo_writer'] = ['odt', 'ott', 'sxw', 'stw'];
+        $type['oo_calc'] = ['ods', 'ots', 'sxc', 'stc'];
+        $type['oo_impress'] = ['odp', 'otp', 'sxi', 'sti'];
+        $type['oo_draw'] = ['odg', 'otg', 'sxd', 'std'];
+        $type['epub'] = ['epub'];
+        $type['java'] = ['class', 'jar'];
+        $type['freemind'] = ['mm'];
 
-        $image['word'] = 'word.gif';
-        $image['web'] = 'file_html.gif';
-        $image['image'] = 'file_image.gif';
+        $image['word'] = 'word.png';
+        $image['web'] = 'file_html.png';
+        $image['image'] = 'file_image.png';
         $image['image_vect'] = 'file_svg.png';
-        $image['audio'] = 'file_sound.gif';
-        $image['video'] = 'film.gif';
-        $image['excel'] = 'excel.gif';
-        $image['compressed'] = 'file_zip.gif';
+        $image['audio'] = 'file_sound.png';
+        $image['video'] = 'film.png';
+        $image['excel'] = 'excel.png';
+        $image['compressed'] = 'file_zip.png';
         $image['code'] = 'icons/22/mime_code.png';
-        $image['acrobat'] = 'file_pdf.gif';
-        $image['powerpoint'] = 'powerpoint.gif';
-        $image['flash'] = 'file_flash.gif';
+        $image['acrobat'] = 'file_pdf.png';
+        $image['powerpoint'] = 'powerpoint.png';
+        $image['flash'] = 'file_flash.png';
         $image['text'] = 'icons/22/mime_text.png';
-        $image['oo_writer'] = 'file_oo_writer.gif';
-        $image['oo_calc'] = 'file_oo_calc.gif';
-        $image['oo_impress'] = 'file_oo_impress.gif';
-        $image['oo_draw'] = 'file_oo_draw.gif';
-        $image['epub'] = 'file_epub.gif';
+        $image['oo_writer'] = 'file_oo_writer.png';
+        $image['oo_calc'] = 'file_oo_calc.png';
+        $image['oo_impress'] = 'file_oo_impress.png';
+        $image['oo_draw'] = 'file_oo_draw.png';
+        $image['epub'] = 'file_epub.png';
         $image['java'] = 'file_java.png';
         $image['freemind'] = 'file_freemind.png';
     }
 
-    $extension = array();
+    $extension = [];
     if (!is_array($file_name)) {
         if (preg_match('/\.([[:alnum:]]+)(\?|$)/', $file_name, $extension)) {
             $extension[1] = strtolower($extension[1]);
@@ -171,141 +175,39 @@ function choose_image($file_name)
     return 'defaut.gif';
 }
 
-
 /**
- * Transform a UNIX time stamp in human readable format date.
+ * Get the icon to display for a folder by its path.
  *
- * @author - Hugues Peeters <peeters@ipm.ucl.ac.be>
- * @param int $date - UNIX time stamp
- * @return string A human readable representation of the UNIX date
- */
-function format_date($date)
-{
-    return date('d.m.Y', $date);
-}
-
-/**
- * Transform the file path to a URL.
+ * @param string $folderPath
  *
- * @param string $file_path (string) - Relative local path of the file on the hard disk
- * @return string Relative url
+ * @return string
  */
-function format_url($file_path)
+function chooseFolderIcon($folderPath)
 {
-    $path_component = explode('/', $file_path);
-    $path_component = array_map('rawurlencode', $path_component);
-
-    return implode('/', $path_component);
-}
-
-/**
- * Get the most recent time the content of a folder was changed.
- *
- * @param string $dir_name (string)   - Path of the dir on the hard disk
- * @param bool $do_recursive (bool) - Traverse all folders in the folder?
- * @return string Time the content of the folder was changed
- */
-function recent_modified_file_time($dir_name, $do_recursive = true)
-{
-    $dir = dir($dir_name);
-    $last_modified = 0;
-    $return = 0;
-    if (is_dir($dir)) {
-        while(($entry = $dir->read()) !== false)
-        {
-            if ($entry != '.' && $entry != '..')
-                continue;
-
-            if (!is_dir($dir_name.'/'.$entry))
-                $current_modified = filemtime($dir_name.'/'.$entry);
-            elseif ($do_recursive)
-                $current_modified = recent_modified_file_time($dir_name.'/'.$entry, true);
-
-            if ($current_modified > $last_modified)
-                $last_modified = $current_modified;
-        }
-
-        $dir->close();
-        //prevents returning 0 (for empty directories)
-        $return = ($last_modified == 0) ? filemtime($dir_name) : $last_modified;
+    if ($folderPath == '/shared_folder') {
+        return 'folder_users.png';
     }
 
-    return $return;
-}
-
-/**
- * Get the total size of a directory.
- *
- * @param string $dir_name (string) - Path of the dir on the hard disk
- * @return int Total size in bytes
- */
-function folder_size($dir_name)
-{
-    $size = 0;
-    if ($dir_handle = opendir($dir_name)) {
-        while (($entry = readdir($dir_handle)) !== false) {
-            if ($entry == '.' || $entry == '..') {
-                continue;
-            }
-
-            if (is_dir($dir_name.'/'.$entry)) {
-                $size += folder_size($dir_name.'/'.$entry);
-            } else {
-                $size += filesize($dir_name.'/'.$entry);
-            }
-        }
-
-        closedir($dir_handle);
+    if (strstr($folderPath, 'shared_folder_session_')) {
+        return 'folder_users.png';
     }
 
-    return $size;
-}
-
-/**
- * Calculates the total size of a directory by adding the sizes (that
- * are stored in the database) of all files & folders in this directory.
- *
- * @param 	string  $path
- * @param 	boolean $can_see_invisible
- * @return 	int Total size
- */
-function get_total_folder_size($path, $can_see_invisible = false)
-{
-    $table_itemproperty = Database::get_course_table(TABLE_ITEM_PROPERTY);
-    $table_document = Database::get_course_table(TABLE_DOCUMENT);
-    $tool_document = TOOL_DOCUMENT;
-
-    $course_id = api_get_course_int_id();
-    $session_id = api_get_session_id();
-    $session_condition = api_get_session_condition(
-        $session_id,
-        true,
-        true,
-        'props.session_id'
-    );
-
-    $visibility_rule = ' props.visibility ' . ($can_see_invisible ? '<> 2' : '= 1');
-
-    $sql = "SELECT SUM(table1.size) FROM (
-                SELECT props.ref, size
-                FROM $table_itemproperty AS props, $table_document AS docs
-                WHERE
-                    docs.c_id 	= $course_id AND
-                    docs.id 	= props.ref AND
-                    docs.path LIKE '$path/%' AND
-                    props.c_id 	= $course_id AND
-                    props.tool 	= '$tool_document' AND
-                    $visibility_rule
-                    $session_condition
-                GROUP BY ref
-            ) as table1";
-
-    $result = Database::query($sql);
-    if ($result && Database::num_rows($result) != 0) {
-        $row = Database::fetch_row($result);
-
-        return $row[0] == null ? 0 : $row[0];
-    } else {
-        return 0;
+    switch ($folderPath) {
+        case '/audio':
+            return 'folder_audio.png';
+        case '/flash':
+            return 'folder_flash.png';
+        case '/images':
+            return 'folder_images.png';
+        case '/video':
+            return 'folder_video.png';
+        case '/images/gallery':
+            return 'folder_gallery.png';
+        case '/chat_files':
+            return 'folder_chat.png';
+        case '/learning_path':
+            return 'folder_learningpath.png';
     }
+
+    return 'folder_document.png';
 }

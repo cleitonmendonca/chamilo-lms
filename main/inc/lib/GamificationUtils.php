@@ -3,16 +3,20 @@
 
 /**
  * GamificationUtils class
- * Functions to manage the gamification mode
+ * Functions to manage the gamification mode.
+ *
  * @package chamilo.library
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
  */
 class GamificationUtils
 {
     /**
-     * Get the calculated points on session with gamification mode
-     * @param int $userId The user ID
+     * Get the calculated points on session with gamification mode.
+     *
+     * @param int $userId     The user ID
      * @param int $userStatus The user Status
+     *
      * @return float
      */
     public static function getTotalUserPoints($userId, $userStatus)
@@ -25,7 +29,6 @@ class GamificationUtils
         );
 
         if (empty($sessions)) {
-
             return 0;
         }
 
@@ -37,9 +40,10 @@ class GamificationUtils
     }
 
     /**
-     * Get the achieved points for an user in a session
+     * Get the achieved points for an user in a session.
+     *
      * @param int $sessionId The session ID
-     * @param int $userId The user ID
+     * @param int $userId    The user ID
      *
      * @return int The count of points
      */
@@ -55,7 +59,7 @@ class GamificationUtils
         foreach ($courses as $course) {
             $learnPathListObject = new LearnpathList(
                 $userId,
-                $course['code'],
+                api_get_course_info($course['code']),
                 $sessionId
             );
             $learnPaths = $learnPathListObject->get_flat_list();
@@ -85,9 +89,10 @@ class GamificationUtils
     }
 
     /**
-     * Get the calculated progress for an user in a session
+     * Get the calculated progress for an user in a session.
+     *
      * @param int $sessionId The session ID
-     * @param int $userId The user ID
+     * @param int $userId    The user ID
      *
      * @return float The progress
      */
@@ -121,9 +126,10 @@ class GamificationUtils
     }
 
     /**
-     * Get the number of stars achieved for an user in a session
+     * Get the number of stars achieved for an user in a session.
+     *
      * @param int $sessionId The session ID
-     * @param int $userId The user ID
+     * @param int $userId    The user ID
      *
      * @return int The number of stars
      */
@@ -139,7 +145,7 @@ class GamificationUtils
         foreach ($courses as $course) {
             $learnPathListObject = new LearnpathList(
                 $userId,
-                $course['code'],
+                api_get_course_info($course['code']),
                 $sessionId
             );
             $learnPaths = $learnPathListObject->get_flat_list();
@@ -171,8 +177,9 @@ class GamificationUtils
     }
 
     /**
-     * Get the stars on sessions with gamification mode
-     * @param int $userId The user ID
+     * Get the stars on sessions with gamification mode.
+     *
+     * @param int $userId     The user ID
      * @param int $userStatus The user Status
      *
      * @return int
@@ -197,8 +204,9 @@ class GamificationUtils
     }
 
     /**
-     * Get the total progress on sessions with gamification mode
-     * @param int $userId The user ID
+     * Get the total progress on sessions with gamification mode.
+     *
+     * @param int $userId     The user ID
      * @param int $userStatus The user Status
      *
      * @return float

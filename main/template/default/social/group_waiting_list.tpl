@@ -1,4 +1,4 @@
-{% extends template ~ "/layout/layout_1_col.tpl" %}
+{% extends 'layout/layout_1_col.tpl'|get_template %}
 
 {% block content %}
 <div class="row">
@@ -29,9 +29,7 @@
                     </div>
                 </div>
             </div>
-
             {% endfor %}
-
         </div>
         <div id="display_response_id" class="col-md-5"></div>
         {{ social_auto_extend_link }}

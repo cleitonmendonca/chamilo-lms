@@ -19,6 +19,7 @@ defaultOptions.common.userInputs = [
 ];
 defaultOptions.common.onLoad = undefined;
 defaultOptions.common.onKeyUp = undefined;
+defaultOptions.common.onScore = undefined;
 defaultOptions.common.zxcvbn = false;
 defaultOptions.common.zxcvbnTerms = [
     // List of disrecommended words
@@ -73,6 +74,7 @@ defaultOptions.ui.colorClasses = [
 defaultOptions.ui.showProgressBar = true;
 defaultOptions.ui.progressBarEmptyPercentage = 1;
 defaultOptions.ui.progressBarMinPercentage = 1;
+defaultOptions.ui.progressExtraCssClasses = '';
 defaultOptions.ui.progressBarExtraCssClasses = '';
 defaultOptions.ui.showPopover = false;
 defaultOptions.ui.popoverPlacement = "bottom";

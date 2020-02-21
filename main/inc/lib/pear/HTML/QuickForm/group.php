@@ -91,8 +91,13 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
      * @access    public
      * @return    void
      */
-    public function __construct($elementName=null, $elementLabel=null, $elements=null, $separator=null, $appendName = true)
-    {
+    public function __construct(
+        $elementName = null,
+        $elementLabel = null,
+        $elements = null,
+        $separator = null,
+        $appendName = true
+    ) {
         parent::__construct($elementName, $elementLabel);
         $this->_type = 'group';
         if (isset($elements) && is_array($elements)) {
@@ -389,7 +394,7 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
     * @access public
     * @return void
     */
-    function accept(&$renderer, $required = false, $error = null)
+    public function accept(&$renderer, $required = false, $error = null)
     {
         $this->_createElementsIfNotExist();
         $renderer->startGroup($this, $required, $error);
@@ -399,6 +404,7 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
 
             if ($this->_appendName) {
                 $elementName = $element->getName();
+
                 if (isset($elementName)) {
                     $element->setName($name . '['. (strlen($elementName)? $elementName: $key) .']');
                 } else {
@@ -407,7 +413,6 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
             }
 
             $required = !$element->isFrozen() && in_array($element->getName(), $this->_required);
-
             $element->accept($renderer, $required);
 
             // restore the element's name
@@ -503,6 +508,7 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
     {
         parent::freeze();
         foreach (array_keys($this->_elements) as $key) {
+            $this->_elements[$key]->freezeSeeOnlySelected = $this->freezeSeeOnlySelected;
             $this->_elements[$key]->freeze();
         }
     }
@@ -520,6 +526,65 @@ class HTML_QuickForm_group extends HTML_QuickForm_element
         parent::setPersistantFreeze($persistant);
         foreach (array_keys($this->_elements) as $key) {
             $this->_elements[$key]->setPersistantFreeze($persistant);
+        }
+    }
+
+    /**
+     * @param string $layout
+     *
+     * @return string
+     */
+    public function getTemplate($layout)
+    {
+        $size = $this->calculateSize();
+
+        switch ($layout) {
+            case FormValidator::LAYOUT_INLINE:
+                return '
+                <div class="input-group">
+                    <label {label-for} >
+                        <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
+                        {label}
+                    </label>     
+                </div>
+                <div class="input-group {error_class}">                               
+                    {element}
+                </div>
+                ';
+                break;
+            case FormValidator::LAYOUT_HORIZONTAL:
+                return '
+                <div class="form-group {error_class}" id="'.$this->getName().'-group">
+                    <label {label-for}  class="col-sm-'.$size[0].' control-label  {extra_label_class}" >
+                        <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
+                        {label}
+                    </label>
+                    <div class="col-sm-'.$size[1].'">
+                        {icon}
+                        {element}
+
+                        <!-- BEGIN label_2 -->
+                            <p class="help-block">{label_2}</p>
+                        <!-- END label_2 -->
+
+                        <!-- BEGIN error -->
+                            <span class="help-inline help-block">{error}</span>
+                        <!-- END error -->
+                    </div>
+                    <div class="col-sm-'.$size[2].'">
+                        <!-- BEGIN label_3 -->
+                            {label_3}
+                        <!-- END label_3 -->
+                    </div>
+                </div>';
+                break;
+            case FormValidator::LAYOUT_BOX_NO_LABEL:
+                return '
+                        <div class="input-group">
+                            {icon}
+                            {element}
+                        </div>';
+                break;
         }
     }
 }

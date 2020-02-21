@@ -1,7 +1,7 @@
 <meta charset="{{ system_charset }}" />
 <link href="https://chamilo.org/chamilo-lms/" rel="help" />
 <link href="https://chamilo.org/the-association/" rel="author" />
-<link href="https://chamilo.org/the-association/" rel="copyright" />
+<link href="https://www.gnu.org/licenses/gpl-3.0.en.html" rel="license" />
 <!-- Force latest IE rendering engine or ChromeFrame if installed -->
 <!--[if IE]>
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -19,18 +19,12 @@
 {{ css_static_file_to_string }}
 {{ js_file_to_string }}
 {{ extra_headers }}
-<script>
 
-/* Global chat variables */
-var ajax_url = '{{ _p.web_ajax }}chat.ajax.php';
-var online_button = '{{ online_button }}';
-var offline_button = '{{ offline_button }}';
-var connect_lang = '{{ "ChatConnected"|get_lang }}';
-var disconnect_lang = '{{ "ChatDisconnected"|get_lang }}';
-</script>
-
-{% include template ~ '/layout/header.js.tpl' %}
+{% if _s.language_interface %}
+<script type="text/javascript" src="{{ _p.web }}web/build/main.{{ _s.language_interface }}.js"></script>
+{% else %}{# language_interface *should* always be defined, so we should never come here #}
+<script type="text/javascript" src="{{ _p.web }}web/build/main.js"></script>
+{% endif %}
 
 {{ css_custom_file_to_string }}
 {{ css_style_print }}
-{{ header_extra_content }}

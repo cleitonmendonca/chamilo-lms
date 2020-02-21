@@ -6,7 +6,7 @@ namespace Chamilo\CoreBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * TrackEAttemptCoeff
+ * TrackEAttemptCoeff.
  *
  * @ORM\Table(name="track_e_attempt_coeff")
  * @ORM\Entity
@@ -14,34 +14,33 @@ use Doctrine\ORM\Mapping as ORM;
 class TrackEAttemptCoeff
 {
     /**
-     * @var integer
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue
+     */
+    protected $id;
+
+    /**
+     * @var int
      *
      * @ORM\Column(name="attempt_id", type="integer", nullable=false)
      */
-    private $attemptId;
+    protected $attemptId;
 
     /**
      * @var float
      *
      * @ORM\Column(name="marks_coeff", type="float", precision=6, scale=2, nullable=true)
      */
-    private $marksCoeff;
+    protected $marksCoeff;
 
     /**
-     * @var integer
+     * Set attemptId.
      *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
-     */
-    private $id;
-
-
-
-    /**
-     * Set attemptId
+     * @param int $attemptId
      *
-     * @param integer $attemptId
      * @return TrackEAttemptCoeff
      */
     public function setAttemptId($attemptId)
@@ -52,9 +51,9 @@ class TrackEAttemptCoeff
     }
 
     /**
-     * Get attemptId
+     * Get attemptId.
      *
-     * @return integer
+     * @return int
      */
     public function getAttemptId()
     {
@@ -62,9 +61,10 @@ class TrackEAttemptCoeff
     }
 
     /**
-     * Set marksCoeff
+     * Set marksCoeff.
      *
      * @param float $marksCoeff
+     *
      * @return TrackEAttemptCoeff
      */
     public function setMarksCoeff($marksCoeff)
@@ -75,7 +75,7 @@ class TrackEAttemptCoeff
     }
 
     /**
-     * Get marksCoeff
+     * Get marksCoeff.
      *
      * @return float
      */
@@ -85,9 +85,9 @@ class TrackEAttemptCoeff
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {

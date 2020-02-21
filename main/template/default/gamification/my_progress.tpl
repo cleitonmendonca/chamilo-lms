@@ -26,7 +26,6 @@
                             <span class="sr-only">{{ gamification_progress }} Complete (success)</span>
                         </div>
                     </div>
-
                     <div class="progress-percentage text-right">{{ 'XPercent'|get_lang|format(gamification_progress) }}</div>
                 </div>
             </div>
@@ -50,12 +49,11 @@
 
     <div class="col-md-9">
         {% if current_session %}
-
             <div class="panel panel-default">
                 <div class="panel-heading"><em class="fa fa-book"></em> {{ current_session.getName() }}</div>
                 <div class="panel-body">
                     {% for course_id, course in session_data %}
-                    <h3><img src="{{ 'blackboard_blue.png'|icon(32) }}"/> {{ course.title }}</h3>
+                    <h3><img src="{{ 'session.png'|icon(32) }}"/> {{ course.title }}</h3>
                     <div class="panel-group" id="course-accordion" role="tablist" aria-multiselectable="true">
                         {% for stats_url in course.stats %}
                         {% set panel_id = course_id ~ '-' ~ loop.index %}
@@ -80,8 +78,6 @@
                     {% endfor %}
                 </div>
             </div>
-
-
         {% endif %}
     </div>
 </div>

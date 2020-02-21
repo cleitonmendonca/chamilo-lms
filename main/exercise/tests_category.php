@@ -21,22 +21,25 @@ $htmlHeadXtra[] = '
 
 $nameTools = '';
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $this_section = SECTION_COURSES;
+
+api_protect_course_script(true);
 
 if (!api_is_allowed_to_edit()) {
     api_not_allowed(true);
 }
+
 $category = new TestCategory();
 $courseId = api_get_course_int_id();
 $sessionId = api_get_session_id();
 
 // breadcrumbs
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = [
     "url" => "exercise.php?".api_get_cidreq(),
     "name" => get_lang('Exercises'),
-);
+];
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 $content = '';
@@ -52,7 +55,7 @@ switch ($action) {
         delete_category_form();
         break;
     case 'export_category':
-        $archiveFile = 'export_exercise_categoroes_'.api_get_course_id().'_'.api_get_local_time();
+        $archiveFile = 'export_exercise_categories_'.api_get_course_id().'_'.api_get_local_time();
         $categories = $category->getCategories($courseId, $sessionId);
         $export = [];
         $export[] = ['title', 'description'];
@@ -75,7 +78,7 @@ switch ($action) {
                     $cat = new TestCategory();
                     $cat->name = $item['title'];
                     $cat->description = $item['description'];
-                    $cat->addCategoryInBDD();
+                    $cat->save();
                 }
                 Display::addFlash(Display::return_message(get_lang('Imported')));
             }
@@ -104,8 +107,10 @@ function importCategoryForm()
 }
 
 /**
- * Form to edit a category
+ * Form to edit a category.
+ *
  * @todo move to TestCategory.class.php
+ *
  * @param string $action
  */
 function edit_category_form($action)
@@ -124,21 +129,21 @@ function edit_category_form($action)
         // Setting the form elements
         $form->addElement('header', get_lang('EditCategory'));
         $form->addElement('hidden', 'category_id');
-        $form->addElement('text', 'category_name', get_lang('CategoryName'), array('size' => '95'));
+        $form->addElement('text', 'category_name', get_lang('CategoryName'), ['size' => '95']);
         $form->addHtmlEditor(
             'category_description',
             get_lang('CategoryDescription'),
             false,
             false,
-            array('ToolbarSet' => 'test_category', 'Height' => '200')
+            ['ToolbarSet' => 'TestQuestionDescription', 'Height' => '200']
         );
         $form->addButtonSave(get_lang('ModifyCategory'), 'SubmitNote');
 
         // setting the defaults
-        $defaults = array();
-        $defaults["category_id"] = $objcat->id;
-        $defaults["category_name"] = $objcat->name;
-        $defaults["category_description"] = $objcat->description;
+        $defaults = [];
+        $defaults['category_id'] = $objcat->id;
+        $defaults['category_name'] = $objcat->name;
+        $defaults['category_description'] = $objcat->description;
         $form->setDefaults($defaults);
 
         // setting the rules
@@ -165,7 +170,7 @@ function edit_category_form($action)
         } else {
             $token = Security::get_token();
             $form->addElement('hidden', 'sec_token');
-            $form->setConstants(array('sec_token' => $token));
+            $form->setConstants(['sec_token' => $token]);
 
             return $form->returnForm();
         }
@@ -192,24 +197,26 @@ function delete_category_form()
 }
 
 /**
- * form to add a category
+ * form to add a category.
+ *
  * @todo move to TestCategory.class.php
+ *
  * @param string $action
  */
 function add_category_form($action)
 {
     $action = Security::remove_XSS($action);
     // initiate the object
-    $form = new FormValidator('note', 'post', api_get_self() . '?action=' . $action.'&'.api_get_cidreq());
+    $form = new FormValidator('note', 'post', api_get_self().'?action='.$action.'&'.api_get_cidreq());
     // Setting the form elements
     $form->addElement('header', get_lang('AddACategory'));
-    $form->addElement('text', 'category_name', get_lang('CategoryName'), array('size' => '95'));
+    $form->addElement('text', 'category_name', get_lang('CategoryName'), ['size' => '95']);
     $form->addHtmlEditor(
         'category_description',
         get_lang('CategoryDescription'),
         false,
         false,
-        array('ToolbarSet' => 'test_category', 'Height' => '200')
+        ['ToolbarSet' => 'TestQuestionDescription', 'Height' => '200']
     );
     $form->addButtonCreate(get_lang('AddTestCategory'), 'SubmitNote');
     // setting the rules
@@ -222,7 +229,7 @@ function add_category_form($action)
             $category = new TestCategory();
             $category->name = $values['category_name'];
             $category->description = $values['category_description'];
-            if ($category->addCategoryInBDD()) {
+            if ($category->save()) {
                 Display::addFlash(Display::return_message(get_lang('AddCategoryDone')));
             } else {
                 Display::addFlash(Display::return_message(get_lang('AddCategoryNameAlreadyExists'), 'warning'));
@@ -232,7 +239,7 @@ function add_category_form($action)
     } else {
         $token = Security::get_token();
         $form->addElement('hidden', 'sec_token');
-        $form->setConstants(array('sec_token' => $token));
+        $form->setConstants(['sec_token' => $token]);
 
         return $form->returnForm();
     }
@@ -242,23 +249,23 @@ function add_category_form($action)
 function displayActionBar()
 {
     echo '<div class="actions">';
-    echo '<a href="'.api_get_path(WEB_CODE_PATH).'exercise/exercise.php?' . api_get_cidreq() . '">' .
-            Display::return_icon('back.png', get_lang('GoBackToQuestionList'), '', ICON_SIZE_MEDIUM) . '</a>';
+    echo '<a href="'.api_get_path(WEB_CODE_PATH).'exercise/exercise.php?'.api_get_cidreq().'">'.
+            Display::return_icon('back.png', get_lang('GoBackToQuestionList'), '', ICON_SIZE_MEDIUM).'</a>';
 
-    echo '<a href="' . api_get_self() . '?action=addcategory&'.api_get_cidreq().'">' .
-        Display::return_icon('question_category.gif', get_lang('AddACategory')) . '</a>';
+    echo '<a href="'.api_get_self().'?action=addcategory&'.api_get_cidreq().'">'.
+        Display::return_icon('new_folder.png', get_lang('AddACategory'), null, ICON_SIZE_MEDIUM).'</a>';
 
     echo Display::url(
         Display::return_icon('export_csv.png', get_lang('ExportAsCSV'), [], ICON_SIZE_MEDIUM),
-        api_get_self() . '?action=export_category&'.api_get_cidreq()
+        api_get_self().'?action=export_category&'.api_get_cidreq()
     );
 
     echo Display::url(
         Display::return_icon('import_csv.png', get_lang('ImportAsCSV'), [], ICON_SIZE_MEDIUM),
-        api_get_self() . '?action=import_category&'.api_get_cidreq()
+        api_get_self().'?action=import_category&'.api_get_cidreq()
     );
 
     echo '</div>';
     echo "<br/>";
-    echo "<fieldset><legend>" . get_lang('QuestionCategory') . "</legend></fieldset>";
+    echo "<fieldset><legend>".get_lang('QuestionCategory')."</legend></fieldset>";
 }

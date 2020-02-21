@@ -1,11 +1,11 @@
 <?php
 /* For license terms, see /license.txt */
 /**
- * A script to render all mails templates
+ * A script to render all mails templates.
+ *
  * @package chamilo.plugin.advanced_subscription
  */
-
-require_once __DIR__ . '/../config.php';
+require_once __DIR__.'/../config.php';
 
 // Protect test
 api_protect_admin_script();
@@ -25,33 +25,32 @@ $data['profile_completed'] = 90.0;
 $data['sessionId'] = 1;
 $data['studentUserId'] = 4;
 
-
 // Prepare data
 // Get session data
 // Assign variables
-$fieldsArray = array(
+$fieldsArray = [
     'description',
     'target',
     'mode',
     'publication_end_date',
     'recommended_number_of_participants',
-);
+];
 $sessionArray = api_get_session_info($data['sessionId']);
 $extraSession = new ExtraFieldValue('session');
 $extraField = new ExtraField('session');
 // Get session fields
-$fieldList = $extraField->get_all(array(
-    'variable IN ( ?, ?, ?, ?, ?)' => $fieldsArray
-));
-$fields = array();
+$fieldList = $extraField->get_all([
+    'variable IN ( ?, ?, ?, ?, ?)' => $fieldsArray,
+]);
+$fields = [];
 // Index session fields
 foreach ($fieldList as $field) {
     $fields[$field['id']] = $field['variable'];
 }
 
-$mergedArray = array_merge(array($data['sessionId']), array_keys($fields));
+$mergedArray = array_merge([$data['sessionId']], array_keys($fields));
 $sessionFieldValueList = $extraSession->get_all(
-    array('item_id = ? field_id IN ( ?, ?, ?, ?, ?, ?, ? )' => $mergedArray)
+    ['item_id = ? field_id IN ( ?, ?, ?, ?, ?, ?, ? )' => $mergedArray]
 );
 foreach ($sessionFieldValueList as $sessionFieldValue) {
     // Check if session field value is set in session field list
@@ -78,8 +77,7 @@ $adminsArray = UserManager::get_all_administrators();
 $isWesternNameOrder = api_is_western_name_order();
 foreach ($adminsArray as &$admin) {
     $admin['complete_name'] = $isWesternNameOrder ?
-        $admin['firstname'] . ', ' . $admin['lastname'] :
-        $admin['lastname'] . ', ' . $admin['firstname']
+        $admin['firstname'].', '.$admin['lastname'] : $admin['lastname'].', '.$admin['firstname']
     ;
 }
 unset($admin);
@@ -91,15 +89,15 @@ $data['admins'] = $adminsArray;
 $data['admin'] = current($adminsArray);
 $data['session'] = $sessionArray;
 $data['signature'] = api_get_setting('Institution');
-$data['admin_view_url'] = api_get_path(WEB_PLUGIN_PATH) .
-    'advanced_subscription/src/admin_view.php?s=' . $data['sessionId'];
+$data['admin_view_url'] = api_get_path(WEB_PLUGIN_PATH).
+    'advanced_subscription/src/admin_view.php?s='.$data['sessionId'];
 $data['newStatus'] = ADVANCED_SUBSCRIPTION_QUEUE_STATUS_BOSS_APPROVED;
 $data['student']['acceptUrl'] = $plugin->getQueueUrl($data);
 $data['newStatus'] = ADVANCED_SUBSCRIPTION_QUEUE_STATUS_BOSS_DISAPPROVED;
 $data['student']['rejectUrl'] = $plugin->getQueueUrl($data);
 $tpl = new Template($plugin->get_lang('plugin_title'));
 $tpl->assign('data', $data);
-$tplParams = array(
+$tplParams = [
     'user',
     'student',
     'students',
@@ -110,27 +108,27 @@ $tplParams = array(
     'signature',
     'admin_view_url',
     'acceptUrl',
-    'rejectUrl'
-);
+    'rejectUrl',
+];
 foreach ($tplParams as $tplParam) {
     $tpl->assign($tplParam, $data[$tplParam]);
 }
 
-$dir = __DIR__ . '/../views/';
+$dir = __DIR__.'/../views/';
 $files = scandir($dir);
 
-echo '<br>', '<pre>' , print_r($files, 1) , '</pre>';
+echo '<br>', '<pre>', print_r($files, 1), '</pre>';
 
-foreach ($files as $k =>&$file) {
+foreach ($files as $k => &$file) {
     if (
-        is_file($dir . $file) &&
+        is_file($dir.$file) &&
         strpos($file, '.tpl') &&
         $file != 'admin_view.tpl'
     ) {
         echo '<pre>', $file, '</pre>';
-        echo $tpl->fetch('/advanced_subscription/views/' . $file);
+        echo $tpl->fetch('/advanced_subscription/views/'.$file);
     } else {
         unset($files[$k]);
     }
 }
-echo '<br>', '<pre>' , print_r($files, 1) , '</pre>';
+echo '<br>', '<pre>', print_r($files, 1), '</pre>';

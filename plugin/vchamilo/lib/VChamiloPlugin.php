@@ -2,7 +2,7 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Description of VChamilo
+ * Description of VChamilo.
  *
  * @copyright (c) 2014 VF Consulting
  * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
@@ -16,16 +16,16 @@ class VChamiloPlugin extends Plugin
      */
     public function __construct()
     {
-        parent::__construct('1.2', 'Valery Fremaux, Julio Montoya');
+        parent::__construct('1.4', 'Valery Fremaux, Julio Montoya');
     }
 
     /**
-     *
      * @return VChamiloPlugin
      */
     public static function create()
     {
         static $result = null;
+
         return $result ? $result : $result = new self();
     }
 

@@ -6,10 +6,10 @@
  * https://blueimp.net
  *
  * Licensed under the MIT license:
- * http://www.opensource.org/licenses/MIT
+ * https://opensource.org/licenses/MIT
  */
 
-/*global define, module, require, window, console */
+/* global define */
 
 ;(function (factory) {
   'use strict'

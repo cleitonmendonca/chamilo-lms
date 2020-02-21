@@ -1,11 +1,9 @@
 <?php
 /**
- *
  * @copyright (c) 2014 Valery Fremaux
  * @license GNU General Public License - http://www.gnu.org/copyleft/gpl.html
  * @author Valery Fremaux <valery.fremaux@gmail.com>
  */
-
 $strings['archiverealroot'] = 'Archive container real root (no symlinks here)';
 $strings['backtoindex'] = 'Back to instance index';
 $strings['badconnection'] = 'Connection FAILED';
@@ -103,9 +101,23 @@ $strings['syncthis'] = 'Sync this setting';
 
 $strings['SiteNameExample'] = 'Example: Chamilo';
 $strings['InstitutionExample'] = 'Example: Chamilo Association';
-$strings['RootWebExample'] = 'Example: http://www.chamilo.org/';
+$strings['RootWebExample'] = 'Example: http://www.chamilo.org/ (with final slash)';
 $strings['DatabaseDescription'] = 'A new database will be created with that name.';
 $strings['RootWebExists'] = 'An instance with the same root web exists.';
 $strings['ImportInstance'] = 'Import instance';
 $strings['ConfigurationPath'] = 'Chamilo configuration path';
+$strings['UploadRealRoot'] = 'Upload files';
+$strings['DatabaseAccessShouldBeDifferentThanMasterChamilo'] = 'Database server should be different than the Chamilo master';
+$strings['UrlAppendExample'] = 'Example: /chamilo_v1 (with first slash)';
 
+$strings['FromVersion'] = 'From version';
+$strings['CoursePath'] = 'Path to courses directory';
+$strings['HomePath'] = 'Path to home directory';
+$strings['UploadPath'] = 'Path to upload directory';
+
+$strings['ArchiveUrl'] = 'Archive URL';
+$strings['HomeUrl'] = 'Home URL';
+$strings['UploadUrl'] = 'Upload URL';
+$strings['CourseUrl'] = 'Course URL';
+$strings['ThemeFolder'] = 'Theme folder';
+$strings['ThemeFolderExplanation'] = 'Theme folder should be located inside the web/css/themes/ folder';

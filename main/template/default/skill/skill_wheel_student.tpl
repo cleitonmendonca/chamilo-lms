@@ -1,4 +1,4 @@
-{% include template ~ '/skill/skill_wheel.js.tpl' %}
+{% include 'skill/skill_wheel.js.tpl'|get_template %}
 <script>
     /* Skill search input in the left menu */
     function check_skills_sidebar() {
@@ -128,17 +128,19 @@
 
         /* Wheel skill popup form */
 
-        $("#skill_id").fcbkcomplete({
-            json_url: "{{ url }}&a=find_skills",
+        $("#skill_id").select2({
+            ajax: {
+                url: '{{ url }}&a=find_skills',
+                processResults: function (data) {
+                    return {
+                        results: data.items
+                    };
+                }
+            },
             cache: false,
-            filter_case: false,
-            filter_hide: true,
-            complete_text: "{{ 'EnterTheSkillNameToSearch'|get_lang }}",
-            firstselected: true,
-            //onremove: "testme",
-            onselect: "check_skills_sidebar",
-            filter_selected: true,
-            newel: true
+            placeholder: '{{ 'EnterTheSkillNameToSearch'|get_lang }}'
+        }).on('change', function () {
+            check_skills_sidebar();
         });
 
         load_nodes(0, main_depth);
@@ -168,21 +170,19 @@
                             <figcaption class="avatar-author">{{ user_info.complete_name }}</figcaption>
                         </figure>
                         <p class="text-center">
-                            <a href="{{ _p.web_main }}social/skills_ranking.php" class="btn btn-default" target="_blank">{{ 'YourSkillRankingX'|get_lang|format(ranking) }}</a>
+                            <a href="{{ _p.web_main }}social/skills_ranking.php" class="btn btn-default" target="_blank">
+                                {{ 'YourSkillRankingX'|get_lang|format(ranking) }}
+                            </a>
                         </p>
                         <div class="text-center">
                             {% if skills is not empty %}
                                 {% for skill in skills %}
-                                    {% if skill.icon is empty %}
-                                        <img src="{{ 'badges.png'|icon(32) }}" width="32" height="32" alt="{{ skill.name }}" title="{{ skill.name }}">
-                                    {% else %}
-                                        <img src="{{ skill.web_icon_thumb_path }}" width="32" height="32" alt="{{ skill.name }}" title="{{ skill.name }}">
-                                    {% endif %}
+                                    {{ skill.img_small }}
                                 {% endfor %}
                             {% endif %}
 
                             {% for i in 1..(5 - ranking) %}
-                                <img src="{{ 'badges-default.png'|icon(32) }}" width="32" height="32">
+                                <img src="{{ 'badges-default.png'|icon(64) }}" width="64" height="64">
                             {% endfor %}
                         </div>
                     </div>
@@ -202,7 +202,7 @@
                                 <div class="search-skill">
                                     <h5 class="page-header">{{ 'SkillsSearch'|get_lang }}</h5>
                                     <form id="skill_search" class="form-search">
-                                        <select id="skill_id" name="skill_id" /></select>
+                                        <select id="skill_id" name="skill_id" multiple style="width: 100%;"></select>
                                         <table id="skill_holder" class="table table-condensed"></table>
                                     </form>
                                 </div>
@@ -262,7 +262,7 @@
                                 <ul class="list-unstyled" id="skill-change-background-options">
                                     <li><a href="#" data-color="#FFFFFF">{{ 'White'|get_lang }}</a></li>
                                     <li><a href="#" data-color="#000000">{{ 'Black'|get_lang }}</a></li>
-                                    <li><a href="#" data-color="#A9E2F3">{{ 'LightBlue' }}</a></li>
+                                    <li><a href="#" data-color="#A9E2F3">{{ 'LightBlue'|get_lang }}</a></li>
                                     <li><a href="#" data-color="#848484">{{ 'Gray'|get_lang }}</a></li>
                                     <li><a href="#" data-color="#F7F8E0">{{ 'Corn'|get_lang }}</a></li>
                                 </ul>

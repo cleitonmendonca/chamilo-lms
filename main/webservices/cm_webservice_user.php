@@ -1,52 +1,58 @@
 <?php
-
-require_once(dirname(__FILE__).'/../inc/global.inc.php');
-require_once(dirname(__FILE__).'/cm_webservice.php');
+/* For licensing terms, see /license.txt */
+/**
+ * @package chamilo.webservices
+ */
+require_once __DIR__.'/../inc/global.inc.php';
+require_once __DIR__.'/cm_webservice.php';
 
 /**
- * Description of cm_soap_user
+ * Description of cm_soap_user.
  *
  * @author marcosousa
  */
-
-class WSCMUser extends WSCM {
-
+class WSCMUser extends WSCM
+{
     public function find_id_user($username, $password, $name)
     {
-        if($this->verifyUserPass($username, $password) == "valid")
-        {
-
+        if ($this->verifyUserPass($username, $password) == "valid") {
             $listResult = "#";
 
-            $listArrayResult = Array();
-            $listArray = Array();
+            $listArrayResult = [];
+            $listArray = [];
 
-            $list = $this->get_user_list_like_start(array('firstname'=>$name), array('firstname'));
-            foreach ($list as $userData)
-            {
+            $list = $this->get_user_list_like_start(
+                ['firstname' => $name],
+                ['firstname']
+            );
+            foreach ($list as $userData) {
                 $listArray[] = $userData['user_id'];
             }
 
-            $list = $this->get_user_list_like_start(array('lastname'=>$name), array('firstname'));
-            foreach ($list as $userData)
-            {
+            $list = $this->get_user_list_like_start(
+                ['lastname' => $name],
+                ['firstname']
+            );
+            foreach ($list as $userData) {
                 $listArray[] = $userData['user_id'];
             }
 
-            $list = $this->get_user_list_like_start(array('email'=>$name), array('firstname'));
-            foreach ($list as $userData)
-            {
+            $list = $this->get_user_list_like_start(
+                ['email' => $name],
+                ['firstname']
+            );
+            foreach ($list as $userData) {
                 $listArray[] = $userData['user_id'];
             }
 
             $listArrayResult = array_unique($listArray);
-            foreach($listArrayResult as $result)
-            {
-                $listResult .= $result . "#";
+            foreach ($listArrayResult as $result) {
+                $listResult .= $result."#";
             }
 
             return $listResult;
         }
+
         return "0";
     }
 
@@ -54,7 +60,7 @@ class WSCMUser extends WSCM {
     {
         if ($this->verifyUserPass($username, $password) == "valid") {
             $userPic = UserManager::getUserPicture($id);
-            if (empty ($userPic)) {
+            if (empty($userPic)) {
                 return "0";
             }
 
@@ -72,16 +78,16 @@ class WSCMUser extends WSCM {
                 case 'firstname':
                     return $userInfo['firstname'];
                     break;
-                case 'lastname' :
+                case 'lastname':
                     return $userInfo['lastname'];
                     break;
-                case 'bothfl' :
+                case 'bothfl':
                     return $userInfo['firstname']." ".$userInfo['lastname'];
                     break;
-                case 'bothlf' :
+                case 'bothlf':
                     return $userInfo['lastname']." ".$userInfo['firstname'];
                     break;
-                default :
+                default:
                     return $userInfo['firstname'];
             }
 
@@ -91,20 +97,46 @@ class WSCMUser extends WSCM {
         return "0";
     }
 
-    public function send_invitation($username, $password, $userfriend_id, $content_message = '')
-    {
+    public function send_invitation(
+        $username,
+        $password,
+        $userfriend_id,
+        $content_message = ''
+    ) {
         global $charset;
         if ($this->verifyUserPass($username, $password) == "valid") {
-		    $user_id = UserManager::get_user_id_from_username($username);
+            $user_id = UserManager::get_user_id_from_username($username);
             $message_title = get_lang('Invitation');
-            $count_is_true = SocialManager::send_invitation_friend($user_id,$userfriend_id, $message_title, $content_message);
+            $count_is_true = SocialManager::send_invitation_friend(
+                $user_id,
+                $userfriend_id,
+                $message_title,
+                $content_message
+            );
 
             if ($count_is_true) {
-                return Display::display_normal_message(api_htmlentities(get_lang('InvitationHasBeenSent'), ENT_QUOTES,$charset),false);
+                return Display::return_message(
+                    api_htmlentities(
+                        get_lang('InvitationHasBeenSent'),
+                        ENT_QUOTES,
+                        $charset
+                    ),
+                    'normal',
+                    false
+                );
             } else {
-                return Display::display_error_message(api_htmlentities(get_lang('YouAlreadySentAnInvitation'), ENT_QUOTES,$charset),false);
+                return Display::return_message(
+                    api_htmlentities(
+                        get_lang('YouAlreadySentAnInvitation'),
+                        ENT_QUOTES,
+                        $charset
+                    ),
+                    'error',
+                    false
+                );
             }
         }
+
         return get_lang('InvalidId');
     }
 
@@ -112,7 +144,11 @@ class WSCMUser extends WSCM {
     {
         if ($this->verifyUserPass($username, $password) == "valid") {
             $user_id = UserManager::get_user_id_from_username($username);
-            UserManager::relate_users($userfriend_id, $user_id, USER_RELATION_TYPE_FRIEND);
+            UserManager::relate_users(
+                $userfriend_id,
+                $user_id,
+                USER_RELATION_TYPE_FRIEND
+            );
             SocialManager::invitation_accepted($userfriend_id, $user_id);
 
             return get_lang('AddedContactToList');
@@ -133,20 +169,22 @@ class WSCMUser extends WSCM {
         return get_lang('InvalidId');
     }
 
-
     /**
-    * Get a list of users of which the given conditions match with a LIKE '%cond%'
-    * @param array $conditions a list of condition (exemple : status=>STUDENT)
-    * @param array $order_by a list of fields on which sort
-    * @return array An array with all users of the platform.
-    * @todo optional course code parameter, optional sorting parameters...
+     * Get a list of users of which the given conditions match with a LIKE '%cond%'.
+     *
+     * @param array $conditions a list of condition (exemple : status=>STUDENT)
+     * @param array $order_by   a list of fields on which sort
+     *
+     * @return array an array with all users of the platform
+     *
+     * @todo optional course code parameter, optional sorting parameters...
      *@todo Use the UserManager class
      * @todo security filter order by
-    */
-    private static function get_user_list_like_start($conditions = array(), $order_by = array())
+     */
+    private static function get_user_list_like_start($conditions = [], $order_by = [])
     {
-        $user_table = Database :: get_main_table(TABLE_MAIN_USER);
-        $return_array = array();
+        $user_table = Database::get_main_table(TABLE_MAIN_USER);
+        $return_array = [];
         $sql_query = "SELECT * FROM $user_table";
         if (count($conditions) > 0) {
             $sql_query .= ' WHERE ';
@@ -169,17 +207,7 @@ class WSCMUser extends WSCM {
         while ($result = Database::fetch_array($sql_result)) {
             $return_array[] = $result;
         }
+
         return $return_array;
     }
-
-
 }
-
-/*
-echo "aqui: ";
-$aqui = new WSCMUser();
-
-//print_r($aqui->unreadMessage("aluno", "e695f51fe3dd6b7cf2be3188a614f10f"));
-//print_r($aqui->send_invitation("marco", "c4ca4238a0b923820dcc509a6f75849b", "1", "oia ai"));
-print_r($aqui->denied_invitation("admin", "c4ca4238a0b923820dcc509a6f75849b", "3"));
-*/

@@ -1,11 +1,12 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CoreBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Promotion
+ * Promotion.
  *
  * @ORM\Table(name="promotion")
  * @ORM\Entity
@@ -13,62 +14,72 @@ use Doctrine\ORM\Mapping as ORM;
 class Promotion
 {
     /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue()
+     */
+    protected $id;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      */
-    private $name;
+    protected $name;
 
     /**
      * @var string
      *
      * @ORM\Column(name="description", type="text", nullable=false)
      */
-    private $description;
+    protected $description;
 
     /**
-     * @var integer
+     * @var Career
      *
-     * @ORM\Column(name="career_id", type="integer", nullable=false)
+     * @ORM\ManyToOne(targetEntity="Chamilo\CoreBundle\Entity\Career")
+     * @ORM\JoinColumn(name="career_id", referencedColumnName="id")
      */
-    private $careerId;
+    protected $career;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="status", type="integer", nullable=false)
      */
-    private $status;
+    protected $status;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="created_at", type="datetime", nullable=false)
      */
-    private $createdAt;
+    protected $createdAt;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="updated_at", type="datetime", nullable=false)
      */
-    private $updatedAt;
+    protected $updatedAt;
 
     /**
-     * @var integer
+     * Get id.
      *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
+     * @return int
      */
-    private $id;
-
-
+    public function getId()
+    {
+        return $this->id;
+    }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
+     *
      * @return Promotion
      */
     public function setName($name)
@@ -79,7 +90,7 @@ class Promotion
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -89,9 +100,10 @@ class Promotion
     }
 
     /**
-     * Set description
+     * Set description.
      *
      * @param string $description
+     *
      * @return Promotion
      */
     public function setDescription($description)
@@ -102,7 +114,7 @@ class Promotion
     }
 
     /**
-     * Get description
+     * Get description.
      *
      * @return string
      */
@@ -112,32 +124,34 @@ class Promotion
     }
 
     /**
-     * Set careerId
+     * Set career.
      *
-     * @param integer $careerId
+     * @param Career $career
+     *
      * @return Promotion
      */
-    public function setCareerId($careerId)
+    public function setCareer($career)
     {
-        $this->careerId = $careerId;
+        $this->career = $career;
 
         return $this;
     }
 
     /**
-     * Get careerId
+     * Get career.
      *
-     * @return integer
+     * @return Career
      */
-    public function getCareerId()
+    public function getCareer()
     {
-        return $this->careerId;
+        return $this->career;
     }
 
     /**
-     * Set status
+     * Set status.
      *
-     * @param integer $status
+     * @param int $status
+     *
      * @return Promotion
      */
     public function setStatus($status)
@@ -148,9 +162,9 @@ class Promotion
     }
 
     /**
-     * Get status
+     * Get status.
      *
-     * @return integer
+     * @return int
      */
     public function getStatus()
     {
@@ -158,9 +172,10 @@ class Promotion
     }
 
     /**
-     * Set createdAt
+     * Set createdAt.
      *
      * @param \DateTime $createdAt
+     *
      * @return Promotion
      */
     public function setCreatedAt($createdAt)
@@ -171,7 +186,7 @@ class Promotion
     }
 
     /**
-     * Get createdAt
+     * Get createdAt.
      *
      * @return \DateTime
      */
@@ -181,9 +196,10 @@ class Promotion
     }
 
     /**
-     * Set updatedAt
+     * Set updatedAt.
      *
      * @param \DateTime $updatedAt
+     *
      * @return Promotion
      */
     public function setUpdatedAt($updatedAt)
@@ -194,22 +210,12 @@ class Promotion
     }
 
     /**
-     * Get updatedAt
+     * Get updatedAt.
      *
      * @return \DateTime
      */
     public function getUpdatedAt()
     {
         return $this->updatedAt;
-    }
-
-    /**
-     * Get id
-     *
-     * @return integer
-     */
-    public function getId()
-    {
-        return $this->id;
     }
 }

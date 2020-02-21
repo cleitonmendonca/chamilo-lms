@@ -4,15 +4,15 @@
 namespace Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar;
 
 /**
- * Wiki toolbar configuration
- * 
+ * Wiki toolbar configuration.
+ *
  * @package Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar
  */
 class Wiki extends Basic
 {
-
     /**
-     * Get the toolbar config
+     * Get the toolbar config.
+     *
      * @return array
      */
     public function getConfig()
@@ -33,7 +33,8 @@ class Wiki extends Basic
     }
 
     /**
-     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false
+     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false.
+     *
      * @return array
      */
     protected function getNormalToolbar()
@@ -54,13 +55,13 @@ class Wiki extends Basic
                 '-',
                 'SelectAll',
                 '-',
-                'Find'
+                'Find',
             ],
-            ['Wikilink','Link','Unlink','Anchor'],
-            ['Image','Video','Flash','Oembed','Youtube','Audio','Asciimath'],
-            ['Table','HorizontalRule','Smiley','SpecialChar','leaflet'],
-            ['Format','Font','FontSize'],
-            ['Bold','Italic','Underline'],
+            ['Wikilink', 'Link', 'Unlink', 'Anchor'],
+            ['Image', 'Video', 'Flash', 'Oembed', 'Youtube', 'Audio', 'Asciimath'],
+            ['Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'leaflet'],
+            ['Format', 'Font', 'FontSize'],
+            ['Bold', 'Italic', 'Underline'],
             [
                 'Subscript',
                 'Superscript',
@@ -81,26 +82,26 @@ class Wiki extends Basic
                 api_get_setting('allow_spellcheck') == 'true' ? 'Scayt' : '',
             ],
             api_get_setting('enabled_wiris') == 'true' ? ['ckeditor_wiris_formulaEditor', 'ckeditor_wiris_CAS'] : [''],
-            ['Source']
+            ['Source'],
         ];
     }
 
     /**
-     * Get the toolbar configuration when CKEditor is minimized
+     * Get the toolbar configuration when CKEditor is minimized.
+     *
      * @return array
      */
     protected function getMinimizedToolbar()
     {
         return [
-            ['Save', 'NewPage', 'Templates', '-', 'PasteText'],
+            $this->getNewPageBlock(),
             ['Undo', 'Redo'],
-            ['Wikilink', 'Link', 'Image', 'Video', 'Flash', 'Audio', 'Table',  'Asciimath', 'Asciisvg'],
+            ['Wikilink', 'Link', 'Image', 'Video', 'Flash', 'Audio', 'Table', 'Asciimath', 'Asciisvg'],
             ['BulletedList', 'NumberedList', 'HorizontalRule'],
             ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Styles','Format', 'Font', 'FontSize', 'Bold', 'Italic', 'Underline', 'TextColor', 'BGColor', 'Source'],
+            ['Styles', 'Format', 'Font', 'FontSize', 'Bold', 'Italic', 'Underline', 'TextColor', 'BGColor', 'Source'],
             api_get_setting('enabled_wiris') == 'true' ? ['ckeditor_wiris_formulaEditor', 'ckeditor_wiris_CAS'] : [''],
-            ['Toolbarswitch']
+            ['Toolbarswitch'],
         ];
     }
-
 }

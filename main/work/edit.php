@@ -1,10 +1,16 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../inc/global.inc.php';
-$current_course_tool  = TOOL_STUDENTPUBLICATION;
+require_once __DIR__.'/../inc/global.inc.php';
+$current_course_tool = TOOL_STUDENTPUBLICATION;
 
 api_protect_course_script(true);
+
+$blockEdition = api_get_configuration_value('block_student_publication_edition');
+
+if ($blockEdition && !api_is_platform_admin()) {
+    api_not_allowed(true);
+}
 
 // Including files
 require_once 'work.lib.php';
@@ -13,7 +19,7 @@ $this_section = SECTION_COURSES;
 
 $work_id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : null;
 $item_id = isset($_REQUEST['item_id']) ? intval($_REQUEST['item_id']) : null;
-$work_table = Database :: get_course_table(TABLE_STUDENT_PUBLICATION);
+$work_table = Database::get_course_table(TABLE_STUDENT_PUBLICATION);
 
 $is_allowed_to_edit = api_is_allowed_to_edit();
 $course_id = api_get_course_int_id();
@@ -48,7 +54,7 @@ $check = Security::check_token('post');
 $token = Security::get_token();
 
 $student_can_edit_in_session = api_is_allowed_to_session_edit(false, true);
-$has_ended   = false;
+$has_ended = false;
 $is_author = false;
 $work_item = get_work_data_by_id($item_id);
 
@@ -99,53 +105,40 @@ if (!empty($my_folder_data)) {
     }
 }
 
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = [
     'url' => api_get_path(WEB_CODE_PATH).'work/work.php?'.api_get_cidreq(),
-    'name' => get_lang('StudentPublications')
-);
+    'name' => get_lang('StudentPublications'),
+];
 
 if (api_is_allowed_to_edit()) {
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         'url' => api_get_path(WEB_CODE_PATH).'work/work_list_all.php?'.api_get_cidreq().'&id='.$work_id,
-        'name' =>  $parent_data['title']
-    );
+        'name' => $parent_data['title'],
+    ];
 } else {
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         'url' => api_get_path(WEB_CODE_PATH).'work/work_list.php?'.api_get_cidreq().'&id='.$work_id,
-        'name' =>  $parent_data['title']
-    );
+        'name' => $parent_data['title'],
+    ];
 }
 
 // form title
 $form_title = get_lang('Edit');
 
-$interbreadcrumb[] = array('url' => '#', 'name'  => $form_title);
+$interbreadcrumb[] = ['url' => '#', 'name' => $form_title];
 
 $form = new FormValidator(
     'form',
     'POST',
     api_get_self()."?".api_get_cidreq()."&id=".$work_id,
     '',
-    array('enctype' => "multipart/form-data")
+    ['enctype' => "multipart/form-data"]
 );
 $form->addElement('header', $form_title);
-
 $show_progress_bar = false;
-/*
-if ($submitGroupWorkUrl) {
-    // For user coming from group space to publish his work
-    $realUrl = str_replace($_configuration['root_sys'], api_get_path(WEB_PATH), str_replace("\\", '/', realpath($submitGroupWorkUrl)));
-    $form->addElement('hidden', 'newWorkUrl', $submitGroupWorkUrl);
-    $text_document = $form->addElement('text', 'document', get_lang('Document'));
-    $defaults['document'] = '<a href="' . format_url($submitGroupWorkUrl) . '">' . $realUrl . '</a>';
-    $text_document->freeze();
-} elseif ($item_id && ($is_allowed_to_edit or $is_author)) {
-    $workUrl = $currentCourseRepositoryWeb . $workUrl;
-}*/
-
 $form->addElement('hidden', 'id', $work_id);
 $form->addElement('hidden', 'item_id', $item_id);
-$form->addText('title', get_lang('Title'), true, array('id' => 'file_upload'));
+$form->addText('title', get_lang('Title'), true, ['id' => 'file_upload']);
 if ($is_allowed_to_edit && !empty($item_id)) {
     $sql = "SELECT contains_file, url
             FROM $work_table
@@ -157,7 +150,7 @@ if ($is_allowed_to_edit && !empty($item_id)) {
             $form->addLabel(
                 get_lang('Download'),
                 '<a href="'.api_get_path(WEB_CODE_PATH).'work/download.php?id='.$item_id.'&'.api_get_cidreq().'">'.
-                    Display::return_icon('save.png', get_lang('Save'), array(), ICON_SIZE_MEDIUM).'
+                    Display::return_icon('save.png', get_lang('Save'), [], ICON_SIZE_MEDIUM).'
                 </a>'
             );
         }
@@ -177,7 +170,7 @@ $defaults['qualification'] = $work_item['qualification'];
 
 if ($is_allowed_to_edit && !empty($item_id)) {
     // Get qualification from parent_id that will allow the validation qualification over
-    $sql = "SELECT qualification FROM $work_table
+    /*$sql = "SELECT qualification FROM $work_table
             WHERE c_id = $course_id AND id ='$work_id' ";
     $result = Database::query($sql);
     $row = Database::fetch_array($result);
@@ -185,7 +178,7 @@ if ($is_allowed_to_edit && !empty($item_id)) {
     if (!empty($qualification_over) && intval($qualification_over) > 0) {
         $form->addText('qualification', array(get_lang('Qualification'), " / ".$qualification_over), false, 'size="10"');
         $form->addElement('hidden', 'qualification_over', $qualification_over);
-    }
+    }*/
 
     $form->addCheckBox(
         'send_email',
@@ -217,7 +210,7 @@ $form->addButtonUpdate($text);
 
 $form->setDefaults($defaults);
 $_course = api_get_course_info();
-$currentCourseRepositorySys = api_get_path(SYS_COURSE_PATH).$_course['path'] . '/';
+$currentCourseRepositorySys = api_get_path(SYS_COURSE_PATH).$_course['path'].'/';
 
 $succeed = false;
 if ($form->validate()) {
@@ -238,10 +231,10 @@ if ($form->validate()) {
             $description = isset($_POST['description']) ? $_POST['description'] : $work_data['description'];
 
             $add_to_update = null;
-            if ($is_allowed_to_edit && ($_POST['qualification'] !='' )) {
-                $add_to_update = ', qualificator_id ='."'".api_get_user_id()."', ";
-                $add_to_update .= ' qualification = '."'".Database::escape_string($_POST['qualification'])."',";
-                $add_to_update .= ' date_of_qualification = '."'".api_get_utc_datetime()."'";
+            if ($is_allowed_to_edit && ($_POST['qualification'] != '')) {
+                /*$add_to_update = ', qualificator_id ='."'".api_get_user_id()."', ";
+                $add_to_update .= ' qualification = '."'".api_float_val($_POST['qualification'])."',";
+                $add_to_update .= ' date_of_qualification = '."'".api_get_utc_datetime()."'";*/
 
                 if (isset($_POST['send_email'])) {
                     $url = api_get_path(WEB_CODE_PATH).'work/view.php?'.api_get_cidreq().'&id='.$item_to_edit_id;
@@ -264,7 +257,7 @@ if ($form->validate()) {
                     'error'
                 ));
             } else {
-                $sql = "UPDATE  " . $work_table . "
+                $sql = "UPDATE  ".$work_table."
                         SET	title = '".Database::escape_string($title)."',
                             description = '".Database::escape_string($description)."'
                             ".$add_to_update."
@@ -286,7 +279,7 @@ if ($form->validate()) {
         Security::clear_token();
     } else {
         // Bad token or can't add works
-        Display::addFlash(Display::return_message(get_lang('IsNotPosibleSaveTheDocument'), 'error'));
+        Display::addFlash(Display::return_message(get_lang('ImpossibleToSaveTheDocument'), 'error'));
     }
 
     $script = 'work_list.php';
@@ -304,22 +297,9 @@ $content = null;
 if (!empty($work_id)) {
     if ($is_allowed_to_edit) {
         if (api_resource_is_locked_by_gradebook($work_id, LINK_STUDENTPUBLICATION)) {
-            echo Display::display_warning_message(get_lang('ResourceLockedByGradebook'));
+            echo Display::return_message(get_lang('ResourceLockedByGradebook'), 'warning');
         } else {
-
-            $comments = getWorkComments($work_item);
-
-            $template = $tpl->get_template('work/comments.tpl');
-            $tpl->assign('comments', $comments);
-
-            $commentForm = getWorkCommentForm($work_item, 'edit');
-
-            if (api_is_allowed_to_session_edit()) {
-                $tpl->assign('form', $commentForm);
-            }
-
             $content .= $form->returnForm();
-            $content .= $tpl->fetch($template);
         }
     } elseif ($is_author) {
         if (empty($work_item['qualificator_id']) || $work_item['qualificator_id'] == 0) {

@@ -1,10 +1,11 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CourseBundle\Entity\CQuizAnswer;
 use ChamiloSession as Session;
 
 /**
- * Class UniqueAnswer
+ * Class UniqueAnswer.
  *
  * This class allows to instantiate an object of type UNIQUE_ANSWER
  * (MULTIPLE CHOICE, UNIQUE ANSWER),
@@ -12,15 +13,16 @@ use ChamiloSession as Session;
  *
  * @author Eric Marguin
  * @author Julio Montoya
+ *
  * @package chamilo.exercise
- **/
+ */
 class UniqueAnswer extends Question
 {
-    public static $typePicture = 'mcua.png';
-    public static $explanationLangVar = 'UniqueSelect';
+    public $typePicture = 'mcua.png';
+    public $explanationLangVar = 'UniqueSelect';
 
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
@@ -30,51 +32,49 @@ class UniqueAnswer extends Question
     }
 
     /**
-     * function which redefines Question::createAnswersForm
-     * @param FormValidator $form
+     * {@inheritdoc}
      */
     public function createAnswersForm($form)
     {
         // Getting the exercise list
+        /** @var Exercise $obj_ex */
         $obj_ex = Session::read('objExercise');
 
-        $editor_config = array(
+        $editor_config = [
             'ToolbarSet' => 'TestProposedAnswer',
             'Width' => '100%',
-            'Height' => '125'
-        );
+            'Height' => '125',
+        ];
 
         //this line defines how many questions by default appear when creating a choice question
         // The previous default value was 2. See task #1759.
         $nb_answers = isset($_POST['nb_answers']) ? (int) $_POST['nb_answers'] : 4;
         $nb_answers += (isset($_POST['lessAnswers']) ? -1 : (isset($_POST['moreAnswers']) ? 1 : 0));
 
-        /*
-          Types of Feedback
-          $feedback_option[0]=get_lang('Feedback');
-          $feedback_option[1]=get_lang('DirectFeedback');
-          $feedback_option[2]=get_lang('NoFeedback');
-         */
-
         $feedback_title = '';
-
-        if ($obj_ex->selectFeedbackType() == EXERCISE_FEEDBACK_TYPE_DIRECT) {
-            //Scenario
-            $comment_title = '<th width="20%">' . get_lang('Comment') . '</th>';
-            $feedback_title = '<th width="20%">' . get_lang('Scenario') . '</th>';
-        } else {
-            $comment_title = '<th width="40%">' . get_lang('Comment') . '</th>';
+        switch ($obj_ex->getFeedbackType()) {
+            case EXERCISE_FEEDBACK_TYPE_DIRECT:
+                // Scenario
+                $comment_title = '<th width="20%">'.get_lang('Comment').'</th>';
+                $feedback_title = '<th width="20%">'.get_lang('Scenario').'</th>';
+                break;
+            case EXERCISE_FEEDBACK_TYPE_POPUP:
+                $comment_title = '<th width="20%">'.get_lang('Comment').'</th>';
+                break;
+            default:
+                $comment_title = '<th width="40%">'.get_lang('Comment').'</th>';
+                break;
         }
 
         $html = '<table class="table table-striped table-hover">
             <thead>
                 <tr style="text-align: center;">
-                    <th width="5%">' . get_lang('Number') . '</th>
-                    <th width="5%"> ' . get_lang('True') . '</th>
-                    <th width="40%">' . get_lang('Answer') . '</th>
-                        ' . $comment_title . '
-                        ' . $feedback_title . '
-                    <th width="10%">' . get_lang('Weighting') . '</th>
+                    <th width="5%">'.get_lang('Number').'</th>
+                    <th width="5%"> '.get_lang('True').'</th>
+                    <th width="40%">'.get_lang('Answer').'</th>
+                        '.$comment_title.'
+                        '.$feedback_title.'
+                    <th width="10%">'.get_lang('Weighting').'</th>
                 </tr>
             </thead>
             <tbody>';
@@ -82,20 +82,20 @@ class UniqueAnswer extends Question
         $form->addHeader(get_lang('Answers'));
         $form->addHtml($html);
 
-        $defaults = array();
+        $defaults = [];
         $correct = 0;
         if (!empty($this->id)) {
             $answer = new Answer($this->id);
             $answer->read();
-            if (count($answer->nbrAnswers) > 0 && !$form->isSubmitted()) {
+            if ($answer->nbrAnswers > 0 && !$form->isSubmitted()) {
                 $nb_answers = $answer->nbrAnswers;
             }
         }
         $form->addElement('hidden', 'nb_answers');
 
-        //Feedback SELECT
-        $question_list = $obj_ex->selectQuestionList();
-        $select_question = array();
+        $obj_ex->setQuestionList(true);
+        $question_list = $obj_ex->getQuestionList();
+        $select_question = [];
         $select_question[0] = get_lang('SelectTargetQuestion');
         if (is_array($question_list)) {
             foreach ($question_list as $key => $questionid) {
@@ -104,46 +104,42 @@ class UniqueAnswer extends Question
                     continue;
                 }
                 $question = Question::read($questionid);
-                $select_question[$questionid] = 'Q' . $key . ' :' . cut(
-                    $question->selectTitle(), 20
-                );
+                $questionTitle = strip_tags($question->selectTitle());
+                $select_question[$questionid] = "Q$key: $questionTitle";
             }
         }
         $select_question[-1] = get_lang('ExitTest');
 
         $list = new LearnpathList(api_get_user_id());
         $flat_list = $list->get_flat_list();
-        $select_lp_id = array();
+        $select_lp_id = [];
         $select_lp_id[0] = get_lang('SelectTargetLP');
 
         foreach ($flat_list as $id => $details) {
             $select_lp_id[$id] = cut($details['lp_name'], 20);
         }
 
-        $temp_scenario = array();
-
+        $temp_scenario = [];
         if ($nb_answers < 1) {
             $nb_answers = 1;
-            Display::display_normal_message(
+            echo Display::return_message(
                 get_lang('YouHaveToCreateAtLeastOneAnswer')
             );
         }
 
-        for ($i = 1; $i <= $nb_answers; ++$i) {
+        for ($i = 1; $i <= $nb_answers; $i++) {
             $form->addHtml('<tr>');
             if (isset($answer) && is_object($answer)) {
-                if ($answer->correct[$i]) {
+                if (isset($answer->correct[$i]) && $answer->correct[$i]) {
                     $correct = $i;
                 }
-                $defaults['answer[' . $i . ']'] = $answer->answer[$i];
-                $defaults['comment[' . $i . ']'] = $answer->comment[$i];
-                $defaults['weighting[' . $i . ']'] = float_format(
-                    $answer->weighting[$i],
-                    1
-                );
-
-                $item_list = explode('@@', $answer->destination[$i]);
-
+                $defaults['answer['.$i.']'] = isset($answer->answer[$i]) ? $answer->answer[$i] : '';
+                $defaults['comment['.$i.']'] = isset($answer->comment[$i]) ? $answer->comment[$i] : '';
+                $defaults['weighting['.$i.']'] = isset($answer->weighting[$i]) ? float_format($answer->weighting[$i], 1) : 0;
+                $item_list = [];
+                if (isset($answer->destination[$i])) {
+                    $item_list = explode('@@', $answer->destination[$i]);
+                }
                 $try = isset($item_list[0]) ? $item_list[0] : '';
                 $lp = isset($item_list[1]) ? $item_list[1] : '';
                 $list_dest = isset($item_list[2]) ? $item_list[2] : '';
@@ -160,18 +156,18 @@ class UniqueAnswer extends Question
                     $url_result = $url;
                 }
 
-                $temp_scenario['url' . $i] = $url_result;
-                $temp_scenario['try' . $i] = $try_result;
-                $temp_scenario['lp' . $i] = $lp;
-                $temp_scenario['destination' . $i] = $list_dest;
+                $temp_scenario['url'.$i] = $url_result;
+                $temp_scenario['try'.$i] = $try_result;
+                $temp_scenario['lp'.$i] = $lp;
+                $temp_scenario['destination'.$i] = $list_dest;
             } else {
                 $defaults['answer[1]'] = get_lang('DefaultUniqueAnswer1');
                 $defaults['weighting[1]'] = 10;
                 $defaults['answer[2]'] = get_lang('DefaultUniqueAnswer2');
                 $defaults['weighting[2]'] = 0;
 
-                $temp_scenario['destination' . $i] = array('0');
-                $temp_scenario['lp' . $i] = array('0');
+                $temp_scenario['destination'.$i] = ['0'];
+                $temp_scenario['lp'.$i] = ['0'];
             }
             $defaults['scenario'] = $temp_scenario;
 
@@ -183,77 +179,55 @@ class UniqueAnswer extends Question
             );
             $renderer->setElementTemplate(
                 '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}</td>',
-                'counter[' . $i . ']'
+                'counter['.$i.']'
             );
             $renderer->setElementTemplate(
                 '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}</td>',
-                'answer[' . $i . ']'
+                'answer['.$i.']'
             );
             $renderer->setElementTemplate(
                 '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}</td>',
-                'comment[' . $i . ']'
+                'comment['.$i.']'
             );
             $renderer->setElementTemplate(
                 '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}</td>',
-                'weighting[' . $i . ']'
+                'weighting['.$i.']'
             );
 
             $answer_number = $form->addElement(
-                'text', 'counter[' . $i . ']', null, ' value = "' . $i . '"'
+                'text',
+                'counter['.$i.']',
+                null,
+                ' value = "'.$i.'"'
             );
             $answer_number->freeze();
             $form->addElement(
-                'radio', 'correct', null, null, $i, 'class="checkbox"'
+                'radio',
+                'correct',
+                null,
+                null,
+                $i,
+                'class="checkbox"'
             );
 
-            $form->addHtmlEditor('answer[' . $i . ']', null, null, true, $editor_config);
+            $form->addHtmlEditor('answer['.$i.']', null, null, false, $editor_config);
 
             $form->addRule(
-                'answer[' . $i . ']', get_lang('ThisFieldIsRequired'), 'required'
+                'answer['.$i.']',
+                get_lang('ThisFieldIsRequired'),
+                'required'
             );
 
-            if ($obj_ex->selectFeedbackType() == EXERCISE_FEEDBACK_TYPE_DIRECT) {
-                $form->addHtmlEditor('comment[' . $i . ']', null, null, false, $editor_config);
-                // Direct feedback
-                //Adding extra feedback fields
-                $group = array();
-                $group['try' . $i] = $form->createElement(
-                    'checkbox',
-                    'try' . $i,
-                    null,
-                    get_lang('TryAgain')
-                );
-                $group['lp' . $i] = $form->createElement(
-                    'select',
-                    'lp' . $i,
-                    get_lang('SeeTheory') . ': ',
-                    $select_lp_id
-                );
-                $group['destination' . $i] = $form->createElement(
-                    'select',
-                    'destination' . $i,
-                    get_lang('GoToQuestion') . ': ',
-                    $select_question
-                );
-                $group['url' . $i] = $form->createElement(
-                    'text',
-                    'url' . $i,
-                    get_lang('Other') . ': ',
-                    array(
-                        'class' => 'col-md-2',
-                        'placeholder' => get_lang('Other')
-                    )
-                );
-                $form->addGroup($group, 'scenario');
-
-                $renderer->setElementTemplate(
-                    '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}',
-                    'scenario'
-                );
-            } else {
-                $form->addHtmlEditor('comment[' . $i . ']', null, null, false, $editor_config);
+            switch ($obj_ex->getFeedbackType()) {
+                case EXERCISE_FEEDBACK_TYPE_DIRECT:
+                    $this->setDirectOptions($i, $form, $renderer, $select_lp_id, $select_question);
+                    break;
+                case EXERCISE_FEEDBACK_TYPE_POPUP:
+                default:
+                    $form->addHtmlEditor('comment['.$i.']', null, null, false, $editor_config);
+                    break;
             }
-            $form->addText('weighting[' . $i . ']', null, null, array('value' => '0'));
+            $form->addText('weighting['.$i.']', null, null, ['value' => '0']);
             $form->addHtml('</tr>');
         }
 
@@ -261,16 +235,24 @@ class UniqueAnswer extends Question
         $form->addHtml('</table>');
 
         global $text;
-
         $buttonGroup = [];
-        //ie6 fix
-        if ($obj_ex->edit_exercise_in_lp == true) {
 
+        if ($obj_ex->edit_exercise_in_lp == true ||
+            (empty($this->exerciseList) && empty($obj_ex->id))
+        ) {
             //setting the save button here and not in the question class.php
             $buttonGroup[] = $form->addButtonDelete(get_lang('LessAnswer'), 'lessAnswers', true);
             $buttonGroup[] = $form->addButtonCreate(get_lang('PlusAnswer'), 'moreAnswers', true);
-            $buttonGroup[] = $form->addButtonSave($text, 'submitQuestion', true);
-
+            $buttonGroup[] = $form->addButton(
+                'submitQuestion',
+                $text,
+                'check',
+                'primary',
+                'default',
+                null,
+                ['id' => 'submit-question'],
+                true
+            );
             $form->addGroup($buttonGroup);
         }
 
@@ -288,18 +270,69 @@ class UniqueAnswer extends Question
                 // Default sample content.
                 $form->setDefaults($defaults);
             } else {
-                $form->setDefaults(array('correct' => 1));
+                $form->setDefaults(['correct' => 1]);
             }
         }
-        $form->setConstants(array('nb_answers' => $nb_answers));
+        $form->setConstants(['nb_answers' => $nb_answers]);
+    }
+
+    public function setDirectOptions($i, FormValidator $form, $renderer, $select_lp_id, $select_question)
+    {
+        $editor_config = [
+            'ToolbarSet' => 'TestProposedAnswer',
+            'Width' => '100%',
+            'Height' => '125',
+        ];
+
+        $form->addHtmlEditor(
+            'comment['.$i.']',
+            null,
+            null,
+            false,
+            $editor_config
+        );
+        // Direct feedback
+        //Adding extra feedback fields
+        $group = [];
+        $group['try'.$i] = $form->createElement(
+            'checkbox',
+            'try'.$i,
+            null,
+            get_lang('TryAgain')
+        );
+        $group['lp'.$i] = $form->createElement(
+            'select',
+            'lp'.$i,
+            get_lang('SeeTheory').': ',
+            $select_lp_id
+        );
+        $group['destination'.$i] = $form->createElement(
+            'select',
+            'destination'.$i,
+            get_lang('GoToQuestion').': ',
+            $select_question
+        );
+        $group['url'.$i] = $form->createElement(
+            'text',
+            'url'.$i,
+            get_lang('Other').': ',
+            [
+                'class' => 'col-md-2',
+                'placeholder' => get_lang('Other'),
+            ]
+        );
+        $form->addGroup($group, 'scenario');
+
+        $renderer->setElementTemplate(
+            '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error --><br/>{element}',
+            'scenario'
+        );
     }
 
     /**
-     * Receives the unique answer question type creation form data and creates
-     * or updates the answers from that question
-     * @param FormValidator $form
+     * {@inheritdoc}
      */
-    public function processAnswersCreation($form)
+    public function processAnswersCreation($form, $exercise)
     {
         $questionWeighting = $nbrGoodAnswers = 0;
         $correct = $form->getSubmitValue('correct');
@@ -307,19 +340,18 @@ class UniqueAnswer extends Question
         $nb_answers = $form->getSubmitValue('nb_answers');
 
         for ($i = 1; $i <= $nb_answers; $i++) {
-            $answer = trim($form->getSubmitValue('answer[' . $i . ']'));
-            $comment = trim($form->getSubmitValue('comment[' . $i . ']'));
-            $weighting = trim($form->getSubmitValue('weighting[' . $i . ']'));
-
+            $answer = trim($form->getSubmitValue('answer['.$i.']'));
+            $comment = trim($form->getSubmitValue('comment['.$i.']'));
+            $weighting = trim($form->getSubmitValue('weighting['.$i.']'));
             $scenario = $form->getSubmitValue('scenario');
 
             //$list_destination = $form -> getSubmitValue('destination'.$i);
             //$destination_str = $form -> getSubmitValue('destination'.$i);
 
-            $try = $scenario['try' . $i];
-            $lp = $scenario['lp' . $i];
-            $destination = $scenario['destination' . $i];
-            $url = trim($scenario['url' . $i]);
+            $try = !empty($scenario['try'.$i]);
+            $lp = $scenario['lp'.$i];
+            $destination = $scenario['destination'.$i];
+            $url = trim($scenario['url'.$i]);
 
             /*
             How we are going to parse the destination value
@@ -340,7 +372,7 @@ class UniqueAnswer extends Question
                 $destination_str.=$destination_id.';';
             }*/
 
-            $goodAnswer = ($correct == $i) ? true : false;
+            $goodAnswer = $correct == $i ? true : false;
 
             if ($goodAnswer) {
                 $nbrGoodAnswers++;
@@ -367,7 +399,7 @@ class UniqueAnswer extends Question
             }
 
             //1@@1;2;@@2;4;4;@@http://www.chamilo.org
-            $dest = $try . '@@' . $lp . '@@' . $destination . '@@' . $url;
+            $dest = $try.'@@'.$lp.'@@'.$destination.'@@'.$url;
             $objAnswer->createAnswer(
                 $answer,
                 $goodAnswer,
@@ -385,41 +417,41 @@ class UniqueAnswer extends Question
 
         // sets the total weighting of the question
         $this->updateWeighting($questionWeighting);
-        $this->save();
+        $this->save($exercise);
     }
 
     /**
-     * Helper function to print the column titles in the answers edition form
-     * @param null $feedback_type The type of feedback influences what columns are shown to the editor
-     * @param null $counter The number of answers to show, in case there should be pagination
-     * @param null $score The maximum score for the question
-     * @return string HTML string for a table header + a wrapper before it
+     * {@inheritdoc}
      */
-    public function return_header(
-        $feedback_type = null,
-        $counter = null,
-        $score = null
-    ) {
-        $header = parent::return_header($feedback_type, $counter, $score);
-        $header .= '<table class="' . $this->question_table_class . '">
-			<tr>
-				<th>' . get_lang("Choice") . '</th>
-				<th>' . get_lang("ExpectedChoice") . '</th>
-				<th>' . get_lang("Answer") . '</th>';
-        $header .= '<th>' . get_lang("Comment") . '</th>';
+    public function return_header(Exercise $exercise, $counter = null, $score = [])
+    {
+        $header = parent::return_header($exercise, $counter, $score);
+        $header .= '<table class="'.$this->question_table_class.'"><tr>';
+
+        $header .= '<th>'.get_lang('Choice').'</th>';
+        if ($exercise->showExpectedChoiceColumn()) {
+            $header .= '<th>'.get_lang('ExpectedChoice').'</th>';
+        }
+
+        $header .= '<th>'.get_lang('Answer').'</th>';
+        if ($exercise->showExpectedChoice()) {
+            $header .= '<th>'.get_lang('Status').'</th>';
+        }
+        $header .= '<th>'.get_lang('Comment').'</th>';
         $header .= '</tr>';
 
         return $header;
     }
 
     /**
-     * Saves one answer to the database
-     * @param int $id   The ID of the answer (has to be calculated for this course)
-     * @param int $question_id  The question ID (to which the answer is attached)
-     * @param string $title The text of the answer
-     * @param string $comment The feedback for the answer
-     * @param double $score  The score you get when picking this answer
-     * @param integer $correct  Whether this answer is considered *the* correct one (this is the unique answer type)
+     * Saves one answer to the database.
+     *
+     * @param int    $id          The ID of the answer (has to be calculated for this course)
+     * @param int    $question_id The question ID (to which the answer is attached)
+     * @param string $title       The text of the answer
+     * @param string $comment     The feedback for the answer
+     * @param float  $score       The score you get when picking this answer
+     * @param int    $correct     Whether this answer is considered *the* correct one (this is the unique answer type)
      */
     public function addAnswer(
         $id,
@@ -442,14 +474,14 @@ class UniqueAnswer extends Question
         $sql = "SELECT max(position) as max_position
                 FROM $tbl_quiz_answer
                 WHERE
-                  c_id = $course_id AND
-                  question_id = $question_id";
+                    c_id = $course_id AND
+                    question_id = $question_id";
         $rs_max = Database::query($sql);
         $row_max = Database::fetch_object($rs_max);
         $position = $row_max->max_position + 1;
 
         // Insert a new answer
-        $quizAnswer = new \Chamilo\CourseBundle\Entity\CQuizAnswer();
+        $quizAnswer = new CQuizAnswer();
         $quizAnswer
             ->setCId($course_id)
             ->setId($id)
@@ -477,7 +509,7 @@ class UniqueAnswer extends Question
         if ($correct) {
             $sql = "UPDATE $tbl_quiz_question
                     SET ponderation = (ponderation + $score)
-                    WHERE c_id = $course_id AND id = " . $question_id;
+                    WHERE c_id = $course_id AND id = ".$question_id;
             Database::query($sql);
         }
     }

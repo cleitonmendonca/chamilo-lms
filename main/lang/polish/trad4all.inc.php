@@ -185,7 +185,6 @@ $Forbidden = "Niedostępny";
 $CourseAccessConfigTip = "Standardowo Twój kurs jest upubliczniony. Możesz zmienić poziom dostępności powyżej.";
 $OpenToTheWorld = "Dostęp dla całego świata";
 $OpenToThePlatform = "Dostęp dla zarejestrowanych użytkowników platformy";
-$OpenToThePlatform = "Dostęp otwarty dla użytkowników zarejestrowanych w platformie";
 $TipLang = "Ten język będzie obowiązywał wszystkich użytkowników tego kursu.";
 $Vid = "Wideo";
 $Work = "Prace studentów";
@@ -421,7 +420,12 @@ $ThisItemIsInvisibleForStudentsButYouHaveAccessAsTeacher = "Ten element jest nie
 $EnableIframeInclusionComment = "Zezwalając na użycie ramek Iframe wewnątrz edytora HTML ulepszysz możliwości edycji dla użytkowników, ale wiąże się to z pewnym ryzykiem. Upewnij się, że możesz zaufać swoim użytkownikom (np. Jeśli wiesz kim są) przed włączeniem tego rozszerzenia.";
 $AddedToLPCannotBeAccessed = "Ćwiczenie zostało włączone do ścieżki nauki, nie może być dostępne bezpośrednio stąd. Jeśli chcesz udostępnić to samo ćwiczenie poprzez narzędzie ćwiczeń, należy zrobić kopię obecnego zadania przy użyciu ikony kopiowania.";
 $EnableIframeInclusionTitle = "Zezwól na użycie ramek Iframe w edytorze HTML";
-$MailTemplateRegistrationMessage = "Szanowny/a ((firstname)) ((lastname)),\ n\nJesteś zarejestrowany na ((sitename)) z następującymi ustawieniami:\n\nNazwa użytkownika: ((username))\nHasło: ((password))\n\nAdres strony ((sitename)) to:. ((url))\n\nln W przypadku jakichkolwiek problemów, prosimy o kontakt.\n\nAdministrator\n((admin_name)) ((admin_surname)).";
+$MailTemplateRegistrationMessage = "Szanowny/a ((firstname)) ((lastname)),\n\n
+Jesteś zarejestrowany na ((sitename)) z następującymi ustawieniami:\n\n
+Nazwa użytkownika: ((username))\nHasło: ((password))\n\n
+Adres strony ((sitename)) to:. ((url))\n\n
+ln W przypadku jakichkolwiek problemów, prosimy o kontakt.\n\n
+Administrator\n((admin_name)) ((admin_surname)).";
 $Explanation = "Kliknięcie OK spowoduje utworzenie stron kursu z Forum, Terminarzem, Obszarem dokumentów itd. Tylko Ty, jako twórca kursu możesz te strony modyfikować";
 $CodeTaken = "Kod kursu jest już podany.
 Użyj przycisku Wstecz i spróbuj jeszcze raz";
@@ -3441,7 +3445,7 @@ $NewMessageInForum = "Nowa wiadomość wysłana na forum";
 $FolderCreated = "Nowy katalog utworzony";
 $AgendaAdded = "Dodano zdarzenia";
 $ShouldBeCSVFormat = "Plik powinien być w formacie CSV. Nie dodawaj spacji. Plik powinien mieć strukturę:";
-$Enter2passToChange = "Podaj nowe hasło dwukrotnie";
+$TypeCurrentPassword = "Podaj nowe hasło dwukrotnie";
 $AuthInfo = "Autoryzacja";
 $ImageWrong = "Rozmiar pliku powinien być mniejszy niż";
 $NewPass = "Nowe hasło";
@@ -3454,7 +3458,7 @@ $Preserved = "Chroniony";
 $ConfirmUnsubscribe = "Potwierdź usunięcie użytkownika";
 $See = "Idź do";
 $LastVisits = "Moje ostatnie logowania";
-$IfYouWantToAddManyUsers = "Jeśli chcesz dodać listę użytkowników do szkolenia \t\t\, skontaktuj się z administratorem.";
+$IfYouWantToAddManyUsers = "Jeśli chcesz dodać listę użytkowników do szkolenia, skontaktuj się z administratorem.";
 $PassTooEasy = "to hasło jest zbyt proste. Zobacz przykład poniżej";
 $AddedToCourse = "jest już zarejestrowany w kursie";
 $UserAlreadyRegistered = "Użytkownik o tej nazwie jest już zarejestrowany w tym kursie.";
@@ -3539,7 +3543,6 @@ $ApprovalForNewAccount = "Zatwierdzenie nowego konta";
 $ManageUser = "Zarządzaj użytkownikami";
 $SubscribeUserToCourseAsTeacher = "Zapisz (Nauczyciel) użytkowników na kurs.";
 $PasswordEncryptedForSecurity = "Twoje hasło jest szyfrowane ze względów bezpieczeństwa. Po naciśnięciu przycisku, hasło zostanie wysłane do Ciebie ponownie.";
-$SystemUnableToSendEmailContact = "System nie był w stanie wysłać e-mail'a. Prosimy o kontakt";
 $OpenIDCouldNotBeFoundPleaseRegister = "Nie można znaleźć tego ID w naszej bazie danych. Zarejestruj nowe konto. Jeśli masz już u nas konto, edytuj swój profil wewnątrz swojego konta, aby dodać ID";
 $UsernameMaxXCharacters = "Nazwa użytkownika może mieć do %s znaków.";
 $PictureUploaded = "Twój obraz został wgrany";
@@ -4287,10 +4290,8 @@ $DropboxContent = "Skrszynka nadawcza to narzędzie umolżliwiające wymianę pl
 $HHome = "Pomoc - Strona główna";
 $HomeContent = "Dla większej wygody, narzędzia Chamilo już na początku nie są puste. Każde narzędzie zawiera mały przykład, który powinien pomóc zrozumieć, jak to działa. Można te przykłady modyfikować lub usuwać.</p><p> Na przykład, na Stronie głównej Twojego kursu, jest tekst wprowadzający w tematykę kursu. Możesz zastąpić ten tekst swoim tekstem klikając przycisk 'modyfikuj' a następnie 'Zatwierdź'. Wszystkie czynno¶ci są bardzo proste. We wszystkich narzędziach obowiązuje taka sama logika: 'dodawaj', 'usuwaj', 'modyfikuj'. </p><p> Kiedy przystępujesz do tworzenia kursu, większo¶ć narzędzi jest aktywna. Można aktywować i dezaktywować poszczególne narzędzia tak, żeby korzystać tylko z tych, które są potrzebne. Dezaktywacja powoduje przeniesienie narzędzia na dół Strony głównej i powoduje, że jest ona niewidoczna dla studentów. </p><p> Możesz dodawać Twoje własne strony do Strony głównej. Te strony muszą być dokumentami HTML (które mogą być tworzone w dowolnym edytorze tekstu lub programie do tworzenia stron WWW). Użyj odnośnika 'Załaduj stronę i przyłącz do Strony głównej', żeby wysłać stronę do serwera. Standardowy nagłówek Twojego serwisu automatycznie będzie połączony z nowym dokumentem , tak żeby koncentrować się na zawartości. Gdybyś chciał łączyć się ze Strony domowej z istniejącą stroną sieci Web (także wewnątrz serwera), używaj 'Dodaj odnośnik do Strony głównej'. Dodana strona może być aktywowana lub dezaktywowana ale nie usuwana. </p><p> Zanim kurs będzie gotowy, przejdź do 'Modyfikuj ustawienia kursu' i zdecyduj o poziomie dostępu do kursów, który chcesz zastosować. Domyślnie Twój kurs powinien być ukryty (ponieważ właśnie nad nim pracujesz). </p>";
 $HOnline = "Pomoc - Konferencje online";
-$OnlineContent = "Narzędzie Chamilo 'Konferencje online' pozwala w prosty sposób uczyć, informować, gromadzić razem do 100 osób (ta liczba zależy od licencjonowania serwera mediów strumieniowych, który udostępnia w sieci multimedia).<br> <ul>   <li><b>audio:</b> Głos wykładowcy jest kompresowany do formatu mp3 i na żywo transmitowany do uczestników konferencji z jakością radia FM dzięki serwerowi mediów strumieniowych.</li>   <li><b>treści kształcenia :</b> Uczestnicy mają dostęp do prezentacji PowerPoint lub innych udostępnionych dokumentów.</li>   <li><b>interakcja:</b> Uczestnicy konferencji mogą zadawać pytania prowadzącemu zajęcia za pośrednictwem tekstowego chat-room.</li> </ul>  'Konferencja online' w Chamilo jest kompromisem między zaawansowanymi rozwiązaniami technicznymi a prostą interakcją w chat-room.<br><br>  Nauczyciel/prowadzący zajęcia potrzebuje:<br> <ul>   <li>dowolnego komputera podłączonego do Internetu</li>   <li>dowolnego, taniego zestawu słuchawki-mikrofon</li>   <li>dowolnej przeglądarki internetowej</li>   <li>w Windows: oprogramowanie Winamp (<a href=\"http://www.winamp.com\" target=\"_blank\">www.winamp.com</a>)</li>   <li>w Mac'u : Quicktime broadcaster (<a href=\"http://www.quicktime.com\" target=\"_blank\">www.quicktime.com</a>)</li> </ul> Uczestnicy konferencji potrzebują:<br> <ul>   <li>dowolnego komputera podłączonego do Internetu</li>   <li>loudspeakers or headset</li>   <li>dowolnej przeglądarki internetowej</li>   <li>w Windows lub Mac'u: Quicktime (<a href=\"http://www.quicktime.com\" target=\"_blank\">www.quicktime.com</a>)</li>   <li>w Linuxie : XMMS</li> </ul>";
 $HClar = "Pomoc - Start";
 $HDoc = "Dokumenty - Pomoc";
-$DocContent = "<p>Narzędzie Dokumenty jest podobne do Menadżera Plików w komputerze.</p><p>Możesz ładować pliki różnego typu (HTML, Word, Powerpoint, Excel, Acrobat, Flash, Quicktime, etc.). Musisz tylko zadbać, żeby studenci mieli programy, które umożliwią  odczytanie umieszczonych plików. Pliki niektórych typów mogą zawierać wirusy - do Ciebie należy odpowiedzialność, żeby nie załadować zawirusowanych plików. Rozsądnym jest sprawdzanie wszystkich plików programem przeciwwirusowym przed ich załadowaniem do serwera. </p> <p>Dokumenty są wyświetlane w porządku alfabetycznym.<br><b>Uwaga : </b>Jeśli chcesz umieścić pliki w innej kolejności, ponumeruj je: 01, 02, 03...</p><p>Możesz:</p><h4>Załadować dokument</h4><ul>  <li>Wybierz plik w swoim komputerze używając przycisku 'Przeglądaj' <input type=submit value=Przeglądaj name=submit2> po prawej stronie ekranu.</li>  <li>Uruchom ładowanie za pomoca przycisku 'Załaduj' <input type=submit value=Załaduj name=submit2>\t.</li></ul><h4>Zmienić nazwę dokumentu (katalogu)</h4><ul>  <li>kliknij na przycisk <img src=../img/renommer.gif width=20 height=20 align=baseline> w kolumnie Zmień nazwę</li>  <li>Wpisz nową nazwę w polu (góra po lewej)</li>  <li>Zatwierdź przez kliknięcie <input type=submit value=Ok name=submit24>. </ul>\t<h4>Usuwać dokument (lub katalog)</h4>\t<ul>\t    <li>Kliknij na <img src=../img/delete.gif width=20 height=20> \tw kolumnie 'Usuń'.</li>\t</ul>\t<h4>Spowodować, żeby dokument (katalog) był niewidzialny dla studentów</h4>\t<ul>\t    <li>Kliknij <img src=../img/visible.gif width=20 height=20>w kolumnie 'Pokaż/ukryj'.</li>\t  <li>Dokument (lub katalog) cały czas istnieje ale jest niewidoczny dla studentów.</li>\t    <li>Żeby przywrócić jego dostępność, kliknij ponownie <img src=../document/../img/invisible.gif width=24 height=20> \tw kolumnie 'Pokaż/ukryj'</li>\t</ul>\t<h4>Dodawać lub modyfikować komentarze do dokumentu</h4>\t<ul>\t    <li>Kliknij <img src=../document/../img/comment.gif width=20 height=20> w kolumnie 'Komentarz'</li>\t  <li>Wpisz komentarze do odpowiedniego pola (na górze, po prawej).</li>\t  <li>Zatwoierdź, przez kliknięcie <input type=submit value=OK name=submit2>\t\t.</li>\t</ul>\t<p>Żeby usunąć komentarz, kliknij <img src=../document/../img/comment.gif width=20 height=20>, \t  skasuj istniejący komentarz i kliknij <input type=submit value=OK name=submit22>\t  . \t<hr>\t<p>Możesz dowolnie zorganizować zawartość obszaru Dokumenty. W tym celu:</p>\t<h4><b>Twórz katalogi</b></h4>\t<ul>\t  <li>Kliknij <img src=../document/../img/dossier.gif width=20 height=20> 'Utwórz katalog' (na górze, po lewo)</li>\t  <li>Wpisz nazwę Twojego nowego katalogu w odpowiednim polu (na górze po lewej)</li>\t  <li>Zatwierdź przez kliknięcie <input type=submit value=OK name=submit23>.</li>\t</ul>\t<h4>Przenoś pliki (lub katalogi)</h4>\t<ul>\t  <li>Kliknij na przycik <img src=../document/../img/deplacer.gif width=34 height=16> w kolumnie 'Przenoś'</li>\t  <li>Z menu (na górze, po lewej) wybierz katalog, do którego chcesz przenieść dokument lub katalog (Uwaga: słowo 'root' oznacza, że znajdujesz się głównym katalogu serwera).</li>\t  <li>Zatwierdź przez kliknięcie <input type=submit value=OK name=submit232>.</li>\t</ul>\t<center>\t  <p>";
 $HUser = "Użytkownicy - Pomoc";
 $HExercise = "Testy - Pomoc";
 $HPath = "Pomoc - Ścieżka nauczania";
@@ -4421,7 +4422,7 @@ $PeopleWhoAnswered = "Osoby, które wybrały tę odpowiedź";
 $SurveyPublication = "Publikacja ankiety";
 $AdditonalUsers = "Dodatkowi użytkownicy";
 $MailText = "Wiadomość e-mail";
-$UseLinkSyntax = "Wybrani użytkownicy otrzymają e-mail z tekstem powyżej oraz unikalny link, na który należy kliknąć, by wypełnić ankietę. Jeśli chcesz umieścić link w tekście, musisz umieścić go w wybranym miejscu następujący sposób: ** link ** (gwiazdka gwiazdka link gwiazdka gwiazdka). Link zostanie automatycznie wstawiony w wybrane miejsce. Jeśli nie dodasz ** link ** do tekstu, wówczas link e-maila zostanie dodany na końcu maila.";
+$UseLinkSyntax = "Wybrani użytkownicy otrzymają e-mail z tekstem powyżej oraz unikalny link, na który należy kliknąć, by wypełnić ankietę. Jeśli chcesz umieścić link w tekście, musisz umieścić go w wybranym miejscu następujący sposób: **link** (gwiazdka gwiazdka link gwiazdka gwiazdka). Link zostanie automatycznie wstawiony w wybrane miejsce. Jeśli nie dodasz **link** do tekstu, wówczas link e-maila zostanie dodany na końcu maila.";
 $DetailedReportByUser = "Szczegółowy raport użytkownika";
 $DetailedReportByQuestion = "Szczegółowy raport o pytaniu";
 $ComparativeReportDetail = "W tym raporcie można porównać dwa pytania.";
@@ -4687,7 +4688,7 @@ $Assignment = "Zadania";
 $ExpiryDateToSendWorkIs = "Termin wykonania zadania";
 $EnableExpiryDate = "Włącz datę wygaśnięcia";
 $EnableEndDate = "Włącz ostateczną datę odbioru";
-$IsNotPosibleSaveTheDocument = "Nie można zapisać dokumentu";
+$ImpossibleToSaveTheDocument = "Nie można zapisać dokumentu";
 $EndDateCannotBeBeforeTheExpireDate = "Data końcowa nie może wcześniejsza niż data wygaśnięcia";
 $SelectAFilter = "Wybierz filtr";
 $FilterByNotExpired = "Sortuj wg aktualnych";
@@ -5524,12 +5525,9 @@ $EndDateMustBeMoreThanStartDate = "Data końcowa musi być późniejsza niż dat
 $ToAttend = "aby wziąć udział";
 $AllUsersAreAutomaticallyRegistered = "Wszyscy użytkownicy są automatycznie rejestrowani";
 $AssignCoach = "Przypisz trenera";
-$chamilo = "Chamilo";
 $YourAccountOnXHasJustBeenApprovedByOneOfOurAdministrators = "Twoje konto na %s zostało właśnie zatwierdzone przez jednego z naszych administratorów.";
-$php = "PHP";
 $Off = "Wyłączony";
-$webserver = "Serwer sieci Web";
-$mysql = "MySQL";
+$WebServer = "Serwer sieci Web";
 $NotInserted = "Nie zawarte";
 $YouCanNowLoginAtXUsingTheLoginAndThePasswordYouHaveProvided = "Teraz możesz zalogować się na %s przy użyciu loginu i hasła, które podałeś.";
 $HaveFun = "Powodzenia";
@@ -5696,7 +5694,8 @@ $OnlyAccessFromYourGroup = "Dostępne tylko z grupy";
 $CreateAssignmentPage = "To utworzy specjalną stronę wiki, na której nauczyciel może opisać zadanie. Zostanie ona automatycznie połączona ze stronami Wiki, gdzie uczniowie wykonują zadanie. Zarówno strony Trenera jak i studentów są tworzone automatycznie. W tych zadaniach, studenci mogą tylko edytować i przeglądać swoje strony. Można jednak to zmienić, jeśli będzie taka potrzeba.";
 $UserFolders = "Foldery użytkowników";
 $UserFolder = "Katalog użytkownika";
-$HelpUsersFolder = "INFORMACJE WIDOCZNE tylko dla nauczyciela: \ nFolder użytkowników zawiera folder każdego użytkownika, który ma dostęp do niego przez narzędzie dokumentów, lub gdy jakiś plik został przesłany w kursie za pośrednictwem internetowego edytora. Jeśli nie doszło do żadnych okoliczności, to nie powstał żaden folder użytkownika. W przypadku grup, pliki, które są wysyłane za pośrednictwem edytora zostaną dodane w folderze każdej grupy, który jest dostępny tylko dla studentów z tej grupy.
+$HelpUsersFolder = "INFORMACJE WIDOCZNE tylko dla nauczyciela:\n
+Folder użytkowników zawiera folder każdego użytkownika, który ma dostęp do niego przez narzędzie dokumentów, lub gdy jakiś plik został przesłany w kursie za pośrednictwem internetowego edytora. Jeśli nie doszło do żadnych okoliczności, to nie powstał żaden folder użytkownika. W przypadku grup, pliki, które są wysyłane za pośrednictwem edytora zostaną dodane w folderze każdej grupy, który jest dostępny tylko dla studentów z tej grupy.
 
 Folder użytkowników i każdy z zawartych w nim folderów będą domyślnie ukryte dla wszystkich studentów, ale każdy student może zobaczyć zawartość jego/jej katalogu poprzez internetowy edytor. Jeśli jednak student zna adres pliku lub folderu innego studenta, może uzyskać do niego dostęp.
 
@@ -6332,6 +6331,7 @@ $CasMainPortComment = "Port, poprzez który następuje łączenie się z serwere
 $CasMainProtocolTitle = "Protokół głównego serwera CAS";
 $CAS1Text = "CAS 1";
 $CAS2Text = "CAS 2";
+$CAS3Text = "CAS 3";
 $SAMLText = "SAML";
 $CasMainProtocolComment = "Protokół, z którym łączymy się z serwerem CAS";
 $CasUserAddActivateTitle = "Włącz dodawanie użytkownika CAS";

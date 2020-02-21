@@ -2,14 +2,15 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Search user certificates if them are publics
+ * Search user certificates if them are publics.
+ *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.gradebook
  */
-
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 if (api_get_setting('allow_public_certificates') != 'true') {
     api_not_allowed(
@@ -30,8 +31,7 @@ $searchForm->addButtonSearch();
 if ($searchForm->validate()) {
     $firstname = $searchForm->getSubmitValue('firstname');
     $lastname = $searchForm->getSubmitValue('lastname');
-
-    $userList = UserManager::getUserByName($firstname, $lastname);
+    $userList = UserManager::getUsersByName($firstname, $lastname);
 
     if (empty($userList)) {
         Display::addFlash(
@@ -54,12 +54,18 @@ if ($searchForm->validate()) {
     }
 
     $courseList = GradebookUtils::getUserCertificatesInCourses($userId, false);
-    $sessionList = GradebookUtils::getUserCertificatesInSessions($userId, false);
+    $sessionList = GradebookUtils::getUserCertificatesInSessions(
+        $userId,
+        false
+    );
 
     if (empty($courseList) && empty($sessionList)) {
         Display::addFlash(
             Display::return_message(
-                sprintf(get_lang('TheUserXNotYetAchievedCertificates'), $userInfo['complete_name']),
+                sprintf(
+                    get_lang('TheUserXNotYetAchievedCertificates'),
+                    $userInfo['complete_name']
+                ),
                 'warning'
             )
         );
@@ -76,8 +82,8 @@ $template->assign('user_list', $userList);
 $template->assign('user_info', $userInfo);
 $template->assign('course_list', $courseList);
 $template->assign('session_list', $sessionList);
-
-$content = $template->fetch('default/gradebook/search.tpl');
+$templateName = $template->get_template('gradebook/search.tpl');
+$content = $template->fetch($templateName);
 
 $template->assign('header', get_lang('SearchCertificates'));
 $template->assign('content', $content);

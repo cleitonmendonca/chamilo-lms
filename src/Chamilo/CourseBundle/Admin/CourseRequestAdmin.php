@@ -4,25 +4,23 @@
 namespace Chamilo\CourseBundle\Admin;
 
 use Sonata\AdminBundle\Admin\Admin;
-use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
+use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Show\ShowMapper;
 
 /**
- * Class CourseRequestAdmin
+ * Class CourseRequestAdmin.
+ *
  * @package Chamilo\CoreBundle\Admin
  */
 class CourseRequestAdmin extends Admin
 {
-    /**
-     * @param FormMapper $formMapper
-     */
     protected function configureFormFields(FormMapper $formMapper)
     {
         $formMapper
             ->add('title')
-            ->add('description', 'textarea', array('attr' => array('class'=> 'ckeditor')))
+            ->add('description', 'textarea', ['attr' => ['class' => 'ckeditor']])
             ->add('code')
             ->add('user')
             ->add('status')
@@ -33,9 +31,6 @@ class CourseRequestAdmin extends Admin
         ;
     }
 
-    /**
-     * @param ShowMapper $showMapper
-     */
     protected function configureShowField(ShowMapper $showMapper)
     {
         $showMapper
@@ -44,9 +39,6 @@ class CourseRequestAdmin extends Admin
         ;
     }
 
-    /**
-     * @param DatagridMapper $datagridMapper
-     */
     protected function configureDatagridFilters(DatagridMapper $datagridMapper)
     {
         $datagridMapper
@@ -54,9 +46,6 @@ class CourseRequestAdmin extends Admin
         ;
     }
 
-    /**
-     * @param ListMapper $listMapper
-     */
     protected function configureListFields(ListMapper $listMapper)
     {
         $listMapper

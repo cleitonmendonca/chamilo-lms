@@ -4,15 +4,15 @@
 namespace Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar;
 
 /**
- * Survey toolbar configuration
+ * Survey toolbar configuration.
  *
  * @package Chamilo\CoreBundle\Component\Editor\CkEditor\Toolbar
  */
 class Survey extends Basic
 {
-
     /**
-     * Get the toolbar config
+     * Get the toolbar config.
+     *
      * @return array
      */
     public function getConfig()
@@ -28,7 +28,8 @@ class Survey extends Basic
     }
 
     /**
-     * Get the toolbar configuration when CKEditor is maximized
+     * Get the toolbar configuration when CKEditor is maximized.
+     *
      * @return array
      */
     protected function getMaximizedToolbar()
@@ -50,22 +51,35 @@ class Survey extends Basic
                 'Smiley',
                 'SpecialChar',
                 'Asciimath',
-                'Asciisvg'
+                'Asciisvg',
             ],
             '/',
             ['Table', '-', 'CreateDiv'],
             ['BulletedList', 'NumberedList', 'HorizontalRule', '-', 'Outdent', 'Indent', 'Blockquote'],
             ['JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Bold', 'Italic', 'Underline', 'Strike', '-', 'Subscript', 'Superscript', '-', 'TextColor', 'BGColor'],
+            [
+                'Bold',
+                'Italic',
+                'Underline',
+                'Strike',
+                '-',
+                'Subscript',
+                'Superscript',
+                '-',
+                'TextColor',
+                'BGColor',
+                api_get_configuration_value('translate_html') ? 'Language' : '',
+            ],
             [api_get_setting('allow_spellcheck') == 'true' ? 'Scayt' : ''],
             ['Styles', 'Format', 'Font', 'FontSize'],
             ['PageBreak', 'ShowBlocks', 'Source'],
-            ['Toolbarswitch']
+            ['Toolbarswitch'],
         ];
     }
 
     /**
-     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false
+     * Get the default toolbar configuration when the setting more_buttons_maximized_mode is false.
+     *
      * @return array
      */
     protected function getNormalToolbar()
@@ -78,25 +92,35 @@ class Survey extends Basic
             ['FontSize'],
             ['Bold', 'Italic'],
             ['NumberedList', 'BulletedList', '-', 'TextColor'],
-            ['Source']
+            ['Source'],
         ];
     }
 
     /**
-     * Get the toolbar configuration when CKEditor is minimized
+     * Get the toolbar configuration when CKEditor is minimized.
+     *
      * @return array
      */
     protected function getMinimizedToolbar()
     {
         return [
-            ['NewPage', 'Templates', '-', 'PasteFromWord'],
+            $this->getNewPageBlock(),
             ['Undo', 'Redo'],
             ['Link', 'Image', 'Video', 'Flash', 'Audio', 'Table', 'Asciimath', 'Asciisvg'],
             ['BulletedList', 'NumberedList', 'HorizontalRule'],
-            ['JustifyLeft', 'JustifyCenter', 'JustifyBlock'],
-            ['Format', 'FontSize', 'Bold', 'Italic', 'Underline', 'TextColor', 'BGColor', 'Source'],
-            ['Toolbarswitch']
+            ['JustifyLeft', 'JustifyCenter', 'JustifyRight'],
+            [
+                'Format',
+                'FontSize',
+                'Bold',
+                'Italic',
+                'Underline',
+                'TextColor',
+                'BGColor',
+                api_get_configuration_value('translate_html') ? 'Language' : '',
+                'Source',
+            ],
+            ['Toolbarswitch'],
         ];
     }
-
 }

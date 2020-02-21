@@ -1,6 +1,6 @@
 {
   "name": "mediaelement",
-  "homepage": "https://github.com/herby/mediaelement",
+  "homepage": "https://github.com/mediaelement/mediaelement",
   "description": "HTML5 <video> and <audio> made easy.",
   "moduleType": [
     "globals"
@@ -23,14 +23,14 @@
     "./build/mediaelement-and-player.js",
     "./build/mediaelementplayer.css"
   ],
-  "version": "2.22.0",
-  "_release": "2.22.0",
+  "version": "4.2.9",
+  "_release": "4.2.9",
   "_resolution": {
     "type": "version",
-    "tag": "2.22.0",
-    "commit": "c8ab5f4c70f3ea1655bb36ef6af20976c940f65a"
+    "tag": "4.2.9",
+    "commit": "6d665634da067ac075cd49631e646c7b16f25510"
   },
   "_source": "https://github.com/johndyer/mediaelement.git",
-  "_target": "2.*",
+  "_target": "4.*",
   "_originalSource": "mediaelement"
 }

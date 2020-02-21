@@ -20,37 +20,37 @@ CKEDITOR.editorConfig = function (config) {
     ];
     //Style for default CKEditor Chamilo LMS
     config.stylesSet = [
-        { 
+        {
             name : 'Title 1',
             element : 'h1',
             attributes : { 'class': 'ck ck-title' }
         },
-        { 
+        {
             name : 'Title 2',
             element : 'h2',
             attributes : { 'class': 'ck ck-title2' }
         },
-        { 
+        {
             name : 'Alert Success',
-            element : 'p',
+            element : 'div',
             attributes : { 'class': 'alert alert-success' }
         },
-        { 
+        {
             name : 'Alert Info',
-            element : 'p',
+            element : 'div',
             attributes : { 'class': 'alert alert-info' }
         },
-        { 
+        {
             name : 'Alert Warning',
-            element : 'p',
+            element : 'div',
             attributes : { 'class': 'alert alert-warning' }
         },
-        { 
+        {
             name : 'Alert Danger',
-            element : 'p',
+            element : 'div',
             attributes : { 'class': 'alert alert-danger' }
         },
-        { 
+        {
             name : 'Section Article' ,
             element : 'h3' ,
             attributes : { 'class': 'ck ck-article' }
@@ -95,8 +95,7 @@ CKEDITOR.editorConfig = function (config) {
             attributes: { 'class':'ck-style3'}
         }
     ];
-    
-    
+
     {% if moreButtonsInMaximizedMode %}
         config.toolbar = 'minToolbar';
         config.smallToolbar = 'minToolbar';
@@ -104,11 +103,30 @@ CKEDITOR.editorConfig = function (config) {
     {% endif %}
 
     // File manager (elFinder)
-    config.filebrowserBrowseUrl = '{{ _p.web_lib ~ 'elfinder/filemanager.php' }}';
+    config.filebrowserBrowseUrl = '{{ _p.web_lib ~ 'elfinder/filemanager.php?' }}{{ course_condition }}';
+    config.videobrowserBrowseUrl = '{{ _p.web_lib ~ 'elfinder/filemanager.php?' }}{{ course_condition }}';
+
+    {% if enter_mode %}
+        config.enterMode = {{ enter_mode }};
+    {% endif %}
 
     // Allows to use "class" attribute inside divs and spans.
     config.allowedContent = true;
-    config.contentsCss = '{{ cssEditor }}';
+    // Option to set the "styles" menu
+    config.contentsCss = [
+        '{{ bootstrap_css }}',
+        '{{ font_awesome_css }}',
+        '{{ css_editor }}',
+    ];
 
-    config.customConfig = '{{ _p.web_main ~ 'inc/lib/javascript/ckeditor/config_js.php'}}';
+    config.language_list = ['{{ language_list }}'];
+
+    config.qMarkersRollsUrl = '{{ _p.web_ajax }}exercise.ajax.php?a=get_quiz_embeddable';
 };
+
+// Sets default target to "_blank" in link plugin
+CKEDITOR.on('dialogDefinition', function (ev) {
+    if (ev.data.name == 'link'){
+        ev.data.definition.getContents('target').get('linkTargetType')['default']='_blank';
+    }
+});

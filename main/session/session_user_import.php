@@ -4,10 +4,9 @@
 /**
  * @package chamilo.admin
  */
-
 $cidReset = true;
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 set_time_limit(0);
 
@@ -20,11 +19,11 @@ $form_sent = 0;
 $tool_name = get_lang('ImportUsers');
 
 //$interbreadcrumb[] = array('url' => 'index.php', 'name' => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => "session_list.php", "name" => get_lang('SessionList'));
-$interbreadcrumb[] = array(
+$interbreadcrumb[] = ['url' => "session_list.php", "name" => get_lang('SessionList')];
+$interbreadcrumb[] = [
     'url' => "resume_session.php?id_session=".$session_id,
     "name" => get_lang('SessionOverview'),
-);
+];
 
 if (isset($_POST['formSent']) && $_POST['formSent']) {
     if (isset($_FILES['import_file']['tmp_name']) &&
@@ -34,26 +33,26 @@ if (isset($_POST['formSent']) && $_POST['formSent']) {
 
         // CSV
         $users = Import::csvToArray($_FILES['import_file']['tmp_name']);
-        $user_list = array();
+        $user_list = [];
         foreach ($users as $user_data) {
             $username = $user_data['username'];
-            $user_id  = UserManager::get_user_id_from_username($username);
+            $user_id = UserManager::get_user_id_from_username($username);
             if ($user_id) {
                 $user_list[] = $user_id;
             }
         }
 
         if (!empty($user_list)) {
-            SessionManager::suscribe_users_to_session(
+            SessionManager::subscribeUsersToSession(
                 $session_id,
                 $user_list,
                 null,
                 false
             );
 
-            foreach ($user_list as & $user_id) {
+            foreach ($user_list as &$user_id) {
                 $user_info = api_get_user_info($user_id);
-                $user_id   = $user_info['complete_name'];
+                $user_id = $user_info['complete_name'];
             }
             $error_message = get_lang('UsersAdded').' : '.implode(', ', $user_list);
         }
@@ -72,7 +71,7 @@ echo '<a href="resume_session.php?id_session='.$session_id.'">'.
 echo '</div>';
 
 if (!empty($error_message)) {
-    Display::display_normal_message($error_message, false);
+    echo Display::return_message($error_message, 'normal', false);
 }
 
 $form = new FormValidator(
@@ -80,7 +79,7 @@ $form = new FormValidator(
     'post',
     api_get_self().'?id_session='.$session_id,
     null,
-    array('enctype' => 'multipart/form-data')
+    ['enctype' => 'multipart/form-data']
 );
 $form->addElement('hidden', 'formSent', 1);
 $form->addElement('file', 'import_file', get_lang('ImportCSVFileLocation'));

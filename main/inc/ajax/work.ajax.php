@@ -1,24 +1,72 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Responses to AJAX calls
+ * Responses to AJAX calls.
  */
-
-require_once '../global.inc.php';
+require_once __DIR__.'/../global.inc.php';
 require_once api_get_path(SYS_CODE_PATH).'work/work.lib.php';
 
 $action = isset($_REQUEST['a']) ? $_REQUEST['a'] : null;
 $isAllowedToEdit = api_is_allowed_to_edit();
+$courseInfo = api_get_course_info();
 
 switch ($action) {
+    case 'show_student_work':
+        api_protect_course_script(true);
+        if ($isAllowedToEdit) {
+            $itemList = isset($_REQUEST['item_list']) ? $_REQUEST['item_list'] : [];
+            $itemList = explode(',', $itemList);
+            if (!empty($itemList)) {
+                foreach ($itemList as $itemId) {
+                    makeVisible($itemId, $courseInfo);
+                }
+                echo '1';
+                exit;
+            }
+        }
+        echo '0';
+        break;
+    case 'hide_student_work':
+        api_protect_course_script(true);
+        if ($isAllowedToEdit) {
+            $itemList = isset($_REQUEST['item_list']) ? $_REQUEST['item_list'] : [];
+            $itemList = explode(',', $itemList);
+            if (!empty($itemList)) {
+                foreach ($itemList as $itemId) {
+                    makeInvisible($itemId, $courseInfo);
+                }
+                echo '1';
+                exit;
+            }
+        }
+        echo '0';
+        break;
+    case 'delete_student_work':
+        api_protect_course_script(true);
+        if ($isAllowedToEdit) {
+            $itemId = isset($_REQUEST['id']) ? $_REQUEST['id'] : 0;
+            deleteWorkItem($itemId, $courseInfo);
+            echo '1';
+            exit;
+        }
+        echo '0';
+        break;
     case 'upload_file':
         api_protect_course_script(true);
         $workId = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
 
         $workInfo = get_work_data_by_id($workId);
-        $courseInfo = api_get_course_info();
         $sessionId = api_get_session_id();
         $userId = api_get_user_id();
+        $groupId = api_get_group_id();
+
+        $onlyOnePublication = api_get_configuration_value('allow_only_one_student_publication_per_user');
+        if ($onlyOnePublication) {
+            $count = get_work_count_by_student($userId, $workId);
+            if ($count >= 1) {
+                exit;
+            }
+        }
 
         if (!empty($_FILES)) {
             $files = $_FILES['files'];
@@ -39,16 +87,28 @@ switch ($action) {
                 $values = [
                     'contains_file' => 1,
                     'title' => $file['name'],
-                    'description' => ''
+                    'description' => '',
                 ];
-                $result = processWorkForm($workInfo, $values, $courseInfo, $sessionId, 0, $userId, $file, true);
 
-                $json = array();
+                $result = processWorkForm(
+                    $workInfo,
+                    $values,
+                    $courseInfo,
+                    $sessionId,
+                    $groupId,
+                    $userId,
+                    $file,
+                    api_get_configuration_value('assignment_prevent_duplicate_upload'),
+                    false
+                );
+
+                $json = [];
                 if (!empty($result) && is_array($result) && empty($result['error'])) {
-                    $json['name'] = Display::url(
+                    $json['name'] = api_htmlentities($result['title']);
+                    $json['link'] = Display::url(
                         api_htmlentities($result['title']),
                         api_htmlentities($result['view_url']),
-                        array('target' => '_blank')
+                        ['target' => '_blank']
                     );
 
                     $json['url'] = $result['view_url'];
@@ -86,7 +146,7 @@ switch ($action) {
         $is_allowed_to_edit = api_is_allowed_to_edit(null, true);
         $itemId = isset($_GET['item_id']) ? intval($_GET['item_id']) : '';
 
-        $result = array();
+        $result = [];
 
         if (!empty($_FILES) && !empty($itemId)) {
             $file = $_FILES['file'];
@@ -99,12 +159,11 @@ switch ($action) {
                 echo 'false';
                 break;
             }
-            $work_table = Database:: get_course_table(
+            $work_table = Database::get_course_table(
                 TABLE_STUDENT_PUBLICATION
             );
 
             if (isset($resultUpload['url']) && !empty($resultUpload['url'])) {
-
                 $title = isset($resultUpload['filename']) && !empty($resultUpload['filename']) ? $resultUpload['filename'] : get_lang('Untitled');
                 $url = Database::escape_string($resultUpload['url']);
                 $title = Database::escape_string($title);
@@ -118,17 +177,17 @@ switch ($action) {
                 $result['title'] = $resultUpload['filename'];
                 $result['url'] = 'view.php?'.api_get_cidreq().'&id='.$itemId;
 
-                $json = array();
+                $json = [];
                 $json['name'] = Display::url(
                     api_htmlentities($result['title']),
                     api_htmlentities($result['url']),
-                    array('target' => '_blank')
+                    ['target' => '_blank']
                 );
 
                 $json['type'] = api_htmlentities($file['type']);
                 $json['size'] = format_file_size($file['size']);
-
             }
+
             if (isset($result['url'])) {
                 $json['result'] = Display::return_icon(
                     'accept.png',
@@ -148,7 +207,6 @@ switch ($action) {
             header('Content-Type: application/json');
             echo json_encode($json);
         }
-
         break;
     default:
         echo '';

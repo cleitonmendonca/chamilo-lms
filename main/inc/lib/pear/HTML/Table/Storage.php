@@ -470,7 +470,7 @@ class HTML_Table_Storage extends HTML_Common
      * @return   int
      * @access   public
      */
-    function addRow($contents = null, $attributes = null, $type = 'td',
+    function addRow($contents = [], $attributes = null, $type = 'td',
         $inTR = false)
     {
         if (isset($contents) && !is_array($contents)) {
@@ -838,6 +838,10 @@ class HTML_Table_Storage extends HTML_Common
     {
         $colspan = isset($attributes['colspan']) ? $attributes['colspan'] : 1;
         $rowspan = isset($attributes['rowspan']) ? $attributes['rowspan'] : 1;
+        if (!is_numeric($row) or !is_numeric($col)) {
+            //throw new Exception('Row or column index is not numerical');
+            return;
+        }
         if (($row + $rowspan - 1) >= $this->_rows) {
             if ($this->_autoGrow) {
                 $this->_rows = $row + $rowspan;

@@ -2,23 +2,23 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Form for group message
+ * Form for group message.
+ *
  * @package chamilo.social
  */
-
 $cidReset = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_block_anonymous_users();
-if (api_get_setting('allow_social_tool') !='true') {
+if (api_get_setting('allow_social_tool') != 'true') {
     api_not_allowed();
 }
 
 $tok = Security::get_token();
 
 if (isset($_REQUEST['user_friend'])) {
-    $info_user_friend=array();
-    $info_path_friend=array();
+    $info_user_friend = [];
+    $info_path_friend = [];
     $userfriend_id = intval($_REQUEST['user_friend']);
     $info_user_friend = api_get_user_info($userfriend_id);
     $info_path_friend = UserManager::get_user_picture_path_by_id($userfriend_id, 'web');
@@ -26,9 +26,8 @@ if (isset($_REQUEST['user_friend'])) {
 
 $group_id = isset($_GET['group_id']) ? intval($_GET['group_id']) : null;
 $message_id = isset($_GET['message_id']) ? intval($_GET['message_id']) : null;
-$actions = array('add_message_group', 'edit_message_group', 'reply_message_group');
-
-$allowed_action = isset($_GET['action']) && in_array($_GET['action'],$actions) ? Security::remove_XSS($_GET['action']):'';
+$actions = ['add_message_group', 'edit_message_group', 'reply_message_group'];
+$allowed_action = isset($_GET['action']) && in_array($_GET['action'], $actions) ? Security::remove_XSS($_GET['action']) : '';
 
 $to_group = '';
 $subject = '';
@@ -54,22 +53,28 @@ if (!empty($group_id) && $allowed_action) {
     }
 }
 
-$page_item = !empty($_GET['topics_page_nr']) ? intval($_GET['topics_page_nr']):1;
-$param_item_page = isset($_GET['items_page_nr']) && isset($_GET['topic_id']) ? ('&items_'.intval($_GET['topic_id']).'_page_nr='.(!empty($_GET['topics_page_nr'])?intval($_GET['topics_page_nr']):1)):'';
+$page_item = !empty($_GET['topics_page_nr']) ? intval($_GET['topics_page_nr']) : 1;
+$param_item_page = isset($_GET['items_page_nr']) && isset($_GET['topic_id']) ? ('&items_'.intval($_GET['topic_id']).'_page_nr='.(!empty($_GET['topics_page_nr']) ? intval($_GET['topics_page_nr']) : 1)) : '';
 if (isset($_GET['topic_id'])) {
     $param_item_page .= '&topic_id='.intval($_GET['topic_id']);
 }
-$page_topic  = isset($_GET['topics_page_nr']) ? intval($_GET['topics_page_nr']) : 1;
-$anchor_topic  = isset($_GET['anchor_topic']) ? Security::remove_XSS($_GET['anchor_topic']) : null;
+$page_topic = isset($_GET['topics_page_nr']) ? intval($_GET['topics_page_nr']) : 1;
+$anchor_topic = isset($_GET['anchor_topic']) ? Security::remove_XSS($_GET['anchor_topic']) : null;
 
 $url = api_get_path(WEB_CODE_PATH).'social/group_topics.php?id='.$group_id.'&anchor_topic='.$anchor_topic.'&topics_page_nr='.$page_topic.$param_item_page;
 
-$form = new FormValidator('form', 'post', $url, null, array('enctype' => 'multipart/form-data'));
-$form->addElement('hidden', 'action', $allowed_action);
-$form->addElement('hidden', 'group_id', $group_id);
-$form->addElement('hidden', 'parent_id', $message_id);
-$form->addElement('hidden', 'message_id', $message_id);
-$form->addElement('hidden', 'token', $tok);
+$form = new FormValidator(
+    'form',
+    'post',
+    $url,
+    null,
+    ['enctype' => 'multipart/form-data']
+);
+$form->addHidden('action', $allowed_action);
+$form->addHidden('group_id', $group_id);
+$form->addHidden('parent_id', $message_id);
+$form->addHidden('message_id', $message_id);
+$form->addHidden('token', $tok);
 
 $tpl = new Template(get_lang('Groups'));
 
@@ -87,25 +92,26 @@ if (api_get_setting('allow_message_tool') === 'true') {
     $form->addElement(
         'label',
         get_lang('AttachmentFiles'),
-        '
-            <div id="link-more-attach">
-                <a class="btn btn-default" href="javascript://" onclick="return add_image_form()">
-                    ' . get_lang('AddOneMoreFile') . '
-                </a>
-            </div>
-        '
+        '<div id="link-more-attach">
+            <a class="btn btn-default" href="javascript://" onclick="return add_image_form()">
+                '.get_lang('AddOneMoreFile').'
+            </a>
+        </div>'
     );
 
     $form->addElement('label', null, '<div id="filepaths"></div>');
     $form->addElement(
         'file',
         'attach_1',
-        sprintf(get_lang('MaximunFileSizeX'),
-        format_file_size(api_get_setting('message_max_upload_filesize')))
+        sprintf(
+            get_lang('MaximunFileSizeX'),
+            format_file_size(api_get_setting('message_max_upload_filesize'))
+        )
     );
     $form->addButtonSend(get_lang('SendMessage'));
 
     $form->setDefaults(['content' => $message, 'title' => $subject]);
-    $form->display();
+    $tpl->assign('content', $form->returnForm());
 }
-$tpl->display_blank_template();
+
+$tpl->displayBlankTemplateNoHeader();

@@ -1,6 +1,8 @@
 <?php
 /* For licensing terms, see /license.txt */
 
+use Chamilo\CourseBundle\Entity\CToolIntro;
+
 /**
  * The INTRODUCTION MICRO MODULE is used to insert and edit
  * an introduction section on a Chamilo module or on the course homepage.
@@ -27,12 +29,10 @@
  *
  * @package chamilo.include
  */
-
-use Chamilo\CourseBundle\Entity\CToolIntro;
-
-$TBL_INTRODUCTION = Database::get_course_table(TABLE_TOOL_INTRO);
-$intro_editAllowed = $is_allowed_to_edit;
+$em = Database::getManager();
+$intro_editAllowed = $is_allowed_to_edit = api_is_allowed_to_edit();
 $session_id = api_get_session_id();
+$blogParam = isset($_GET['blog_id']) ? ('&blog_id='.(int) $_GET['blog_id']) : '';
 
 $introduction_section = '';
 
@@ -47,67 +47,50 @@ if (!empty($courseId)) {
     $form = new FormValidator(
         'introduction_text',
         'post',
-        api_get_self().'?'.api_get_cidreq()
+        api_get_self().'?'.api_get_cidreq().$blogParam
     );
 } else {
     $form = new FormValidator('introduction_text');
 }
 
-$config = array(
-    'ToolbarSet' => 'IntroductionTool',
+$config = [
+    'ToolbarSet' => 'IntroductionSection',
     'Width' => '100%',
-    'Height' => '300'
-);
+    'Height' => '300',
+];
 
-$form->addHtmlEditor('intro_content', null, false, false, $config, true);
+$form->addHtmlEditor('intro_content', null, false, false, $config);
 $form->addButtonSave(get_lang('SaveIntroText'), 'intro_cmdUpdate');
 
 /* INTRODUCTION MICRO MODULE - COMMANDS SECTION (IF ALLOWED) */
 $course_id = api_get_course_int_id();
 
 if ($intro_editAllowed) {
+    /** @var CToolIntro $toolIntro */
+    $toolIntro = $em
+        ->getRepository('ChamiloCourseBundle:CToolIntro')
+        ->findOneBy(['cId' => $course_id, 'id' => $moduleId, 'sessionId' => $session_id]);
+
     /* Replace command */
     if ($intro_cmdUpdate) {
         if ($form->validate()) {
             $form_values = $form->exportValues();
-            $intro_content = Security::remove_XSS(
-                stripslashes(
-                    api_html_entity_decode($form_values['intro_content'])
-                ),
-                COURSEMANAGERLOWSECURITY
-            );
-
-            $criteria = [
-                'cId' => $course_id,
-                'id' => $moduleId,
-                'sessionId' => $session_id,
-            ];
+            $intro_content = $form_values['intro_content'];
 
             if (!empty($intro_content)) {
-                /** @var CToolIntro $toolIntro */
-                $toolIntro = Database::getManager()
-                    ->getRepository('ChamiloCourseBundle:CToolIntro')
-                    ->findOneBy($criteria);
-
-                if ($toolIntro) {
-                    $toolIntro
-                        ->setIntroText($intro_content);
-                } else {
+                if (!$toolIntro) {
                     $toolIntro = new CToolIntro();
                     $toolIntro
                         ->setSessionId($session_id)
                         ->setCId($course_id)
-                        ->setIntroText($intro_content)
                         ->setId($moduleId);
                 }
-                Database::getManager()->persist($toolIntro);
-                Database::getManager()->flush();
 
-                $introduction_section .= Display::return_message(
-                    get_lang('IntroductionTextUpdated'),
-                    'confirmation',
-                    false
-                );
+                $toolIntro->setIntroText($intro_content);
+
+                $em->persist($toolIntro);
+                $em->flush();
+                Display::addFlash(Display::return_message(get_lang('IntroductionTextUpdated'), 'confirmation', false));
             } else {
                 // got to the delete command
                 $intro_cmdDel = true;
@@ -118,56 +101,53 @@ if ($intro_editAllowed) {
     }
 
     /* Delete Command */
-    if ($intro_cmdDel) {
-        $sql = "DELETE FROM $TBL_INTRODUCTION
-                WHERE
-                    c_id = $course_id AND
-                    id='".Database::escape_string($moduleId)."' AND
-                    session_id='".intval($session_id)."'";
-        Database::query($sql);
-        $introduction_section .= Display::return_message(get_lang('IntroductionTextDeleted'), 'confirmation');
+    if ($intro_cmdDel && $toolIntro) {
+        $em->remove($toolIntro);
+        $em->flush();
+
+        Display::addFlash(Display::return_message(get_lang('IntroductionTextDeleted'), 'confirmation'));
     }
 }
 
 /* INTRODUCTION MICRO MODULE - DISPLAY SECTION */
 
 /* Retrieves the module introduction text, if exist */
-/* @todo use a lib to query the $TBL_INTRODUCTION table */
 // Getting course intro
-$intro_content = null;
-$sql = "SELECT intro_text FROM $TBL_INTRODUCTION
-        WHERE
-            c_id = $course_id AND
-            id = '".Database::escape_string($moduleId)."' AND
-            session_id = 0";
+/** @var CToolIntro $toolIntro */
+$toolIntro = $em
+    ->getRepository('ChamiloCourseBundle:CToolIntro')
+    ->findOneBy(['cId' => $course_id, 'id' => $moduleId, 'sessionId' => 0]);
 
-$intro_dbQuery = Database::query($sql);
-if (Database::num_rows($intro_dbQuery) > 0) {
-    $intro_dbResult = Database::fetch_array($intro_dbQuery);
-    $intro_content = $intro_dbResult['intro_text'];
+$intro_content = $toolIntro ? $toolIntro->getIntroText() : '';
+if ($session_id) {
+    /** @var CToolIntro $toolIntro */
+    $toolIntro = $em
+        ->getRepository('ChamiloCourseBundle:CToolIntro')
+        ->findOneBy(['cId' => $course_id, 'id' => $moduleId, 'sessionId' => $session_id]);
+
+    $introSessionContent = $toolIntro && $toolIntro->getIntroText() ? $toolIntro->getIntroText() : '';
+    $intro_content = $introSessionContent ?: $intro_content;
 }
 
-// Getting session intro
-if (!empty($session_id)) {
-    $sql = "SELECT intro_text FROM $TBL_INTRODUCTION
-            WHERE
-                c_id = $course_id AND
-                id = '".Database::escape_string($moduleId)."' AND
-                session_id = '".intval($session_id)."'";
-    $intro_dbQuery = Database::query($sql);
-    $introSessionContent = null;
-    if (Database::num_rows($intro_dbQuery) > 0) {
-        $intro_dbResult = Database::fetch_array($intro_dbQuery);
-        $introSessionContent = $intro_dbResult['intro_text'];
-    }
-    // If the course session intro exists replace it.
-    if (!empty($introSessionContent)) {
-        $intro_content = $introSessionContent;
-    }
+// Default behaviour show iframes.
+$userStatus = COURSEMANAGERLOWSECURITY;
+
+// Allows to do a remove_XSS in course introduction with user status COURSEMANAGERLOWSECURITY
+// Block embed type videos (like vimeo, wistia, etc) - see BT#12244 BT#12556
+if (api_get_configuration_value('course_introduction_html_strict_filtering')) {
+    $userStatus = COURSEMANAGER;
 }
+
+// Ignore editor.css
+$cssEditor = api_get_path(WEB_CSS_PATH).'editor.css';
+$linkToReplace = [
+    '<link href="'.$cssEditor.'" rel="stylesheet" type="text/css" />',
+    '<link href="'.$cssEditor.'" media="screen" rel="stylesheet" type="text/css" />',
+];
+$intro_content = str_replace($linkToReplace, '', $intro_content);
+$intro_content = Security::remove_XSS($intro_content, $userStatus);
 
 /* Determines the correct display */
-
 if ($intro_cmdEdit || $intro_cmdAdd) {
     $intro_dispDefault = false;
     $intro_dispForm = true;
@@ -190,7 +170,7 @@ if ($intro_dispForm) {
     $default['intro_content'] = $intro_content;
     $form->setDefaults($default);
     $introduction_section .= '<div id="courseintro" style="width: 98%">';
-    $introduction_section .= $form->return_form();
+    $introduction_section .= $form->returnForm();
     $introduction_section .= '</div>';
 }
 
@@ -204,23 +184,20 @@ if ($tool == TOOL_COURSE_HOMEPAGE && !isset($_GET['intro_cmdEdit'])) {
     $class1 = '';
     if ($displayMode == '1') {
         // Show only the current course progress step
-        // $information_title = get_lang('InfoAboutLastDoneAdvance');
-        $last_done_advance =  $thematic->get_last_done_thematic_advance();
+        $last_done_advance = $thematic->get_last_done_thematic_advance();
         $thematic_advance_info = $thematic->get_thematic_advance_list($last_done_advance);
         $subTitle1 = get_lang('CurrentTopic');
         $class1 = ' current';
-    } else if($displayMode == '2') {
+    } elseif ($displayMode == '2') {
         // Show only the two next course progress steps
-        // $information_title = get_lang('InfoAboutNextAdvanceNotDone');
         $last_done_advance = $thematic->get_next_thematic_advance_not_done();
         $next_advance_not_done = $thematic->get_next_thematic_advance_not_done(2);
         $thematic_advance_info = $thematic->get_thematic_advance_list($last_done_advance);
         $thematic_advance_info2 = $thematic->get_thematic_advance_list($next_advance_not_done);
         $subTitle1 = $subTitle2 = get_lang('NextTopic');
-    } else if($displayMode == '3') {
+    } elseif ($displayMode == '3') {
         // Show the current and next course progress steps
-        // $information_title = get_lang('InfoAboutLastDoneAdvanceAndNextAdvanceNotDone');
-        $last_done_advance =  $thematic->get_last_done_thematic_advance();
+        $last_done_advance = $thematic->get_last_done_thematic_advance();
         $next_advance_not_done = $thematic->get_next_thematic_advance_not_done();
         $thematic_advance_info = $thematic->get_thematic_advance_list($last_done_advance);
         $thematic_advance_info2 = $thematic->get_thematic_advance_list($next_advance_not_done);
@@ -231,12 +208,9 @@ if ($tool == TOOL_COURSE_HOMEPAGE && !isset($_GET['intro_cmdEdit'])) {
 
     if (!empty($thematic_advance_info)) {
         $thematic_advance = get_lang('CourseThematicAdvance');
-        $thematicScore = $thematic->get_total_average_of_thematic_advances() . '%';
-        $thematicUrl = api_get_path(WEB_CODE_PATH) .
-            'course_progress/index.php?action=thematic_details&'.api_get_cidreq();
-        $thematic_info = $thematic->get_thematic_list(
-            $thematic_advance_info['thematic_id']
-        );
+        $thematicScore = $thematic->get_total_average_of_thematic_advances().'%';
+        $thematicUrl = api_get_path(WEB_CODE_PATH).'course_progress/index.php?action=thematic_details&'.api_get_cidreq();
+        $thematic_info = $thematic->get_thematic_list($thematic_advance_info['thematic_id']);
 
         $thematic_advance_info['start_date'] = api_get_local_time(
             $thematic_advance_info['start_date']
@@ -245,28 +219,25 @@ if ($tool == TOOL_COURSE_HOMEPAGE && !isset($_GET['intro_cmdEdit'])) {
             $thematic_advance_info['start_date'],
             DATE_TIME_FORMAT_LONG
         );
-        $userInfo = $_SESSION['_user'];
+        $userInfo = api_get_user_info();
         $courseInfo = api_get_course_info();
-        $titleThematic = $thematic_advance .' : '. $courseInfo['name'] . ' <b>( '. $thematicScore .' )</b>';
+        $titleThematic = $thematic_advance.' : '.$courseInfo['name'].' <b>( '.$thematicScore.' )</b>';
 
-
-
-        $infoUser = '<div class="thematic-avatar"><img src="' . $userInfo['avatar'] . '" class="img-circle img-responsive"></div>';
+        $infoUser = '<div class="thematic-avatar"><img src="'.$userInfo['avatar'].'" class="img-circle img-responsive"></div>';
         $infoUser .= '<div class="progress">
-                        <div class="progress-bar progress-bar-danger" role="progressbar" style="width: ' . $thematicScore . ';">
+                        <div class="progress-bar progress-bar-primary" role="progressbar" style="width: '.$thematicScore.';">
                         '.$thematicScore.'
                         </div>
                     </div>';
 
-
         $thematicItemOne = '
         <div class="col-md-6 items-progress">
             <div class="thematic-cont '.$class1.'">
-            <div class="topics">' . $subTitle1 . '</div>
-            <h4 class="title-topics">' . Display::returnFontAwesomeIcon('book') . $thematic_info['title'] . '</h4>
-            <p class="date">' .  Display::returnFontAwesomeIcon('calendar-o') . $thematic_advance_info['start_date'] . '</p>
-            <div class="views">' . Display::returnFontAwesomeIcon('file-text-o')  . strip_tags($thematic_advance_info['content']). '</div>
-            <p class="time">'. Display::returnFontAwesomeIcon('clock-o') . get_lang('DurationInHours') . ' : ' . $thematic_advance_info['duration'] . ' - <a href="' . $thematicUrl . '">' . get_lang('SeeDetail') . '</a></p>
+            <div class="topics">'.$subTitle1.'</div>
+            <h4 class="title-topics">'.Display::returnFontAwesomeIcon('book').strip_tags($thematic_info['title']).'</h4>
+            <p class="date">'.Display::returnFontAwesomeIcon('calendar-o').$thematic_advance_info['start_date'].'</p>
+            <div class="views">'.Display::returnFontAwesomeIcon('file-text-o').strip_tags($thematic_advance_info['content']).'</div>
+            <p class="time">'.Display::returnFontAwesomeIcon('clock-o').get_lang('DurationInHours').' : '.$thematic_advance_info['duration'].' - <a href="'.$thematicUrl.'">'.get_lang('SeeDetail').'</a></p>
             </div>
         </div>';
 
@@ -279,23 +250,30 @@ if ($tool == TOOL_COURSE_HOMEPAGE && !isset($_GET['intro_cmdEdit'])) {
                 <div class="col-md-6 items-progress">
                     <div class="thematic-cont">
                     <div class="topics">'.$subTitle2.'</div>
-                    <h4 class="title-topics">'. Display::returnFontAwesomeIcon('book')  . $thematic_info2['title'].'</h4>
-                    <p class="date">' . Display::returnFontAwesomeIcon('calendar-o') .$thematic_advance_info2['start_date'].'</p>
-                    <div class="views">' . Display::returnFontAwesomeIcon('file-text-o')  . strip_tags($thematic_advance_info2['content']).'</div>
-                    <p class="time">'. Display::returnFontAwesomeIcon('clock-o') .get_lang('DurationInHours').' : '.$thematic_advance_info2['duration'].' - <a href="'.$thematicUrl.'">'.get_lang('SeeDetail').'</a></p>
+                    <h4 class="title-topics">'.Display::returnFontAwesomeIcon('book').$thematic_info2['title'].'</h4>
+                    <p class="date">'.Display::returnFontAwesomeIcon('calendar-o').$thematic_advance_info2['start_date'].'</p>
+                    <div class="views">'.Display::returnFontAwesomeIcon('file-text-o').strip_tags($thematic_advance_info2['content']).'</div>
+                    <p class="time">'.Display::returnFontAwesomeIcon('clock-o').get_lang('DurationInHours').' : '.$thematic_advance_info2['duration'].' - <a href="'.$thematicUrl.'">'.get_lang('SeeDetail').'</a></p>
                     </div>
                 </div>';
         }
-
-
         $thematicPanel = '<div class="row">';
-        $thematicPanel .= '<div class="col-md-2">' . $infoUser . '</div>';
-        $thematicPanel .= '<div class="col-md-10"><div class="row">' . $thematicItemOne . $thematicItemTwo . '</div></div>';
+        $thematicPanel .= '<div class="col-md-2">'.$infoUser.'</div>';
+        $thematicPanel .= '<div class="col-md-10"><div class="row">'.$thematicItemOne.$thematicItemTwo.'</div></div>';
         $thematicPanel .= '</div>';
         $thematicPanel .= '<div class="separate">
-                        <a href="' . $thematicUrl . '" class="btn btn-default btn-block">' . get_lang('ShowFullCourseAdvance') . '</a>
+                        <a href="'.$thematicUrl.'" class="btn btn-default btn-block">'.get_lang('ShowFullCourseAdvance').'</a>
                     </div>';
-        $thematicProgress = Display::panelCollapse($titleThematic, $thematicPanel, 'thematic', null, 'accordion-thematic', 'collapse-thematic', false);
+
+        $thematicProgress = Display::panelCollapse(
+            $titleThematic,
+            $thematicPanel,
+            'thematic',
+            null,
+            'accordion-thematic',
+            'collapse-thematic',
+            false
+        );
     }
 }
 $introduction_section .= '<div class="row">';
@@ -310,7 +288,7 @@ if (api_is_allowed_to_edit() && empty($session_id)) {
     $editIconButton = Display::url(
         '<em class="fa fa-wrench"></em> ',
         api_get_path(WEB_CODE_PATH).'course_info/tools.php?'.api_get_cidreq(),
-        ['class' => 'btn btn-default', 'title' => get_lang('CustomizeIcons') ]
+        ['class' => 'btn btn-default', 'title' => get_lang('CustomizeIcons')]
     );
 }
 
@@ -319,30 +297,30 @@ $textIntro = '';
 if ($intro_dispCommand) {
     if (empty($intro_content)) {
         // Displays "Add intro" commands
-        $toolbar = '<div class="btn-group pull-right" role="group">';
+        $toolbar .= '<div class="toolbar-edit">';
+        $toolbar .= '<div class="btn-group pull-right" role="group">';
         if (!empty($courseId)) {
-            $textIntro  = '<a class="btn btn-default" title="' . get_lang('AddIntro') . '" href="'.api_get_self().'?' . api_get_cidreq().'&intro_cmdAdd=1">';
+            $textIntro = '<a class="btn btn-default" title="'.addslashes(get_lang('AddIntro')).'" href="'.api_get_self().'?'.api_get_cidreq().$blogParam.'&intro_cmdAdd=1">';
             $textIntro .= '<em class="fa fa-file-text"></em> ';
             $textIntro .= "</a>";
-            $toolbar .= $textIntro . $editIconButton;
+            $toolbar .= $textIntro.$editIconButton;
         } else {
-            $toolbar .= '<a class="btn btn-default" href="' . api_get_self() . '?intro_cmdAdd=1">"' . get_lang('AddIntro') . '</a>';
+            $toolbar .= '<a class="btn btn-default" href="'.api_get_self().'?intro_cmdAdd=1">'.get_lang('AddIntro').'</a>';
             $toolbar .= $editIconButton;
         }
-        $toolbar .= '</div>';
-
+        $toolbar .= '</div></div>';
     } else {
         // Displays "edit intro && delete intro" commands
+        $toolbar .= '<div class="toolbar-edit">';
         $toolbar .= '<div class="btn-group pull-right" rol="group">';
         if (!empty($courseId)) {
             $toolbar .=
-                '<a  class="btn btn-default" href="'.api_get_self().'?'.api_get_cidreq().'&intro_cmdEdit=1" title="'.get_lang('Modify').'">
+                '<a class="btn btn-default" href="'.api_get_self().'?'.api_get_cidreq().$blogParam.'&intro_cmdEdit=1" title="'.get_lang('Modify').'">
                 <em class="fa fa-pencil"></em></a>';
             $toolbar .= $editIconButton;
-            $toolbar .="<a class=\"btn btn-default\" href=\"".api_get_self()."?".api_get_cidreq()."&intro_cmdDel=1\" onclick=\"javascript:
+            $toolbar .= "<a class=\"btn btn-default\" href=\"".api_get_self()."?".api_get_cidreq().$blogParam."&intro_cmdDel=1\" onclick=\"javascript:
                 if(!confirm('".addslashes(api_htmlentities(get_lang('ConfirmYourChoice'), ENT_QUOTES, $charset)).
                 "')) return false;\"><em class=\"fa fa-trash-o\"></em></a>";
-
         } else {
             $toolbar .=
                 '<a class="btn btn-default" href="'.api_get_self().'?intro_cmdEdit=1" title="'.get_lang('Modify').'">
@@ -353,7 +331,7 @@ if ($intro_dispCommand) {
                 if(!confirm('".addslashes(api_htmlentities(get_lang('ConfirmYourChoice'), ENT_QUOTES, $charset)).
                 "')) return false;\"><em class=\"fa fa-trash-o\"></em></a>";
         }
-        $toolbar .=  "</div>";
+        $toolbar .= "</div></div>";
         // Fix for chrome XSS filter for videos in iframes - BT#7930
         $browser = api_get_navigator();
         if (strpos($introduction_section, '<iframe') !== false && $browser['name'] == 'Chrome') {
@@ -362,8 +340,12 @@ if ($intro_dispCommand) {
     }
 }
 
-$introduction_section .= '<div class="col-md-12">';
+$nameSection = get_lang('AddCustomCourseIntro');
+if ($moduleId != 'course_homepage') {
+    $nameSection = get_lang('AddCustomToolsIntro');
+}
 
+$introduction_section .= '<div class="col-md-12">';
 if ($intro_dispDefault) {
     if (!empty($intro_content)) {
         $introduction_section .= '<div class="page-course">';
@@ -372,7 +354,7 @@ if ($intro_dispDefault) {
     } else {
         if (api_is_allowed_to_edit()) {
             $introduction_section .= '<div class="help-course">';
-            $introduction_section .= get_lang('AddCustomCourseIntro') . ' ' . $textIntro;
+            $introduction_section .= $nameSection.' '.$textIntro;
             $introduction_section .= '</div>';
         }
     }

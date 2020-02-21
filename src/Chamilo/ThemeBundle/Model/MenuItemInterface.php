@@ -2,47 +2,47 @@
 /**
  * MenuItemInterface.php
  * avanzu-admin
- * Date: 23.02.14
+ * Date: 23.02.14.
  */
 
 namespace Chamilo\ThemeBundle\Model;
 
-
 /**
- * Interface MenuItemInterface
+ * Interface MenuItemInterface.
  *
  * @package Chamilo\ThemeBundle\Model
  */
-interface MenuItemInterface {
+interface MenuItemInterface
+{
     /**
      * @return mixed
      */
     public function getIdentifier();
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getLabel();
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getRoute();
 
     /**
-     * @return mixed
+     * @return bool
      */
     public function isActive();
 
     /**
-     * @param $isActive
+     * @param bool $isActive
      *
-     * @return mixed
+     * @return MenuItemModel
      */
     public function setIsActive($isActive);
 
     /**
-     * @return mixed
+     * @return bool
      */
     public function hasChildren();
 
@@ -52,16 +52,12 @@ interface MenuItemInterface {
     public function getChildren();
 
     /**
-     * @param MenuItemInterface $child
-     *
-     * @return mixed
+     * @return MenuItemModel
      */
     public function addChild(MenuItemInterface $child);
 
     /**
-     * @param MenuItemInterface $child
-     *
-     * @return mixed
+     * @return MenuItemModel
      */
     public function removeChild(MenuItemInterface $child);
 
@@ -76,24 +72,24 @@ interface MenuItemInterface {
     public function getBadge();
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getBadgeColor();
 
     /**
-     * @return mixed
+     * @return MenuItemInterface
      */
     public function getParent();
 
     /**
-     * @return mixed
+     * @return bool
      */
     public function hasParent();
 
     /**
      * @param MenuItemInterface $parent
      *
-     * @return mixed
+     * @return MenuItemModel
      */
     public function setParent(MenuItemInterface $parent = null);
 

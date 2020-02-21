@@ -1,14 +1,14 @@
 <?php
 /**
- * This script initiates a videoconference session, calling the BigBlueButton API
+ * This script initiates a videoconference session, calling the BigBlueButton API.
+ *
  * @package chamilo.plugin.bigbluebutton
  */
 /**
- * Initialization
+ * Initialization.
  */
-
 $course_plugin = 'openmeetings'; //needed in order to load the plugin lang variables
-require_once dirname(__FILE__).'/config.php';
+require_once __DIR__.'/config.php';
 $plugin = \OpenMeetingsPlugin::create();
 $tool_name = $plugin->get_lang('Videoconference');
 $tpl = new Template($tool_name);
@@ -24,8 +24,7 @@ if ($teacher) {
     switch ($action) {
         case 'add_to_calendar':
             $course_info = api_get_course_info();
-            $agenda = new Agenda();
-            $agenda->type = 'course';
+            $agenda = new Agenda('course');
 
             $id = intval($_GET['id']);
             $title = sprintf(get_lang('VideoConferenceXCourseX'), $id, $course_info['name']);
@@ -37,7 +36,7 @@ if ($teacher) {
                 'true',
                 $title,
                 $content,
-                array('everyone')
+                ['everyone']
             );
             if (!empty($event_id)) {
                 $message = Display::return_message(get_lang('VideoConferenceAddedToTheCalendar'), 'success');

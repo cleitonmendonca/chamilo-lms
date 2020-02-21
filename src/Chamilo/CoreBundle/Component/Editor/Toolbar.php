@@ -6,15 +6,16 @@ namespace Chamilo\CoreBundle\Component\Editor;
 //use Symfony\Component\Routing\RouterInterface;
 
 /**
- * Class Toolbar
+ * Class Toolbar.
+ *
  * @package Chamilo\CoreBundle\Component\Editor
  */
 class Toolbar
 {
-    public $config = array();
+    public $config = [];
     public $urlGenerator;
-    public $plugins = array();
-    public $defaultPlugins = array();
+    public $plugins = [];
+    public $defaultPlugins = [];
 
     /**
      * @param string $toolbar
@@ -23,14 +24,36 @@ class Toolbar
      */
     public function __construct(
         $toolbar = null,
-        $config = array(),
+        $config = [],
         $prefix = null
     ) {
         if (!empty($toolbar)) {
             $class = __NAMESPACE__."\\".$prefix."\\Toolbar\\".$toolbar;
             if (class_exists($class)) {
+                $this->setConfig($config);
                 $toolbarObj = new $class();
-                $this->setConfig($toolbarObj->getConfig());
+                $config = $toolbarObj->getConfig();
+
+                if (api_get_configuration_value('full_ckeditor_toolbar_set')) {
+                    $basicClass = __NAMESPACE__."\\".$prefix."\\Toolbar\\Basic";
+                    $basicObj = new $basicClass();
+                    $basicConfig = $basicObj->getConfig();
+
+                    if (api_get_setting('more_buttons_maximized_mode') == 'true') {
+                        if (isset($config['toolbar'])) {
+                            unset($config['toolbar']);
+                        }
+
+                        $config['toolbar_minToolbar'] = $basicConfig['toolbar_minToolbar'];
+                        $config['toolbar_maxToolbar'] = $basicConfig['toolbar_maxToolbar'];
+                    }
+
+                    $config['height'] = '85px';
+                    $config['toolbarCanCollapse'] = true;
+                    $config['toolbarStartupExpanded'] = false;
+                }
+
+                $this->updateConfig($config);
             }
         }
 
@@ -59,7 +82,8 @@ class Toolbar
     }
 
     /**
-     * Get plugins by default in all editors in the platform
+     * Get plugins by default in all editors in the platform.
+     *
      * @return array
      */
     public function getDefaultPlugins()
@@ -68,7 +92,8 @@ class Toolbar
     }
 
     /**
-     * Get fixed plugins depending of the toolbar
+     * Get fixed plugins depending of the toolbar.
+     *
      * @return array
      */
     public function getPlugins()
@@ -78,24 +103,19 @@ class Toolbar
 
     /**
      * Get dynamic/conditional plugins depending of platform/course settings.
+     *
      * @return array
      */
     public function getConditionalPlugins()
     {
-        return array();
+        return [];
     }
 
-    /**
-     * @param array $config
-     */
     public function setConfig(array $config)
     {
         $this->config = $config;
     }
 
-    /**
-     * @param array $config
-     */
     public function updateConfig(array $config)
     {
         if (empty($this->config)) {

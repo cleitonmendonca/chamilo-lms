@@ -1,9 +1,9 @@
-{% include template ~ '/skill/skill_wheel.js.tpl' %}
+{% include 'skill/skill_wheel.js.tpl'|get_template %}
 <script>
     /* Skill search input in the left menu */
     function check_skills_sidebar() {
         //Selecting only selected skills
-        $("#skill_id option:selected").each(function () {
+        $("#skill_id option").each(function () {
             var skill_id = $(this).val();
             if (skill_id != "") {
                 $.ajax({
@@ -369,17 +369,19 @@
             delete_gradebook_from_skill(skill_id, gradebook_id);
         });
 
-        $("#skill_id").fcbkcomplete({
-            json_url: "{{ url }}&a=find_skills",
+        $("#skill_id").select2({
+            ajax: {
+                url: '{{ url }}&a=find_skills',
+                processResults: function (data) {
+                    return {
+                        results: data.items
+                    };
+                }
+            },
             cache: false,
-            filter_case: false,
-            filter_hide: true,
-            complete_text: "{{ 'EnterTheSkillNameToSearch' | get_lang }}",
-            firstselected: true,
-            //onremove: "testme",
-            onselect: "check_skills_sidebar",
-            filter_selected: true,
-            newel: true
+            placeholder: '{{ 'EnterTheSkillNameToSearch'|get_lang }}'
+        }).on('change', function () {
+            check_skills_sidebar();
         });
 
         load_nodes(0, main_depth);
@@ -405,7 +407,7 @@
         /* Generated random colour */
         /*
          function colour(d) {
-         
+
          if (d.children) {
          // There is a maximum of two children!
          var colours = d.children.map(colour),
@@ -501,7 +503,7 @@
                         <h4 class="page-header">{{ 'WhatSkillsAreYouLookingFor'|get_lang }}</h4>
                         <div class="search-skill">
                             <form id="skill_search" class="form-search">
-                                <select id="skill_id" name="skill_id" /></select>
+                                <select id="skill_id" name="skill_id" style="width: 100%;" multiple></select>
                                 <table id="skill_holder" class="table table-condensed"></table>
                             </form>
                         </div>
@@ -566,7 +568,7 @@
                                 <ul class="list-unstyled" id="skill-change-background-options">
                                     <li><a href="#" data-color="#FFFFFF">{{ 'White' | get_lang }}</a></li>
                                     <li><a href="#" data-color="#000000">{{ 'Black' | get_lang }}</a></li>
-                                    <li><a href="#" data-color="#A9E2F3">{{ 'LightBlue' }}</a></li>
+                                    <li><a href="#" data-color="#A9E2F3">{{ 'LightBlue'|get_lang }}</a></li>
                                     <li><a href="#" data-color="#848484">{{ 'Gray' | get_lang }}</a></li>
                                     <li><a href="#" data-color="#F7F8E0">{{ 'Corn' | get_lang }}</a></li>
                                 </ul>
@@ -624,7 +626,7 @@
                 <h4 class="modal-title" id="form-save-profile-title">{{ "SkillProfile" | get_lang }}</h4>
             </div>
             <div class="modal-body">
-                {{ saveProfileForm }}
+                {{ save_profile_form }}
             </div>
             <div class="modal-footer">
                 <button id="form-button-save-profile" class="btn btn-primary">

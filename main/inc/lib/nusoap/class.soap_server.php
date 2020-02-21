@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 /**
 *
 * nusoap_server allows the user to create a SOAP server
@@ -13,7 +10,8 @@
 * @version  $Id: class.soap_server.php,v 1.63 2010/04/26 20:15:08 snichol Exp $
 * @access   public
 */
-class nusoap_server extends nusoap_base {
+class nusoap_server extends nusoap_base
+{
 	/**
 	 * HTTP headers of request
 	 * @var array
@@ -170,8 +168,9 @@ class nusoap_server extends nusoap_base {
     * @param mixed $wsdl file path or URL (string), or wsdl instance (object)
 	* @access   public
 	*/
-	function nusoap_server($wsdl=false){
-		parent::nusoap_base();
+	function __construct($wsdl=false)
+    {
+		parent::__construct();
 		// turn on debugging?
 		global $debug;
 		global $HTTP_SERVER_VARS;
@@ -208,15 +207,17 @@ class nusoap_server extends nusoap_base {
 		}
 
 		// wsdl
-		if($wsdl){
+		if ($wsdl){
 			$this->debug("In nusoap_server, WSDL is specified");
 			if (is_object($wsdl) && (get_class($wsdl) == 'wsdl')) {
 				$this->wsdl = $wsdl;
+                $this->wsdl->soap_defencoding = $this->soap_defencoding;
 				$this->externalWSDLURL = $this->wsdl->wsdl;
 				$this->debug('Use existing wsdl instance from ' . $this->externalWSDLURL);
 			} else {
 				$this->debug('Create wsdl from ' . $wsdl);
 				$this->wsdl = new wsdl($wsdl);
+                $this->wsdl->soap_defencoding = $this->soap_defencoding;
 				$this->externalWSDLURL = $wsdl;
 			}
 			$this->appendDebug($this->wsdl->getDebug());
@@ -283,7 +284,7 @@ class nusoap_server extends nusoap_base {
               }
 			} elseif ($this->wsdl) {
 				$this->debug("In service, serialize WSDL");
-				header("Content-Type: text/xml; charset=ISO-8859-1\r\n");
+                header("Content-Type: text/xml; charset=".$this->soap_defencoding."\r\n");
 				print $this->wsdl->serialize($this->debug_flag);
 				if ($this->debug_flag) {
 					$this->debug('wsdl:');
@@ -292,7 +293,7 @@ class nusoap_server extends nusoap_base {
 				}
 			} else {
 				$this->debug("In service, there is no WSDL");
-				header("Content-Type: text/html; charset=ISO-8859-1\r\n");
+                header("Content-Type: text/html; charset=".$this->soap_defencoding."\r\n");
 				print "This service does not provide WSDL";
 			}
 		} elseif ($this->wsdl) {
@@ -1091,7 +1092,8 @@ class nusoap_server extends nusoap_base {
             $schemaTargetNamespace = $namespace;
         }
 
-		$this->wsdl = new wsdl;
+        $this->wsdl = new wsdl();
+        $this->wsdl->soap_defencoding = $this->soap_defencoding;
 		$this->wsdl->serviceName = $serviceName;
         $this->wsdl->endpoint = $endpoint;
 		$this->wsdl->namespaces['tns'] = $namespace;
@@ -1122,5 +1124,6 @@ class nusoap_server extends nusoap_base {
 /**
  * Backward compatibility
  */
-class soap_server extends nusoap_server {
+class soap_server extends nusoap_server
+{
 }

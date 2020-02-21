@@ -1,9 +1,14 @@
 <?php
-/* For licensing terms, see /chamilo_license.txt */
+/* For licensing terms, see /license.txt */
+
+use Chamilo\CoreBundle\Entity\Message;
+use Chamilo\CoreBundle\Entity\MessageFeedback;
+use ChamiloSession as Session;
+
 /**
- * Responses to AJAX calls
+ * Responses to AJAX calls.
  */
-require_once '../global.inc.php';
+require_once __DIR__.'/../global.inc.php';
 
 $action = isset($_GET['a']) ? $_GET['a'] : null;
 
@@ -14,14 +19,13 @@ switch ($action) {
             echo '';
             break;
         }
+        $relation_type = USER_RELATION_TYPE_UNKNOWN; //Unknown contact
         if (isset($_GET['is_my_friend'])) {
             $relation_type = USER_RELATION_TYPE_FRIEND; //My friend
-        } else {
-            $relation_type = USER_RELATION_TYPE_UNKNOW; //Unknown contact
         }
 
         if (isset($_GET['friend_id'])) {
-            $my_current_friend  = $_GET['friend_id'];
+            $my_current_friend = $_GET['friend_id'];
             UserManager::relate_users($current_user_id, $my_current_friend, $relation_type);
             UserManager::relate_users($my_current_friend, $current_user_id, $relation_type);
             SocialManager::invitation_accepted($my_current_friend, $current_user_id);
@@ -29,7 +33,8 @@ switch ($action) {
                 Display::return_message(get_lang('AddedContactToList'), 'success')
             );
 
-            header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+            header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
+            exit;
         }
         break;
     case 'deny_friend':
@@ -37,17 +42,18 @@ switch ($action) {
             echo '';
             break;
         }
-
+        $relation_type = USER_RELATION_TYPE_UNKNOWN; //Contact unknown
         if (isset($_GET['is_my_friend'])) {
-            $relation_type = USER_RELATION_TYPE_FRIEND;//my friend
-        } else {
-            $relation_type = USER_RELATION_TYPE_UNKNOW;//Contact unknown
+            $relation_type = USER_RELATION_TYPE_FRIEND; //my friend
         }
         if (isset($_GET['denied_friend_id'])) {
             SocialManager::invitation_denied($_GET['denied_friend_id'], $current_user_id);
-            Display::display_confirmation_message(api_xml_http_response_encode(get_lang('InvitationDenied')));
-            
-            header('Location: ' . api_get_path(WEB_CODE_PATH) . 'social/invitations.php');
+            Display::addFlash(
+                Display::return_message(get_lang('InvitationDenied'), 'success')
+            );
+
+            header('Location: '.api_get_path(WEB_CODE_PATH).'social/invitations.php');
+            exit;
         }
         break;
     case 'delete_friend':
@@ -55,7 +61,7 @@ switch ($action) {
             echo '';
             break;
         }
-        $my_delete_friend = intval($_POST['delete_friend_id']);
+        $my_delete_friend = (int) $_POST['delete_friend_id'];
         if (isset($_POST['delete_friend_id'])) {
             SocialManager::remove_user_rel_user($my_delete_friend);
         }
@@ -65,9 +71,8 @@ switch ($action) {
             echo '';
             break;
         }
-        $user_id	= api_get_user_id();
-        $name_search= Security::remove_XSS($_POST['search_name_q']);
-        $number_friends = 0;
+        $user_id = api_get_user_id();
+        $name_search = Security::remove_XSS($_POST['search_name_q']);
 
         if (isset($name_search) && $name_search != 'undefined') {
             $friends = SocialManager::get_friends($user_id, null, $name_search);
@@ -77,17 +82,16 @@ switch ($action) {
 
         $friend_html = '';
         $number_of_images = 8;
-
         $number_friends = count($friends);
         if ($number_friends != 0) {
-            $number_loop   = ($number_friends/$number_of_images);
-            $loop_friends  = ceil($number_loop);
-            $j=0;
-            for ($k=0; $k<$loop_friends; $k++) {
-                if ($j==$number_of_images) {
-                    $number_of_images=$number_of_images*2;
+            $number_loop = $number_friends / $number_of_images;
+            $loop_friends = ceil($number_loop);
+            $j = 0;
+            for ($k = 0; $k < $loop_friends; $k++) {
+                if ($j == $number_of_images) {
+                    $number_of_images = $number_of_images * 2;
                 }
-                while ($j<$number_of_images) {
+                while ($j < $number_of_images) {
                     if (isset($friends[$j])) {
                         $friend = $friends[$j];
                         $user_name = api_xml_http_response_encode($friend['firstName'].' '.$friend['lastName']);
@@ -95,15 +99,15 @@ switch ($action) {
 
                         $friend_html .= '
                             <div class="col-md-3">
-                                <div class="thumbnail text-center" id="div_' . $friends[$j]['friend_user_id'] . '">
-                                    <img src="' . $userPicture . '" class="img-responsive" id="imgfriend_' . $friend['friend_user_id'] . '" title="$user_name">
+                                <div class="thumbnail text-center" id="div_'.$friends[$j]['friend_user_id'].'">
+                                    <img src="'.$userPicture.'" class="img-responsive" id="imgfriend_'.$friend['friend_user_id'].'" title="$user_name">
                                     <div class="caption">
                                         <h3>
-                                            <a href="profile.php?u=' . $friend['friend_user_id'] . '">' . $user_name . '</a>
+                                            <a href="profile.php?u='.$friend['friend_user_id'].'">'.$user_name.'</a>
                                         </h3>
                                         <p>
-                                            <button class="btn btn-danger" onclick="delete_friend(this)" id=img_' . $friend['friend_user_id'] . '>
-                                                ' . get_lang('Delete') . '
+                                            <button class="btn btn-danger" onclick="delete_friend(this)" id=img_'.$friend['friend_user_id'].'>
+                                                '.get_lang('Delete').'
                                             </button>
                                         </p>
                                     </div>
@@ -124,7 +128,7 @@ switch ($action) {
         }
         require_once api_get_path(SYS_CODE_PATH).'forum/forumfunction.inc.php';
 
-        $user_id = intval($_SESSION['social_user_id']);
+        $user_id = Session::read('social_user_id');
 
         if ($_POST['action']) {
             $action = $_POST['action'];
@@ -132,7 +136,7 @@ switch ($action) {
 
         switch ($action) {
             case 'load_course':
-                $course_id =  intval($_POST['course_code']); // the int course id
+                $course_id = intval($_POST['course_code']); // the int course id
                 $course_info = api_get_course_info_by_id($course_id);
                 $course_code = $course_info['code'];
 
@@ -140,7 +144,7 @@ switch ($action) {
                     //------Forum messages
                     $forum_result = get_all_post_from_user($user_id, $course_code);
                     $all_result_data = 0;
-                    if ($forum_result !='') {
+                    if ($forum_result != '') {
                         echo '<div id="social-forum-main-title">';
                         echo api_xml_http_response_encode(get_lang('Forum'));
                         echo '</div>';
@@ -153,7 +157,7 @@ switch ($action) {
                     }
 
                     //------Blog posts
-                    $result = get_blog_post_from_user($course_code, $user_id);
+                    $result = Blog::getBlogPostFromUser($course_id, $user_id, $course_code);
 
                     if (!empty($result)) {
                         api_display_tool_title(api_xml_http_response_encode(get_lang('Blog')));
@@ -165,7 +169,7 @@ switch ($action) {
                     }
 
                     //------Blog comments
-                    $result = get_blog_comment_from_user($course_code, $user_id);
+                    $result = Blog::getBlogCommentsFromUser($course_id, $user_id, $course_code);
                     if (!empty($result)) {
                         echo '<div  style="background:#FAF9F6; padding-left:10px;">';
                         api_display_tool_title(api_xml_http_response_encode(get_lang('BlogComments')));
@@ -177,55 +181,145 @@ switch ($action) {
                     if ($all_result_data == 0) {
                         echo api_xml_http_response_encode(get_lang('NoDataAvailable'));
                     }
-
                 } else {
-                        echo '<div class="clear"></div><br />';
-                        api_display_tool_title(api_xml_http_response_encode(get_lang('Details')));
-                        echo '<div style="background:#FAF9F6; padding:0px;">';
-                        echo api_xml_http_response_encode(get_lang('UserNonRegisteredAtTheCourse'));
-                        echo '<div class="clear"></div><br />';
-                        echo '</div>';
-                        echo '<div class="clear"></div><br />';
+                    echo '<div class="clear"></div><br />';
+                    api_display_tool_title(api_xml_http_response_encode(get_lang('Details')));
+                    echo '<div style="background:#FAF9F6; padding:0px;">';
+                    echo api_xml_http_response_encode(get_lang('UserNonRegisteredAtTheCourse'));
+                    echo '<div class="clear"></div><br />';
+                    echo '</div>';
+                    echo '<div class="clear"></div><br />';
                 }
                 break;
             case 'unload_course':
-                break;
             default:
                 break;
         }
         break;
-    case 'listWallMessage':
-        $start = isset($_REQUEST['start']) ? intval($_REQUEST['start']) - 1 : 0;
-        $length = isset($_REQUEST['length']) ? intval($_REQUEST['length']) : 10;
-        $userId = isset($_REQUEST['u']) ? intval($_REQUEST['u']) : api_get_user_id();
-        $friendId = $userId;
-        $array = SocialManager::getWallMessagesPostHTML($userId, $friendId, null, $length, $start);
-        if (!empty($array)) {
-            ksort($array);
-            $html = '';
-            for($i = 0; $i < count($array); $i++) {
-                $post = $array[$i]['html'];
-                $comment = SocialManager::getWallMessagesHTML($userId, $friendId, $array[$i]['id']);
-                $html .= '<div class="panel panel-info"><div class="panel-body">'.$post.$comment.'</div></div>';
+    case 'send_comment':
+        if (api_is_anonymous()) {
+            exit;
+        }
+
+        if (api_get_setting('allow_social_tool') !== 'true') {
+            exit;
+        }
+
+        $messageId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+        if (empty($messageId)) {
+            exit;
+        }
+
+        $userId = api_get_user_id();
+        $messageInfo = MessageManager::get_message_by_id($messageId);
+        if (!empty($messageInfo)) {
+            $comment = isset($_REQUEST['comment']) ? $_REQUEST['comment'] : '';
+            if (!empty($comment)) {
+                $messageId = SocialManager::sendWallMessage(
+                    $userId,
+                    $messageInfo['user_receiver_id'],
+                    $comment,
+                    $messageId,
+                    MESSAGE_STATUS_WALL
+                );
+                if ($messageId) {
+                    $messageInfo = MessageManager::get_message_by_id($messageId);
+                    echo SocialManager::processPostComment($messageInfo);
+                }
             }
+        }
+        break;
+    case 'delete_message':
+        if (api_is_anonymous()) {
+            exit;
+        }
+
+        if (api_get_setting('allow_social_tool') !== 'true') {
+            exit;
+        }
+
+        $messageId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+        if (empty($messageId)) {
+            exit;
+        }
+
+        $userId = api_get_user_id();
+        $messageInfo = MessageManager::get_message_by_id($messageId);
+        if (!empty($messageInfo)) {
+            $canDelete = ($messageInfo['user_receiver_id'] == $userId || $messageInfo['user_sender_id'] == $userId) &&
+                empty($messageInfo['group_id']);
+            if ($canDelete || api_is_platform_admin()) {
+                SocialManager::deleteMessage($messageId);
+                echo Display::return_message(get_lang('MessageDeleted'));
+                break;
+            }
+        }
+        break;
+    case 'list_wall_message':
+        if (api_is_anonymous()) {
+            break;
+        }
+        $start = isset($_REQUEST['start']) ? (int) $_REQUEST['start'] : 0;
+        $userId = isset($_REQUEST['u']) ? (int) $_REQUEST['u'] : api_get_user_id();
+
+        $html = '';
+        if ($userId == api_get_user_id()) {
+            $threadList = SocialManager::getThreadList($userId);
+            $threadIdList = [];
+            if (!empty($threadList)) {
+                $threadIdList = array_column($threadList, 'id');
+            }
+
+            $html = SocialManager::getMyWallMessages(
+                $userId,
+                $start,
+                SocialManager::DEFAULT_SCROLL_NEW_POST,
+                $threadIdList
+            );
+            $html = $html['posts'];
+        } else {
+            $messages = SocialManager::getWallMessages(
+                $userId,
+                null,
+                0,
+                0,
+                '',
+                $start,
+                SocialManager::DEFAULT_SCROLL_NEW_POST
+            );
+            $messages = SocialManager::formatWallMessages($messages);
+
+            if (!empty($messages)) {
+                ksort($messages);
+                foreach ($messages as $message) {
+                    $post = $message['html'];
+                    $comments = SocialManager::getWallPostComments($userId, $message);
+                    $html .= SocialManager::wrapPost($message, $post.$comments);
+                }
+            }
+        }
+
+        if (!empty($html)) {
             $html .= Display::div(
                 Display::url(
                     get_lang('SeeMore'),
-                    api_get_self() . '?u=' . $userId . '&a=listWallMessage&start=' .
-                    ($start + $length + 1) . '&length=' . $length,
-                    array(
+                    api_get_self().'?u='.$userId.'&a=list_wall_message&start='.
+                    ($start + SocialManager::DEFAULT_SCROLL_NEW_POST).'&length='.SocialManager::DEFAULT_SCROLL_NEW_POST,
+                    [
                         'class' => 'nextPage',
-                    )
+                    ]
                 ),
-                array(
+                [
                     'class' => 'next',
-                )
+                ]
             );
-            echo $html;
         }
+        echo $html;
         break;
         // Read the Url using OpenGraph and returns the hyperlinks content
-    case 'readUrlWithOpenGraph':
+    case 'read_url_with_open_graph':
         $url = isset($_POST['social_wall_new_msg_main']) ? $_POST['social_wall_new_msg_main'] : '';
         $url = trim($url);
         $html = '';
@@ -236,8 +330,101 @@ switch ($action) {
         }
         echo $html;
         break;
-    case 'voteMsg':
+    case 'like_message':
+        header('Content-Type: application/json');
 
+        if (
+            api_is_anonymous() ||
+            !api_get_configuration_value('social_enable_messages_feedback')
+        ) {
+            echo json_encode(false);
+            exit;
+        }
+
+        $messageId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        $status = isset($_GET['status']) ? $_GET['status'] : '';
+        $groupId = isset($_GET['group']) ? (int) $_GET['group'] : 0;
+
+        if (empty($messageId) || !in_array($status, ['like', 'dislike'])) {
+            echo json_encode(false);
+            exit;
+        }
+
+        $em = Database::getManager();
+        $messageRepo = $em->getRepository('ChamiloCoreBundle:Message');
+        $messageLikesRepo = $em->getRepository('ChamiloCoreBundle:MessageFeedback');
+
+        /** @var Message $message */
+        $message = $messageRepo->find($messageId);
+
+        if (empty($message)) {
+            echo json_encode(false);
+            exit;
+        }
+
+        if ((int) $message->getGroupId() !== $groupId) {
+            echo json_encode(false);
+            exit;
+        }
+
+        if (!empty($message->getGroupId())) {
+            $usergroup = new UserGroup();
+            $groupInfo = $usergroup->get($groupId);
+
+            if (empty($groupInfo)) {
+                echo json_encode(false);
+                exit;
+            }
+
+            $isMember = $usergroup->is_group_member($groupId, $current_user_id);
+
+            if (GROUP_PERMISSION_CLOSED == $groupInfo['visibility'] && !$isMember) {
+                echo json_encode(false);
+                exit;
+            }
+        }
+
+        $user = api_get_user_entity($current_user_id);
+
+        $userLike = $messageLikesRepo->findOneBy(['message' => $message, 'user' => $user]);
+
+        if (empty($userLike)) {
+            $userLike = new MessageFeedback();
+            $userLike
+                ->setMessage($message)
+                ->setUser($user);
+        }
+
+        if ('like' === $status) {
+            if ($userLike->isLiked()) {
+                echo json_encode(false);
+                exit;
+            }
+
+            $userLike
+                ->setLiked(true)
+                ->setDisliked(false);
+        } elseif ('dislike' === $status) {
+            if ($userLike->isDisliked()) {
+                echo json_encode(false);
+                exit;
+            }
+
+            $userLike
+                ->setLiked(false)
+                ->setDisliked(true);
+        }
+
+        $userLike
+            ->setUpdatedAt(
+                api_get_utc_datetime(null, false, true)
+            );
+
+        $em->persist($userLike);
+        $em->flush();
+
+        echo json_encode(true);
+        break;
     default:
         echo '';
 }

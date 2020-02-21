@@ -8,7 +8,7 @@ use Gedmo\Mapping\Annotation as Gedmo;
 use Sylius\Component\Attribute\Model\AttributeValue as BaseAttributeValue;
 
 /**
- * Class ExtraFieldValues
+ * Class ExtraFieldValues.
  *
  * @ORM\Table(
  *     name="extra_field_values",
@@ -22,7 +22,7 @@ use Sylius\Component\Attribute\Model\AttributeValue as BaseAttributeValue;
 class ExtraFieldValues extends BaseAttributeValue
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=false, unique=false)
      * @ORM\Id
@@ -39,7 +39,7 @@ class ExtraFieldValues extends BaseAttributeValue
     /**
      * @ORM\ManyToOne(targetEntity="Chamilo\CoreBundle\Entity\ExtraField")
      * @ORM\JoinColumn(name="field_id", referencedColumnName="id")
-     **/
+     */
     protected $field;
 
     /**
@@ -49,7 +49,7 @@ class ExtraFieldValues extends BaseAttributeValue
     protected $itemId;
 
     /**
-     * @var \DateTime $created
+     * @var \DateTime
      *
      * @Gedmo\Timestampable(on="create")
      * @ORM\Column(name="created_at", type="datetime")
@@ -57,7 +57,7 @@ class ExtraFieldValues extends BaseAttributeValue
     protected $createdAt;
 
     /**
-     * @var \DateTime $updated
+     * @var \DateTime
      *
      * @Gedmo\Timestampable(on="update")
      * @ORM\Column(name="updated_at", type="datetime")
@@ -71,15 +71,14 @@ class ExtraFieldValues extends BaseAttributeValue
     protected $comment;
 
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
-
     }
 
     /**
-     * @return mixed
+     * @return ExtraField
      */
     public function getField()
     {
@@ -158,11 +157,11 @@ class ExtraFieldValues extends BaseAttributeValue
         return $this;
     }
 
-     /**
-     * Set comment
+    /**
+     * Set comment.
      *
      * @param string $comment
-      *
+     *
      * @return ExtraFieldValues
      */
     public function setComment($comment)
@@ -173,7 +172,7 @@ class ExtraFieldValues extends BaseAttributeValue
     }
 
     /**
-     * Get comment
+     * Get comment.
      *
      * @return string
      */
@@ -183,12 +182,32 @@ class ExtraFieldValues extends BaseAttributeValue
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return ExtraFieldValues
+     */
+    public function setValue($value)
+    {
+        $this->value = $value;
+
+        return $this;
     }
 }

@@ -4,20 +4,17 @@
 /**
  * @package chamilo.plugin.ticket
  */
-
+exit;
 require_once __DIR__.'/../inc/global.inc.php';
-$plugin = TicketPlugin::create();
-
 require_once __DIR__.'/tutor_report.lib.php';
 
-$htmlHeadXtra[] = '
-	<script type="text/javascript">
-$(document).ready(function (){
+$htmlHeadXtra[] = '<script>
+$(function() {
     $(".ajax").click(function() {
         var url     = this.href;
         var dialog  = $("#dialog");
         if ($("#dialog").length == 0) {
-                dialog  = $("' . '<div id="dialog" style="display:hidden"></div>' . '").appendTo("body");
+                dialog  = $("'.'<div id="dialog" style="display:hidden"></div>'.'").appendTo("body");
         }
 
         // load remote content
@@ -55,8 +52,8 @@ function save() {
 	rs_id = $("#rs_id").val();
 	 $.ajax({
 		contentType: "application/x-www-form-urlencoded",
-		beforeSend: function(objeto) {
-		$("div#confirmation").html("<img src=\"' . api_get_path(WEB_LIBRARY_PATH) . 'javascript/indicator.gif\" />"); },
+		beforeSend: function(myObject) {
+		$("div#confirmation").html("<img src=\"'.api_get_path(WEB_LIBRARY_PATH).'javascript/indicator.gif\" />"); },
 		type: "POST",
 		url: "update_report.php",
 		data: "work_id="+work_id+"&forum_id="+forum_id+"&rs_id="+rs_id,
@@ -95,7 +92,7 @@ function save() {
 $course_code = api_get_course_id();
 $results = initializeReport($course_code);
 if (isset($_GET['action'])) {
-    Export::arrayToXls($results['export'], "COURSE_USER_REPORT" . $course_code);
+    Export::arrayToXls($results['export'], "COURSE_USER_REPORT".$course_code);
 } else {
     Display::display_header();
     api_protect_course_script();

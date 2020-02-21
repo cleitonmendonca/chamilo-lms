@@ -1,6 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
-require_once '../../../global.inc.php';
+
+require_once __DIR__.'/../../../global.inc.php';
 
 if (api_is_anonymous()) {
     api_not_allowed(true);
@@ -34,16 +35,24 @@ if ($isSender) {
 $idUserLocal = api_get_user_id();
 $userLocal = api_get_user_info($idUserLocal, true);
 $htmlHeadXtra[] = '<script type="text/javascript" src="'
-    . api_get_path(WEB_PATH) . 'web/assets/SimpleWebRTC/latest.js'
+    . api_get_path(WEB_PUBLIC_PATH).'assets/simpleWebRTC/latest-v2.js'
     . '"></script>' . "\n";
+
+$navigator = api_get_navigator();
+
+Display::addFlash(
+    Display::return_message(get_lang('FeatureDisabledBecauseOfUnmaintainedThirdPartyLibraries'), 'error')
+);
 
 $template = new Template();
 $template->assign('room_name', $chatVideo->getRoomName());
 $template->assign('chat_user', $chatUser);
 $template->assign('user_local', $userLocal);
 $template->assign('block_friends', $friend_html);
+$template->assign('navigator_is_firefox', $navigator['name'] == 'Mozilla');
 
-$content = $template->fetch('default/chat/video.tpl');
+$tpl = $template->get_template('chat/video.tpl');
+$content = $template->fetch($tpl);
 
 $templateHeader = Display::returnFontAwesomeIcon('video-camera', 'lg', true)
     . $chatVideo->getRoomName();

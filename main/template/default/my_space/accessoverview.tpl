@@ -1,15 +1,11 @@
 <h2 class="page-header">{{ 'DisplayAccessOverview'|get_lang }}</h2>
-
 {{ form }}
-
 <h3 class="page-header">{{ 'Results'|get_lang }}</h3>
-
 {{ table }}
-
 <script>
-    $(document).on('ready', function () {
-        var courseIdEl = $('#course_id'),
-            sessionIdEl = $('#session_id');
+    $(function(){
+        var courseIdEl = $('#access_overview_course_id'),
+            sessionIdEl = $('#access_overview_session_id');
 
         if (!courseIdEl.val()) {
             sessionIdEl

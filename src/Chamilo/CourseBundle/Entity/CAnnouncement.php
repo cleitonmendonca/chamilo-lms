@@ -6,7 +6,7 @@ namespace Chamilo\CourseBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * CAnnouncement
+ * CAnnouncement.
  *
  * @ORM\Table(
  *  name="c_announcement",
@@ -17,77 +17,78 @@ use Doctrine\ORM\Mapping as ORM;
  * )
  * @ORM\Entity
  */
-class Announcement
+class CAnnouncement
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="iid", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue
      */
-    private $iid;
+    protected $iid;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=true)
      */
-    private $id;
+    protected $id;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="c_id", type="integer")
      */
-    private $cId;
+    protected $cId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="title", type="text", nullable=true)
      */
-    private $title;
+    protected $title;
 
     /**
      * @var string
      *
      * @ORM\Column(name="content", type="text", nullable=true)
      */
-    private $content;
+    protected $content;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="end_date", type="date", nullable=true)
      */
-    private $endDate;
+    protected $endDate;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="display_order", type="integer", nullable=false)
      */
-    private $displayOrder;
+    protected $displayOrder;
 
     /**
-     * @var boolean
+     * @var bool
      *
      * @ORM\Column(name="email_sent", type="boolean", nullable=true)
      */
-    private $emailSent;
+    protected $emailSent;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="session_id", type="integer", nullable=true)
      */
-    private $sessionId;
+    protected $sessionId;
 
     /**
-     * Set title
+     * Set title.
      *
      * @param string $title
+     *
      * @return CAnnouncement
      */
     public function setTitle($title)
@@ -98,7 +99,7 @@ class Announcement
     }
 
     /**
-     * Get title
+     * Get title.
      *
      * @return string
      */
@@ -108,9 +109,10 @@ class Announcement
     }
 
     /**
-     * Set content
+     * Set content.
      *
      * @param string $content
+     *
      * @return CAnnouncement
      */
     public function setContent($content)
@@ -121,7 +123,7 @@ class Announcement
     }
 
     /**
-     * Get content
+     * Get content.
      *
      * @return string
      */
@@ -131,9 +133,10 @@ class Announcement
     }
 
     /**
-     * Set endDate
+     * Set endDate.
      *
      * @param \DateTime $endDate
+     *
      * @return CAnnouncement
      */
     public function setEndDate($endDate)
@@ -144,7 +147,7 @@ class Announcement
     }
 
     /**
-     * Get endDate
+     * Get endDate.
      *
      * @return \DateTime
      */
@@ -154,9 +157,10 @@ class Announcement
     }
 
     /**
-     * Set displayOrder
+     * Set displayOrder.
      *
-     * @param integer $displayOrder
+     * @param int $displayOrder
+     *
      * @return CAnnouncement
      */
     public function setDisplayOrder($displayOrder)
@@ -167,9 +171,9 @@ class Announcement
     }
 
     /**
-     * Get displayOrder
+     * Get displayOrder.
      *
-     * @return integer
+     * @return int
      */
     public function getDisplayOrder()
     {
@@ -177,9 +181,10 @@ class Announcement
     }
 
     /**
-     * Set emailSent
+     * Set emailSent.
      *
-     * @param boolean $emailSent
+     * @param bool $emailSent
+     *
      * @return CAnnouncement
      */
     public function setEmailSent($emailSent)
@@ -190,9 +195,9 @@ class Announcement
     }
 
     /**
-     * Get emailSent
+     * Get emailSent.
      *
-     * @return boolean
+     * @return bool
      */
     public function getEmailSent()
     {
@@ -200,9 +205,10 @@ class Announcement
     }
 
     /**
-     * Set sessionId
+     * Set sessionId.
      *
-     * @param integer $sessionId
+     * @param int $sessionId
+     *
      * @return CAnnouncement
      */
     public function setSessionId($sessionId)
@@ -213,9 +219,9 @@ class Announcement
     }
 
     /**
-     * Get sessionId
+     * Get sessionId.
      *
-     * @return integer
+     * @return int
      */
     public function getSessionId()
     {
@@ -223,9 +229,10 @@ class Announcement
     }
 
     /**
-     * Set id
+     * Set id.
      *
-     * @param integer $id
+     * @param int $id
+     *
      * @return CAnnouncement
      */
     public function setId($id)
@@ -236,9 +243,9 @@ class Announcement
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -246,9 +253,10 @@ class Announcement
     }
 
     /**
-     * Set cId
+     * Set cId.
      *
-     * @param integer $cId
+     * @param int $cId
+     *
      * @return CAnnouncement
      */
     public function setCId($cId)
@@ -259,12 +267,22 @@ class Announcement
     }
 
     /**
-     * Get cId
+     * Get cId.
      *
-     * @return integer
+     * @return int
      */
     public function getCId()
     {
         return $this->cId;
+    }
+
+    /**
+     * Get iid.
+     *
+     * @return int
+     */
+    public function getIid()
+    {
+        return $this->iid;
     }
 }

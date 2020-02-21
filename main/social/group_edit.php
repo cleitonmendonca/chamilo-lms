@@ -3,11 +3,11 @@
 
 /**
  * @package chamilo.social
+ *
  * @author Julio Montoya <gugli100@gmail.com>
  */
-
 $cidReset = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_block_anonymous_users();
 if (api_get_setting('allow_social_tool') !== 'true') {
@@ -26,8 +26,8 @@ if (empty($group_data)) {
     exit;
 }
 
-$interbreadcrumb[] = array('url' => 'groups.php', 'name' => get_lang('Groups'));
-$interbreadcrumb[] = array('url' => 'group_view.php?id='.$group_id, 'name' => $group_data['name']);
+$interbreadcrumb[] = ['url' => 'groups.php', 'name' => get_lang('Groups')];
+$interbreadcrumb[] = ['url' => 'group_view.php?id='.$group_id, 'name' => $group_data['name']];
 
 // only group admins can edit the group
 if (!$usergroup->is_group_admin($group_id)) {
@@ -59,7 +59,7 @@ $social_right_content = $form->returnForm();
 
 $tpl = new Template(get_lang('Edit'));
 
-SocialManager::setSocialUserBlock($tpl, $user_id, 'groups', $group_id);
+SocialManager::setSocialUserBlock($tpl, api_get_user_id(), 'groups', $group_id);
 
 $tpl->setHelp('Groups');
 $tpl->assign('social_menu_block', $social_left_content);

@@ -1,11 +1,12 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CoreBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Chat
+ * Chat.
  *
  * @ORM\Table(
  *      name="chat_video", indexes={
@@ -20,49 +21,48 @@ use Doctrine\ORM\Mapping as ORM;
 class ChatVideo
 {
     /**
-     * @var integer
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
+     */
+    protected $id;
+
+    /**
+     * @var int
      *
      * @ORM\Column(name="from_user", type="integer", nullable=false)
      */
-    private $fromUser;
+    protected $fromUser;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="to_user", type="integer", nullable=false)
      */
-    private $toUser;
+    protected $toUser;
 
     /**
      * @var string
      *
      * @ORM\Column(name="room_name", type="string", nullable=false)
      */
-    private $roomName;
+    protected $roomName;
 
     /**
      * @var \DateTime
      *
      * @ORM\Column(name="datetime", type="datetime", nullable=false)
      */
-    private $datetime;
+    protected $datetime;
 
     /**
-     * @var integer
+     * Set fromUser.
      *
-     * @ORM\Column(name="id", type="integer")
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
-     */
-    private $id;
-
-
-
-    /**
-     * Set fromUser
+     * @param int $fromUser
      *
-     * @param integer $fromUser
-     * @return Chat
+     * @return ChatVideo
      */
     public function setFromUser($fromUser)
     {
@@ -72,9 +72,9 @@ class ChatVideo
     }
 
     /**
-     * Get fromUser
+     * Get fromUser.
      *
-     * @return integer
+     * @return int
      */
     public function getFromUser()
     {
@@ -82,10 +82,11 @@ class ChatVideo
     }
 
     /**
-     * Set toUser
+     * Set toUser.
      *
-     * @param integer $toUser
-     * @return Chat
+     * @param int $toUser
+     *
+     * @return ChatVideo
      */
     public function setToUser($toUser)
     {
@@ -95,9 +96,9 @@ class ChatVideo
     }
 
     /**
-     * Get toUser
+     * Get toUser.
      *
-     * @return integer
+     * @return int
      */
     public function getToUser()
     {
@@ -105,10 +106,11 @@ class ChatVideo
     }
 
     /**
-     * Set room_name
+     * Set room_name.
      *
      * @param string $roomName
-     * @return Chat
+     *
+     * @return ChatVideo
      */
     public function setRoomName($roomName)
     {
@@ -118,7 +120,7 @@ class ChatVideo
     }
 
     /**
-     * Get room_name
+     * Get room_name.
      *
      * @return string
      */
@@ -128,10 +130,11 @@ class ChatVideo
     }
 
     /**
-     * Set datetime
+     * Set datetime.
      *
      * @param \DateTime $datetime
-     * @return Chat
+     *
+     * @return ChatVideo
      */
     public function setDatetime($datetime)
     {
@@ -141,7 +144,7 @@ class ChatVideo
     }
 
     /**
-     * Get datetime
+     * Get datetime.
      *
      * @return \DateTime
      */
@@ -151,9 +154,9 @@ class ChatVideo
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {

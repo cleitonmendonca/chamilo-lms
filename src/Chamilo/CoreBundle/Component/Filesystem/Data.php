@@ -8,7 +8,6 @@ use Chamilo\CoreBundle\Component\Editor\Driver\CourseDriver;
 use Chamilo\UserBundle\Entity\User;
 use MediaAlchemyst\Alchemyst;
 use Sunra\PhpSimple\HtmlDomParser;
-use Symfony\Component\Console;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
@@ -19,6 +18,7 @@ use Unoconv\Unoconv;
  * @todo use Gaufrette to manage course files (some day)
  * @todo add security restrictions.
  * Class DataFilesystem
+ *
  * @package Chamilo\CoreBundle\Component\DataFilesystem
  */
 class Data
@@ -26,15 +26,13 @@ class Data
     /** @var array Chamilo paths */
     private $paths;
 
-    /** @var Filesystem  */
+    /** @var Filesystem */
     private $fs;
     private $connector;
     private $converter;
 
     /**
-     * @param array $paths
-     * @param Filesystem $filesystem
-     * @param Connector $connector
+     * @param array     $paths
      * @param Alchemyst $converter
      */
     public function __construct(
@@ -51,11 +49,13 @@ class Data
     }
 
     /**
-     * Gets a file from the "data" folder
+     * Gets a file from the "data" folder.
+     *
      * @param string $file
      *
-     * @return SplFileInfo
      * @throws \InvalidArgumentException
+     *
+     * @return SplFileInfo
      */
     public function get($file)
     {
@@ -63,17 +63,13 @@ class Data
         if ($this->fs->exists($file)) {
             return $file;
         } else {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'The file "%s" does not exists .',
-                    $file
-                )
-            );
+            throw new \InvalidArgumentException(sprintf('The file "%s" does not exists .', $file));
         }
     }
 
     /**
-     * Gets a file from the data/courses/MATHS/document directory
+     * Gets a file from the data/courses/MATHS/document directory.
+     *
      * @param string $courseCode
      * @param string $file
      *
@@ -86,11 +82,12 @@ class Data
         return $this->get($file);
     }
 
-     /**
-     * Gets a file from the data/courses/MATHS/scorm directory
+    /**
+     * Gets a file from the data/courses/MATHS/scorm directory.
+     *
      * @param string $courseCode
      * @param string $file
-      *
+     *
      * @return SplFileInfo
      */
     public function getCourseScormDocument($courseCode, $file)
@@ -101,7 +98,8 @@ class Data
     }
 
     /**
-     * Gets a file from the data/courses/MATHS/document directory
+     * Gets a file from the data/courses/MATHS/document directory.
+     *
      * @param string $courseCode
      * @param string $file
      *
@@ -115,10 +113,10 @@ class Data
     }
 
     /**
-     * Create folders
-     * @param array            $folderList
-     * @param OutputInterface  $output
-     * @param string           $folderPermissions
+     * Create folders.
+     *
+     * @param OutputInterface $output
+     * @param string          $folderPermissions
      */
     public function createFolders(
         array $folderList,
@@ -142,7 +140,6 @@ class Data
     }
 
     /**
-     * @param array           $folderList
      * @param OutputInterface $output
      */
     public function copyFolders(array $folderList, OutputInterface $output = null)
@@ -172,7 +169,8 @@ class Data
     }
 
     /**
-     * Creates a empty file inside the temp folder
+     * Creates a empty file inside the temp folder.
+     *
      * @param string $fileName
      * @param string $extension
      *
@@ -197,7 +195,8 @@ class Data
 
     /**
      * Converts ../courses/ABC/document/file.jpg to
-     * http://chamilo/courses/ABC/document/file.jpg
+     * http://chamilo/courses/ABC/document/file.jpg.
+     *
      * @param string $content
      *
      * @return string
@@ -254,7 +253,8 @@ class Data
             $fileName = $fileInfo['filename'];
             $newFilePath = str_replace(
                 $fileInfo['basename'],
-                $fileName.'.'.$format, $filePath
+                $fileName.'.'.$format,
+                $filePath
             );
             /** @var \MediaAlchemyst\DriversContainer $drivers */
             $drivers = $this->converter->getDrivers();
@@ -264,7 +264,6 @@ class Data
             $unoconv->transcode($filePath, $format, $newFilePath);
             if ($this->fs->exists($newFilePath)) {
                 return $newFilePath;
-
             }
         }
 
@@ -272,8 +271,7 @@ class Data
     }
 
     /**
-     * Creates the users/upload/X/my_files folder
-     * @param User $user
+     * Creates the users/upload/X/my_files folder.
      */
     public function createMyFilesFolder(User $user)
     {
@@ -281,7 +279,7 @@ class Data
         $path = \UserManager::get_user_picture_path_by_id($userId, 'system');
 
         if (!$this->fs->exists($path['dir'].'my_files')) {
-            $this->createFolders(array($path['dir'].'my_files'));
+            $this->createFolders([$path['dir'].'my_files']);
         }
     }
 }

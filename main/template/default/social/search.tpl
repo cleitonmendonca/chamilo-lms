@@ -1,4 +1,4 @@
-{% extends template ~ "/layout/layout_1_col.tpl" %}
+{% extends 'layout/layout_1_col.tpl'|get_template %}
 
 {% block content %}
 <div class="row">
@@ -9,14 +9,12 @@
         </div>
     </div>
     <div class="col-md-9">
-        
-            <div class="form-search-sm">
-                {{ search_form }}
-            </div>
-            <div class="list-search-sm">
-                {{ social_search }}
-            </div>
-        
+        <div class="form-search-sm">
+            {{ search_form }}
+        </div>
+        <div class="list-search-sm">
+            {{ social_search }}
+        </div>
     </div>
 </div>
 

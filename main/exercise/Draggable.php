@@ -2,17 +2,17 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Class Draggable
+ * Class Draggable.
  *
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
  */
 class Draggable extends Question
 {
-    public static $typePicture = 'ordering.png';
-    public static $explanationLangVar = 'Draggable';
+    public $typePicture = 'ordering.png';
+    public $explanationLangVar = 'Draggable';
 
     /**
-     * Class constructor
+     * Class constructor.
      */
     public function __construct()
     {
@@ -22,17 +22,14 @@ class Draggable extends Question
     }
 
     /**
-     * Function which redefines Question::createAnswersForm
-     * @param FormValidator $form
+     * {@inheritdoc}
      */
     public function createAnswersForm($form)
     {
-        $defaults = array();
+        $defaults = [];
         $nb_matches = $nb_options = 2;
-        $matches = array();
-
+        $matches = [];
         $answer = null;
-
         if ($form->isSubmitted()) {
             $nb_matches = $form->getSubmitValue('nb_matches');
             $nb_options = $form->getSubmitValue('nb_options');
@@ -52,23 +49,24 @@ class Draggable extends Question
             if (isset($_POST['moreOptions'])) {
                 $nb_options++;
             }
-        } else if (!empty($this->id)) {
+        } elseif (!empty($this->id)) {
+            $defaults['orientation'] = in_array($this->extra, ['h', 'v']) ? $this->extra : 'h';
+
             $answer = new Answer($this->id);
             $answer->read();
 
-            if (count($answer->nbrAnswers) > 0) {
+            if ($answer->nbrAnswers > 0) {
                 $nb_matches = $nb_options = 0;
-
                 for ($i = 1; $i <= $answer->nbrAnswers; $i++) {
                     if ($answer->isCorrect($i)) {
                         $nb_matches++;
-                        $defaults['answer[' . $nb_matches . ']'] = $answer->selectAnswer($i);
-                        $defaults['weighting[' . $nb_matches . ']'] = float_format($answer->selectWeighting($i), 1);
+                        $defaults['answer['.$nb_matches.']'] = $answer->selectAnswer($i);
+                        $defaults['weighting['.$nb_matches.']'] = float_format($answer->selectWeighting($i), 1);
                         $answerInfo = $answer->getAnswerByAutoId($answer->correct[$i]);
-                        $defaults['matches[' . $nb_matches . ']'] = isset($answerInfo['answer']) ? $answerInfo['answer'] : '';
+                        $defaults['matches['.$nb_matches.']'] = isset($answerInfo['answer']) ? $answerInfo['answer'] : '';
                     } else {
                         $nb_options++;
-                        $defaults['option[' . $nb_options . ']'] = $answer->selectAnswer($i);
+                        $defaults['option['.$nb_options.']'] = $answer->selectAnswer($i);
                     }
                 }
             }
@@ -78,22 +76,29 @@ class Draggable extends Question
             $defaults['matches[2]'] = '2';
             $defaults['option[1]'] = get_lang('DefaultMatchingOptA');
             $defaults['option[2]'] = get_lang('DefaultMatchingOptB');
+            $defaults['orientation'] = 'h';
         }
 
-        for ($i = 1; $i <= $nb_matches; ++$i) {
+        for ($i = 1; $i <= $nb_matches; $i++) {
             $matches[$i] = $i;
         }
 
         $form->addElement('hidden', 'nb_matches', $nb_matches);
         $form->addElement('hidden', 'nb_options', $nb_options);
 
+        $form->addRadio(
+            'orientation',
+            get_lang('ChooseOrientation'),
+            ['h' => get_lang('Horizontal'), 'v' => get_lang('Vertical')]
+        );
+
         // DISPLAY MATCHES
         $html = '<table class="table table-striped table-hover">
             <thead>
                 <tr>
-                    <th width="85%">' . get_lang('Answer') . '</th>
-                    <th width="15%">' . get_lang('MatchesTo') . '</th>
-                    <th width="10">' . get_lang('Weighting') . '</th>
+                    <th width="85%">'.get_lang('Answer').'</th>
+                    <th width="15%">'.get_lang('MatchesTo').'</th>
+                    <th width="10">'.get_lang('Weighting').'</th>
                 </tr>
             </thead>
             <tbody>';
@@ -103,12 +108,11 @@ class Draggable extends Question
 
         if ($nb_matches < 1) {
             $nb_matches = 1;
-            Display::display_normal_message(get_lang('YouHaveToCreateAtLeastOneAnswer'));
+            echo Display::return_message(get_lang('YouHaveToCreateAtLeastOneAnswer'), 'normal');
         }
 
-        for ($i = 1; $i <= $nb_matches; ++$i) {
+        for ($i = 1; $i <= $nb_matches; $i++) {
             $renderer = &$form->defaultRenderer();
-
             $renderer->setElementTemplate(
                 '<td><!-- BEGIN error --><span class="form_error">{error}</span><!-- END error -->{element}</td>',
                 "answer[$i]"
@@ -144,7 +148,7 @@ class Draggable extends Question
         $group = [
             $form->addButtonDelete(get_lang('DelElem'), 'lessMatches', true),
             $form->addButtonCreate(get_lang('AddElem'), 'moreMatches', true),
-            $form->addButtonSave($text, 'submitQuestion', true)
+            $form->addButtonSave($text, 'submitQuestion', true),
         ];
 
         $form->addGroup($group);
@@ -152,6 +156,8 @@ class Draggable extends Question
         if (!empty($this->id)) {
             $form->setDefaults($defaults);
         } else {
+            $form->setDefaults(['orientation' => 'h']);
+
             if ($this->isContent == 1) {
                 $form->setDefaults($defaults);
             }
@@ -160,37 +166,33 @@ class Draggable extends Question
         $form->setConstants(
             [
                 'nb_matches' => $nb_matches,
-                'nb_options' => $nb_options
+                'nb_options' => $nb_options,
             ]
         );
     }
 
     /**
-     * Abstract function which creates the form to create / edit the answers of the question
-     * @param FormValidator $form
+     * {@inheritdoc}
      */
-    public function processAnswersCreation($form)
+    public function processAnswersCreation($form, $exercise)
     {
+        $this->extra = $form->exportValue('orientation');
         $nb_matches = $form->getSubmitValue('nb_matches');
         $this->weighting = 0;
         $position = 0;
-
         $objAnswer = new Answer($this->id);
-
         // Insert the options
-        for ($i = 1; $i <= $nb_matches; ++$i) {
+        for ($i = 1; $i <= $nb_matches; $i++) {
             $position++;
-
             $objAnswer->createAnswer($position, 0, '', 0, $position);
         }
 
         // Insert the answers
-        for ($i = 1; $i <= $nb_matches; ++$i) {
+        for ($i = 1; $i <= $nb_matches; $i++) {
             $position++;
-
-            $answer = $form->getSubmitValue('answer[' . $i . ']');
-            $matches = $form->getSubmitValue('matches[' . $i . ']');
-            $weighting = $form->getSubmitValue('weighting[' . $i . ']');
+            $answer = $form->getSubmitValue('answer['.$i.']');
+            $matches = $form->getSubmitValue('matches['.$i.']');
+            $weighting = $form->getSubmitValue('weighting['.$i.']');
             $this->weighting += $weighting;
             $objAnswer->createAnswer(
                 $answer,
@@ -202,24 +204,27 @@ class Draggable extends Question
         }
 
         $objAnswer->save();
-        $this->save();
+        $this->save($exercise);
     }
 
     /**
-     * Shows question title an description
-     * @param string $feedback_type
-     * @param int $counter
-     * @param float $score
-     * @return string
+     * {@inheritdoc}
      */
-    public function return_header($feedback_type = null, $counter = null, $score = null)
+    public function return_header(Exercise $exercise, $counter = null, $score = [])
     {
-        $header = parent::return_header($feedback_type, $counter, $score);
-        $header .= '<table class="' . $this->question_table_class . '">
-            <tr>
-                <th>' . get_lang('ElementList') . '</th>
-                <th>' . get_lang('Status') . '</th>
-            </tr>';
+        $header = parent::return_header($exercise, $counter, $score);
+        $header .= '<table class="'.$this->question_table_class.'"><tr>';
+
+        if ($exercise->showExpectedChoice()) {
+            $header .= '<th>'.get_lang('YourChoice').'</th>';
+            if ($exercise->showExpectedChoiceColumn()) {
+                $header .= '<th>'.get_lang('ExpectedChoice').'</th>';
+            }
+        } else {
+            $header .= '<th>'.get_lang('ElementList').'</th>';
+        }
+        $header .= '<th>'.get_lang('Status').'</th>';
+        $header .= '</tr>';
 
         return $header;
     }

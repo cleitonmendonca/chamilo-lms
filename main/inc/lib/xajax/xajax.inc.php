@@ -817,52 +817,13 @@ class xajax
 	}
 
 	/**
-	 * This method can be used to create a new xajax.js file out of the
-	 * xajax_uncompressed.js file (which will only happen if xajax.js doesn't
-	 * already exist on the filesystem).
-	 *
-	 * @param string an optional argument containing the full server file path
-	 *               of xajax.js.
-	 */
-	function autoCompressJavascript($sJsFullFilename=NULL)
-	{
-		$sJsFile = "xajax_js/xajax.js";
-
-		if ($sJsFullFilename) {
-			$realJsFile = $sJsFullFilename;
-		}
-		else {
-			$realPath = realpath(dirname(__FILE__));
-			$realJsFile = $realPath . "/". $sJsFile;
-		}
-
-		// Create a compressed file if necessary
-		if (!file_exists($realJsFile)) {
-			$srcFile = str_replace(".js", "_uncompressed.js", $realJsFile);
-			if (!file_exists($srcFile)) {
-				trigger_error("The xajax uncompressed Javascript file could not be found in the <b>" . dirname($realJsFile) . "</b> folder. Error ", E_USER_ERROR);
-			}
-			require(dirname(__FILE__)."/xajaxCompress.php");
-			$javaScript = implode('', file($srcFile));
-			$compressedScript = xajaxCompressJavascript($javaScript);
-			$fH = @fopen($realJsFile, "w");
-			if (!$fH) {
-				trigger_error("The xajax compressed javascript file could not be written in the <b>" . dirname($realJsFile) . "</b> folder. Error ", E_USER_ERROR);
-			}
-			else {
-				fwrite($fH, $compressedScript);
-				fclose($fH);
-			}
-		}
-	}
-
-	/**
 	 * Returns the current URL based upon the SERVER vars.
 	 *
 	 * @access private
 	 * @return string
 	 */
-	function _detectURI() {
+	function _detectURI()
+	{
 		$aURL = array();
 
 		// Try to get the request URL
@@ -914,25 +875,9 @@ class xajax
 		}
 
 		// Build the URL: Start with scheme, user and pass
-		$sURL = $aURL['scheme'].'://';
-		if (!empty($aURL['user'])) {
-			$sURL.= $aURL['user'];
-			if (!empty($aURL['pass'])) {
-				$sURL.= ':'.$aURL['pass'];
-			}
-			$sURL.= '@';
-		}
-
-		// Add the host
-		$sURL.= $aURL['host'];
-
-		// Add the port if needed
-		if (!empty($aURL['port']) && (($aURL['scheme'] == 'http' && $aURL['port'] != 80) || ($aURL['scheme'] == 'https' && $aURL['port'] != 443))) {
-			$sURL.= ':'.$aURL['port'];
-		}
-
+		$sURL  = api_get_self();
 		// Add the path and the query string
-		$sURL.= $aURL['path'].@$aURL['query'];
+		$sURL.= @$aURL['query'];
 
 		// Clean up
 		unset($aURL);

@@ -1,5 +1,4 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
  * HTML class for a file upload field
@@ -36,16 +35,11 @@
  */
 class HTML_QuickForm_file extends HTML_QuickForm_input
 {
-    // {{{ properties
-
    /**
     * Uploaded file data, from $_FILES
     * @var array
     */
     var $_value = null;
-
-    // }}}
-    // {{{ constructor
 
     /**
      * Class constructor
@@ -61,12 +55,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     {
         parent::__construct($elementName, $elementLabel, $attributes);
         $this->setType('file');
-
-
-    } //end constructor
-
-    // }}}
-    // {{{ setSize()
+    }
 
     /**
      * Sets size of file element
@@ -78,10 +67,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function setSize($size)
     {
         $this->updateAttributes(array('size' => $size));
-    } //end func setSize
-
-    // }}}
-    // {{{ getSize()
+    }
 
     /**
      * Returns size of file element
@@ -93,10 +79,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function getSize()
     {
         return $this->getAttribute('size');
-    } //end func getSize
-
-    // }}}
-    // {{{ freeze()
+    }
 
     /**
      * Freeze the element so that only its value is returned
@@ -107,10 +90,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function freeze()
     {
         return false;
-    } //end func freeze
-
-    // }}}
-    // {{{ setValue()
+    }
 
     /**
      * Sets value for file element.
@@ -128,10 +108,7 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     function setValue($value)
     {
         return null;
-    } //end func setValue
-
-    // }}}
-    // {{{ getValue()
+    }
 
     /**
      * Returns information about the uploaded file
@@ -275,60 +252,103 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
     public function getElementJS($param)
     {
         $id = $this->getAttribute('id');
-        $ratio = '16 / 9';
+        $ratio = 'aspectRatio: 16 / 9';
         if (!empty($param['ratio'])) {
-            $ratio = $param['ratio'];
+            $ratio = 'aspectRatio: '.$param['ratio'].',';
         }
+        $scalable = 'false';
+        if (!empty($param['scalable']) && $param['scalable'] != 'false') {
+            $ratio = '';
+            $scalable = $param['scalable'];
+        }
+
         return '<script>
-        $(document).ready(function() {
-            var $image = $("#'.$id.'_preview_image");
-            var $input = $("[name=\''.$id.'_crop_result\']");
-            var $cropButton = $("#'.$id.'_crop_button");
-            var canvas = "";
-            var imageWidth = "";
-            var imageHeight = "";
+        $(function() {
+            var $inputFile = $(\'#'.$id.'\'),
+                $image = $(\'#'.$id.'_preview_image\'),
+                $input = $(\'[name="'.$id.'_crop_result"]\'),
+                $cropButton = $(\'#'.$id.'_crop_button\'),
+                $formGroup = $(\'#'.$id.'-form-group\');
+
+            function isValidType(file) {
+                var fileTypes = [\'image/jpg\', \'image/jpeg\', \'image/gif\', \'image/png\'];
+        
+                for(var i = 0; i < fileTypes.length; i++) {
+                    if(file.type === fileTypes[i]) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
             
-            $("#'.$id.'").change(function() {
-                var oFReader = new FileReader();
-                oFReader.readAsDataURL(document.getElementById("'.$id.'").files[0]);
-        
-                oFReader.onload = function (oFREvent) {
-                    $image.attr("src", this.result);
-                    $("#'.$id.'_label_crop_image").html("'.get_lang('Preview').'");
-                    $("#'.$id.'_crop_image").addClass("thumbnail");
-                    $cropButton.removeClass("hidden");
-                    // Destroy cropper
-                    $image.cropper("destroy");
-        
-                    $image.cropper({
-                        aspectRatio: ' . $ratio . ',
+            function imageCropper() {
+                $formGroup.show();
+                $cropButton.show();
+
+                $image
+                    .cropper(\'destroy\')
+                    .cropper({
+                        '.$ratio.'
                         responsive : true,
                         center : false,
                         guides : false,
                         movable: false,
                         zoomable: false,
                         rotatable: false,
-                        scalable: false,
+                        scalable: '.$scalable.',
                         crop: function(e) {
                             // Output the result data for cropping image.
-                            $input.val(e.x+","+e.y+","+e.width+","+e.height);
+                            $input.val(e.x + \',\' + e.y + \',\' + e.width + \',\' + e.height);
                         }
                     });
+            }
+
+            $inputFile.on(\'change\', function () {
+                var inputFile = this,
+                    file = inputFile.files[0],
+                    fileReader = new FileReader();
+
+                if (!isValidType(file)) {
+                    $formGroup.hide();
+                    $cropButton.hide();
+
+                    if (inputFile.setCustomValidity) {
+                        inputFile.setCustomValidity(
+                            inputFile.title ? inputFile.title : \''.get_lang('OnlyImagesAllowed').'\'
+                        );
+                    }
+
+                    return;
+                }
+
+                if (inputFile.setCustomValidity) {
+                    inputFile.setCustomValidity(\'\');
+                }
+
+                fileReader.readAsDataURL(file);
+                fileReader.onload = function () {
+                    $image
+                        .attr(\'src\', this.result)
+                        .on(\'load\', imageCropper);
                 };
             });
-            
-            $("#'.$id.'_crop_button").on("click", function() {
-                var canvas = $image.cropper("getCroppedCanvas");
-                var dataUrl = canvas.toDataURL();
-                $image.attr("src", dataUrl);
-                $image.cropper("destroy");
-                $cropButton.addClass("hidden");
-                return false;
+
+            $cropButton.on(\'click\', function () {
+                var canvas = $image.cropper(\'getCroppedCanvas\'),
+                    dataUrl = canvas.toDataURL();
+
+                $image.attr(\'src\', dataUrl).cropper(\'destroy\').off(\'load\', imageCropper);
+                $(\'[name="'.$id.'_crop_image_base_64"]\').val(dataUrl);
+                $cropButton.hide();
             });
         });
         </script>';
     }
 
+    /**
+     * @return string
+     */
     public function toHtml()
     {
         $js = '';
@@ -337,14 +357,119 @@ class HTML_QuickForm_file extends HTML_QuickForm_input
             if (!empty($this->_attributes['crop_ratio'])) {
                 $ratio = $this->_attributes['crop_ratio'];
             }
-            $js = $this->getElementJS(array('ratio' => $ratio));
+            $scalable = 'false';
+            if (!empty($this->_attributes['crop_scalable'])) {
+                $scalable = $this->_attributes['crop_scalable'];
+            }
+            $js = $this->getElementJS(array('ratio' => $ratio, 'scalable' => $scalable));
         }
 
-        if ($this->_flagFrozen) {
+        if ($this->isFrozen()) {
             return $this->getFrozenHtml();
         } else {
-            return $js.$this->_getTabs() . '<input' . $this->_getAttrString($this->_attributes) . ' />';
+            $class = '';
+            if (isset($this->_attributes['custom']) && $this->_attributes['custom']) {
+                $class = 'input-file';
         }
-    } //end func toHtml
+
+        return $js.$this->_getTabs().
+                '<input class="'.$class.'" '.$this->_getAttrString($this->_attributes).' />';
+        }
+    }
+
+    /**
+     * @param string $layout
+     *
+     * @return string
+     */
+    public function getTemplate($layout)
+    {
+        $name = $this->getName();
+        $attributes = $this->getAttributes();
+        $size = $this->calculateSize();
+
+        switch ($layout) {
+            case FormValidator::LAYOUT_INLINE:
+                return '
+                <div class="form-group {error_class}">
+                    <label {label-for} >
+                        <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
+                        {label}
+                    </label>
+                    {element}
+                </div>';
+                break;
+            case FormValidator::LAYOUT_HORIZONTAL:
+                if (isset($attributes['custom']) && $attributes['custom']) {
+                    $template = '
+                        <div class="input-file-container">  
+                            {element}
+                            <label tabindex="0" {label-for} class="input-file-trigger">
+                                <i class="fa fa-picture-o fa-lg" aria-hidden="true"></i> {label}
+                            </label>
+                        </div>
+                        <p class="file-return"></p>                        
+                        <script>
+                            document.querySelector("html").classList.add(\'js\');
+                            var fileInput  = document.querySelector( ".input-file" ),  
+                                button     = document.querySelector( ".input-file-trigger" ),
+                                the_return = document.querySelector(".file-return");
+                                  
+                            button.addEventListener("keydown", function(event) {  
+                                if ( event.keyCode == 13 || event.keyCode == 32 ) {  
+                                    fileInput.focus();  
+                                }  
+                            });
+                            button.addEventListener("click", function(event) {
+                               fileInput.focus();
+                               return false;
+                            });  
+                            fileInput.addEventListener("change", function(event) {
+                                fileName = this.value;
+                                if (this.files[0]) {
+                                    fileName = this.files[0].name;
+                                }
+                                the_return.innerHTML = fileName;  
+                            });                            
+                        </script>
+                    ';
+                } else {
+                    $template = '
+                    <div id="file_'.$name.'" class="form-group {error_class}">
+                        
+                        <label {label-for} class="col-sm-'.$size[0].' control-label" >
+                            <!-- BEGIN required --><span class="form_required">*</span><!-- END required -->
+                            {label}
+                        </label>
+                         <div class="col-sm-'.$size[1].'">
+                            {icon}
+                            {element}
+                            <!-- BEGIN label_2 -->
+                                <p class="help-block">{label_2}</p>
+                            <!-- END label_2 -->
+                            <!-- BEGIN error -->
+                                <span class="help-inline help-block">{error}</span>
+                            <!-- END error -->
+                        </div>
+                        <div class="col-sm-'.$size[2].'">
+                            <!-- BEGIN label_3 -->
+                                {label_3}
+                            <!-- END label_3 -->
+                        </div>
+                    </div>';
+                }
+                return $template;
+                break;
+            case FormValidator::LAYOUT_BOX_NO_LABEL:
+                return '
+                        <label {label-for}>{label}</label>
+                        <div class="input-group">
+                            
+                            {icon}
+                            {element}
+                        </div>';
+                break;
+        }
+    }
 
 }

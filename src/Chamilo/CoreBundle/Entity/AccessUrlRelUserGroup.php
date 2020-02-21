@@ -6,7 +6,7 @@ namespace Chamilo\CoreBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * AccessUrlRelUser
+ * AccessUrlRelUser.
  *
  * @ORM\Table(name="access_url_rel_usergroup")
  * @ORM\Entity
@@ -14,35 +14,34 @@ use Doctrine\ORM\Mapping as ORM;
 class AccessUrlRelUserGroup
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue()
      */
-    private $id;
+    protected $id;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="access_url_id", type="integer")
-
      */
-    private $accessUrlId;
+    protected $accessUrlId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="usergroup_id", type="integer")
      */
-    private $userGroupId;
-
+    protected $userGroupId;
 
     /**
-     * Set accessUrlId
+     * Set accessUrlId.
      *
-     * @param integer $accessUrlId
-     * @return AccessUrlRelUser
+     * @param int $accessUrlId
+     *
+     * @return AccessUrlRelUserGroup
      */
     public function setAccessUrlId($accessUrlId)
     {
@@ -52,9 +51,9 @@ class AccessUrlRelUserGroup
     }
 
     /**
-     * Get accessUrlId
+     * Get accessUrlId.
      *
-     * @return integer
+     * @return int
      */
     public function getAccessUrlId()
     {
@@ -71,6 +70,7 @@ class AccessUrlRelUserGroup
 
     /**
      * @param int $id
+     *
      * @return AccessUrlRelUserGroup
      */
     public function setId($id)
@@ -90,6 +90,7 @@ class AccessUrlRelUserGroup
 
     /**
      * @param int $userGroupId
+     *
      * @return AccessUrlRelUserGroup
      */
     public function setUserGroupId($userGroupId)

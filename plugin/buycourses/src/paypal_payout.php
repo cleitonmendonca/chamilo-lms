@@ -1,17 +1,17 @@
 <?php
-
 /* For license terms, see /license.txt */
+
 /**
- * List page for Paypal Payout for the Buy Courses plugin
+ * List page for Paypal Payout for the Buy Courses plugin.
+ *
  * @package chamilo.plugin.buycourses
  */
 /**
- * Initialization
+ * Initialization.
  */
-
 $cidReset = true;
 
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
 $htmlHeadXtra[] = '<link rel="stylesheet" href="../resources/css/style.css" type="text/css">';
 
@@ -38,7 +38,7 @@ foreach ($payouts as $payout) {
         'currency' => $payout['iso_code'],
         'price' => $payout['item_price'],
         'commission' => $payout['commission'],
-        'paypal_account' => $payout['paypal_account']
+        'paypal_account' => $payout['paypal_account'],
     ];
 }
 

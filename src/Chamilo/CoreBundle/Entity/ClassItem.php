@@ -1,11 +1,12 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CourseBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class
+ * ClassItem.
  *
  * @ORM\Table(name="class_item")
  * @ORM\Entity
@@ -17,29 +18,30 @@ class ClassItem
      *
      * @ORM\Column(name="code", type="string", length=40, nullable=true)
      */
-    private $code;
+    protected $code;
 
     /**
      * @var string
      *
      * @ORM\Column(name="name", type="text", nullable=false)
      */
-    private $name;
+    protected $name;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
-    private $id;
+    protected $id;
 
     /**
-     * Set code
+     * Set code.
      *
      * @param string $code
-     * @return Class
+     *
+     * @return ClassItem
      */
     public function setCode($code)
     {
@@ -49,7 +51,7 @@ class ClassItem
     }
 
     /**
-     * Get code
+     * Get code.
      *
      * @return string
      */
@@ -59,10 +61,11 @@ class ClassItem
     }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
-     * @return Class
+     *
+     * @return ClassItem
      */
     public function setName($name)
     {
@@ -72,7 +75,7 @@ class ClassItem
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -82,14 +85,12 @@ class ClassItem
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
         return $this->id;
     }
-
-
 }

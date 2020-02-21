@@ -56,9 +56,6 @@ background: linear-gradient(to bottom, #ffffff 0%,#e5e5e5 100%); /* W3C */
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#e5e5e5',GradientType=0 ); /* IE6-9 */
   border-color: #E5E5E5;
 }
-.navbar-default .navbar-brand {
-  color: #ffffff;
-}
 .navbar-default .navbar-brand:hover, .navbar-default .navbar-brand:focus {
   color: #ededed;
 }
@@ -123,14 +120,14 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e83b10', end
 .panel-default .panel-heading{
     background-color: #F9F9F9;
 }
-footer{
+footer.bgfooter{
   background: #3D3D3D;
   color: #9DD0F1;
   border-top: 4px solid #CCC;
 }
-footer a{
+footer.bgfooter a{
   color: #ffffff;
 }
-footer a:hover{
+footer.bgfooter a:hover{
   color: #CCC;
 }

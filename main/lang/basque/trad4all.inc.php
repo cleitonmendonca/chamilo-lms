@@ -146,7 +146,6 @@ $Forbidden = "Ez duzu baimenik";
 $CourseAccessConfigTip = "Besterik ezean, ikastaroa publikoa da. Baina zuk sarbide maila zehaztu dezakezu gaineko aukeretan.";
 $OpenToTheWorld = "Publikoa - sarbidea edonorentzat dago baimenduta";
 $OpenToThePlatform = "Irekia - plataforman izena eman duten erabiltzaileentzat bakarrik baimenduta dago sarbidea";
-$OpenToThePlatform = "Irekia - plataforman izena eman duten erabiltzaileentzat bakarrik baimenduta dago sarbidea";
 $TipLang = "Hizkuntza hau izango da baliogarria, zure heziketa webguneko bisitari guztientzat";
 $Vid = "Chamilo LIVE bideoa";
 $Work = "Lanak";
@@ -1106,6 +1105,7 @@ $LinkURL = "Loturaren URL";
 $OpenInNewWindow = "Ireki beste leiho batean";
 $LimitUsersListDefaultMaxComment = "Ikastaroetan edo klaseetan erabiltzaileek izena emateko pantailetan, ez iragazitako lehen zerrendak erabiltzaile kopuru hau baino gehiago baditu, orduan lehenetsi lehen letrari (A)";
 $HideDLTTMarkupComment = "Ezkutatu [= ... =] marka, hizkuntzaren aldagai bat itzulita ez dagoenean";
+$SignUp = "Erregistroa";
 $UserDeleted = "Erabiltzailea kendu da";
 $NoClassesForThisCourse = "Ez dago klase inskribaturik ikastaro honetan";
 $CourseUsage = "Ikastaroaren erabilera";
@@ -3452,7 +3452,7 @@ $NewMessageInForum = "Forora mezu berria bidali da";
 $FolderCreated = "Karpeta berria sortu da";
 $AgendaAdded = "Agendako gertaera bat gehitu da";
 $ShouldBeCSVFormat = "Fitxategiak CSV formatua eduki behar du. Ez sartu espaziorik. Egitura, zehatz-mehatz, honako hau izan behar da :";
-$Enter2passToChange = "Pasahitza aldatzeko, idatzi pasahitza berria azpiko eremu bietan, horrela baieztatzeko. Oraingo pasahitza bere horretan edukitzeko, utzi eremuak bete gabe.";
+$TypeCurrentPassword = "Pasahitza aldatzeko, idatzi pasahitza berria azpiko eremu bietan, horrela baieztatzeko. Oraingo pasahitza bere horretan edukitzeko, utzi eremuak bete gabe.";
 $AuthInfo = "Autentifikazioa";
 $ImageWrong = "Fitxategi tamaina txikiagoa izan behar da honakoa baino:";
 $NewPass = "Pasahitza berria";
@@ -3555,7 +3555,6 @@ $ApprovalForNewAccount = "Kontu berria onartu da";
 $ManageUser = "Kudeatu erabiltzailea";
 $SubscribeUserToCourseAsTeacher = "Inskribatu irakasleak";
 $PasswordEncryptedForSecurity = "Segurtasuna dela eta, pasahitza enkriptatuta dago. Horrexegatik, pasahitza berrezartzeko lotura sakatu ondoren, zure pasahitza jasotzen duen mezu elektronikoa bidaliko zaizu.";
-$SystemUnableToSendEmailContact = "Plataforma honek ezin izan dizu mezu elektronikoa bidali";
 $OpenIDCouldNotBeFoundPleaseRegister = "OpenID hau ezin izan da gure datu basean aurkitu. Mesedez, kontu berria eskuratzeko, erregistratu. Jadanik baduzu kontu bat gurekin, editatu kontuaren barruan duzun profila, OpenID hau gehitzeko.";
 $UsernameMaxXCharacters = "Erabiltzailearen izenak, gehienez, %s karaktere eduki ditzake.";
 $PictureUploaded = "Zure irudia kargatu da";
@@ -4352,202 +4351,8 @@ Zure ikastaroa eraikitzen duzunean, saiatu urrats hauek betetzen:
 5.	Klikatu sortu duzun ibilbidearen ondoan dagoen begia irudikatzen duen ikonoaren gainean, zure orri nagusian agertu dadila.
 6.	Ikastaroa besteek ikusteko prest dago orain. Bere orri nagusiak sarrerako testua erakutsiko du eta, jarraian, lotura bakar bat, bere bidez ikasleak ikastaroaren barrura eta ikastaroan zehar gidatzeko. Klikatu Ikaslearen Ikuspegia botoiaren gainean (goian eskuinaldera) ikastaroa ikaslearen ikuspegitik ikusi ahal izateko.";
 $HOnline = "Online konferentzia zuzenean Laguntza";
-$OnlineContent = "Sarrera
-
-Chamilo online konferentzia sistemak, era sinplean eta azkarrean, bostehun lagunei irakasteko, informatzeko edo biltzeko aukera emango dizu.
-
-       
-*	audioa zuzenean : irakaslearen ahotsa zuzeneko emanaldian iristen zaie parte hartzaileei,
-*	diapositibak : parte hartzaileek Power Point, Flash edo PDF aurkezpenak ikusten dituzte,
-*	elkarrekintza : parte hatzaileek txataren bidez galderak egiten dituzte.
-
-
-
-Ikaslea / parte hartzailea
-
-Konferentzian parte hartzeko honako hauek beharko dituzu:
-
-1. Bozgorailuak (edo entzungailuak) zure PCri konektaturik
-
-speakers
-
-2. Winamp Media erreproduzigailua
-
-Winamp
-
-Mac : erabili Quicktime
-Linux : erabili XMMS
-
-  3. Acrobat PDF irakurgailua edo Word edo PowerPoint edo Flash, irakaslearen diapositiben formatuaren arabera
-
-acrobat reader
-
-
-Irakaslea / hizlaria
-
-Konferentzia egiteko, honako hauek beharko dituzu :
-
-1. Mikrofono bat entzungailuekin
-
-Entzungailuak
-
-LogitechUSB erabiltzea gomendatzen dizugu, audio difusioan kalitate hoberena lortzeko.
-
-2. Winamp
-
-Winamp
-
-3. SHOUTcast DSP Plug-In, Winamp 2.x-rako
-
-Shoutcast
-
-Jarraitu argibideei www.shoutcast.comon webgunean, Shoutcast Winamp DSP Plug-In instalatzeko eta konfiguratzeko.
-
-
-Nola egin konferentzia?
-
-Sortu Chamilo ikastaroa > Sartu zaitez honetan > Erakutsi Konferentzia tresna, orduan ikusgai egiteko > Editatu ezarpenak (arkatza irudikatzen duen ikonoa goiko ezkerraldean) > Kargatu zure diapositibak (PDF, PowerPoint edo beste batzuk) > Idatzi sarrerako testua > Idatzi zuzeneko korrontearen URL, zure kudeatzaile teknikoak eman dizun informazioaren arabera.
-
-konferentzia konfiguratzea
-
-Ez ahaztu parte hartzaileei aldez aurretik biltzeko eguna, ordua eta beste jarraibide batzuk argi ematea.
-
-Aholkua : Konferentzia hasi baino 10 minutu lehenago, idatzi mezu labur bat txatean parte hartzaileei lekuan bazarela informatzeko eta audio arazoak eduki litzakeen jendeari laguntzeko.
-
-
-Korrontearen zerbitzaria
-
-Online konferentziaren korrontea zuzenean egiteko, korronte (streaming) zerbitzari bat beharko duzu eta, ziuraski, kudeatzaile tekniko batek erabiltzen lagunduko dizu. Teknikari honek beharrezko duzun URL emango dizu, behin eta zure konferentziaren ezarpenak konfiguratu eta editatu ondoren, zuzeneko korrontea jartzen duen eremuan idazteko.
-
-Chamilo korrontea
-Chamilo streaming
-
-Zuk zeuk egin ezazu : instalatu, konfiguratu eta kudeatu Shoutcast edo AppleDarwin.
-
-Edo harremanetan jarri Chamilorekin. Zure konferentzia antolatzen lagunduko dizugu, hizlariari asistentzia emanez eta korrontea bideratzeko kostu txikiko egitura alokatuko dizugu gure zerbitzariak baliatuz : http://www.Chamilo.org/hosting.php";
 $HClar = "Chamilo Laguntza";
 $HDoc = "Dokumentuak Laguntza";
-$DocContent = "Dokumentuak izeneko tresnak fitxategiak antolatzeko aukera emango dizu, hain zuzen, zuk duzun ordenagailuko fitxategien kudeatzaileak egiten duen bezala.
-   
-Web orri sinpleak sortu ditzakezu ('Sortu dokumentua') edo edozein motako fitxategiak kargatu (HTML, Word, Powerpoint, Excel, Acrobat, Flash, Quicktime etab.). Dena dela, gogoratu ezazu ikasleek software egokia eduki beharko dutela fitxategi horiek ireki eta exekutatzeko.
- 
-Fitxategi mota batzuek birusak eduki ditzakete; kontuz ibili birusek kutsatutako fitxategirik ez kargatzeko. Zure atariaren kudeatzaileak birusen aurkako softwarea instalatu beharko luke. Edozein kasutan, garrantzi handiko neurria da, dokumentuak kargatu aurretik,  birusen aurkako softwarea baliatuz konprobatzea.
- 
-Dokumentuak orden alfabetikoan aurkeztuko dira. Hala ere, dokumentuak beste era batera ordenatu nahi badituzu, izenaren aurretik zenbaki bat jarriz berrizendatu beharko (01, 02, 03, ...).  Gainera, Ikaskuntza Ibilibideak tresna ere erabili dezakezu, edukien aurkibide sofostikatua aurkezteko.  
-
-
-Sortu dokumentua
-
-Hautatu Sortu dokumentua > Jarri titulu bat (hutsunerik gabe, azenturik gabe) > Idatzi sartu nahi duzun testua > Erabili botoiak WYSIWYG (What You See Is What You Get-Zer ikusi, hura erdietsi) editatzailean informazioa, taulak, estiloak eta abar sartzeko. Web orri eraginkorrak lortzeko, oinarrizko hiru eginkizun guztiz menperatu beharko dituzu: Loturak, Irudiak eta Taulak. Kontuan eduki web orriek diseinu aukera gutxiago eskaintzen dituztela, esaterako, Ms-Word orriek baino. Ohartu zaitez editatzailean lan egiteko dokumentu bat sortzen duzun bezala, zuk badagoen edukia ebaki eta itsatsi dezakezula web orri batetik edo Word dokumentu batetik. Hauxe da zure Chamilo ikastarorako edukia inportatzeko oso bide erraza eta azkarra.
-
-•	Lotura bat gehitzeko, helburuko orriaren URL kopiatu behar duzu. Bi nabigazio leihoak/fitxak aldi berean irekitzea aholkatzen dizugu, batean Chamilo ikastaroa agertzen zaizula eta bestean webean zehar nabigatzeko. Behin bilatzen ari zaren orria aurkitu eta gero (konprobatu ezazu orri hau zure Chamilo ikastaroaren barruan egon daitekeela), kopiatu ezazu bere URL (Kontrol+C edo Apple+C), itzuli orriaren editatzailera, hautatu lotura izango den hitza, klikatu kate txikiaren ikonoaren gainean, itsasi ateratako leihoan helburuko orriaren URL eta bidali. Behin zure orria gorde eta gero, lotura konprobatu beharko da ea helburuko orria irekitzen duen. Atera zaizun Lotura menuan erabaki beharko duzu ea loturak orri/fitxa berri bat sortuko duen edo leiho berean zure Chamilo orria ordeztuko duen.
- 
-•	Irudi bat gehitzeko, lotura sortzeko prozesu berbera da. Nabigatu web zehar bigarren leiho batean, aurkitu irudia (irudia zure ikastaroko dokumentuen gunean kokatzeko egokia bada),  kopiatu ezazu bere URL (Kontrol+C edo Apple+C URL barran, URL osoa hautatu eta gero) eta orduan itzuli zure web orriaren editatzailera, kokatu sagua irudia agertzea nahi duzun lekuan bertan, orduan klikatu zuhaitz txikia irudikatzen duen ikonoaren gainean eta kopiatu URL eremuan helburuko irudiaren URL, aurreikusi irudia eta bidali. Kontuan eduki web orrietan irudiei ezin diezula tamaina berria eman PowerPoint aurkezpen batean egin daitekeen antzera. Modu berean, ezin izango duzu orriaren edonon kokatu irudia. 
-   
-•	Taula bat gehitzeko, kokatu sagua taula agertzea nahi duzun eremuan. Ondoren, hautatu taula irudikatzen duen ikonoa WYSIWYG (What You See Is What You Get-Zer ikusi, hura erdietsi) editatzailearen menuan, erabaki itzazu beharrezko dituzun zutabe eta lerro kopuruak eta bidali. Taula erakargarriak izateko, hurrengo balioak hautatzea aholkatzen dizugu: ertza=1, gelaxka arteko tartea=0, gelaxken betegarria=4. Kontuan eduki, sortu eta gero, ezingo duzula taularen tamaina berriro aldatu edo lerrorik eta zutaberik gehitu (sentitzen dugu, baina online editatzailea da hau, eta oraindik ez  da hitzen prozesadorea). 
-
-
-Dokumentua kargatzea
-
-•	Hautatu fitxategia zure ordenagailuan Arakatu botoia erabiliz \tpantailaren eskuinaldean.
-\t\t
-
-•	\t\t\tAbiarazi karga, Kargatzeko botoiarekin .\t\t
-\t\t
-
-•	\t\t\tKonprobatu Karga botoiaren azpiko kontrol-laukia ea dokumentua ZIP fitxategia den ala SCORM paketea. SCORM paketeak, nazioarteko arau baten arabera, SCORM deitutako fitxategi bereziak dira. Irakaskuntzako edukia hartzeko formatu berezia da eta, honi esker, Ikaskuntzaren Kudeaketa Sistema ezberdinen artean material hauek libreki elkar trukatzeko aukera ematen du. SCORM materialak plataforma independenteak dira eta horrelakoak inportatzea eta esportatzea oso erraza da.\t\t
-\t
-\t
-
-
-\t\tBerrizendatu dokumentua (edo karpeta/direktorioa)\t
-\t
-\t\t
-
-•	\t\t\tKlikatu  \t\t\tbotoiaren gainean,  Berrizendatu zutabean\t\t
-\t\t
-
-•	\t\t\tIdatzi beste izena dagokion eremuan (goiko ezkerraldean)\t\t
-\t\t
-
-•	\t\t\tBalidatu klikatzearen bidez .\t\t
-\t
-\t\t
-
-\t\t\tEzabatu dokumentua (edo karpeta)\t\t
-\t\t
-\t\t\t
-
-•	\t\t\t\tKlikatu  \t\t\t\t'Ezabatu' zutabean.\t\t\t
-\t\t
-\t\t
-
-\t\t\tErabiltzaileentzat ikusezin bihurtu dokumentua (edo karpeta)\t\t
-\t\t
-\t\t\t
-
-•	\t\t\t\tKlikatu  \t\t\t\t'Ikusgai/Ikusezin' zutabean.\t\t\t
-\t\t\t
-
-•	\t\t\t\tDokumentua (edo karpeta) artean izango da, baina ordutik aurrera ez da erabiltzaileentzat ikusgai egongo.\t\t\t
-\t\t\t
-
-•	\t\t\t\tBerriro ikusgai izatera itzultzeko, klikatu\t\t\t\t \t\t\t\t'Ikusgai/ikusezin' zutabearen gainean\t\t\t
-\t\t
-\t\t
-
-
-\t\t\tGehitu edo aldatu dokumentuari (edo karpetari) eginiko iruzkina\t\t
-\t\t
-\t\t\t
-
-•	\t\t\t\tKlikatu  \t\t\t\t'Iruzkina' zutabean\t\t\t
-\t\t\t
-
-•	\t\t\t\tIdatzi beste iruzkina dagokion eremuan (goiko eskuinaldean).\t\t\t
-\t\t\t
-
-•	\t\t\t\tBalidatu klikatzearen bidez \t\t\t.
-\t\t
-\t\t
-
-\t\tIruzkin bat ezabatzeko, klikatu  ,\t\tiruzkin zaharra ezabatzeko eta klikatu\t\t.\t\t
-________________________________________
-\t\t
-\t\t\tArtxiboaren bitartez duzun edukia antolatu dezakezu. Horretarako:\t\t
-\t\t
-
-\t\t\t\t\t\t\tSortu karpeta/direktorioa\t\t\t\t\t
-\t\t
-\t\t\t
-
-•	\t\t\t\tKlikatu\t\t\t\t \t\t\t\t'Sortu direktorioa' (goiko ezkerraldean)\t\t\t
-\t\t\t
-
-•	\t\t\t\tIdatzi direktorio berriaren izena dagokion eremuan (goiko ezkerraldean)\t\t\t
-\t\t\t
-
-•	\t\t\t\tBalidatu klikatzearen bidez .\t\t\t
-\t\t
-\t\t
-
-\t\t\tLekuz aldatu dokumentua (edo karpeta)\t\t
-\t\t
-\t\t\t
-
-•	\t\t\t\tKlikatu botoiaren gainean  \t\t\t\t'Lekuz aldatu' zutabean\t\t\t
-\t\t\t
-
-•	\t\t\t\tHautatu zer karpetara aldatu nahi duzun dokumentua (edo karpeta/direktorioa), dagokion korritzailearen menuan (goiko ezkerraldean) (kontuan hartzekoa: 'erroa' hitzak esan nahi du zerbitzariaren dokumentuen zuhaitzean ezin zarela maila hori baino goragoko maila batera joan).\t\t\t
-\t\t\t
-
-•	\t\t\t\tBalidatu gainean klikatuz .\t\t\t
-\t\t
-
-
-\t\t\t\t\t\t\tSortu Ikaskuntza Ibilbidea\t\t\t\t\t
-
-Ikaskuntza Ibilbide honek Edukien Aurkibide itxura du eta Edukien Aurkibide gisa erabili daiteke, baina gaitasun terminoetan askoz aukera gehiago eskaini diezaizkizueke. (Ikusi Ikaskuntza Ibilbidea Laguntza).";
 $HUser = "Erabiltzaileak Laguntza";
 $HExercise = "Azterketak Laguntza";
 $HPath = "Ikaskuntza Ibilbidea Laguntza";
@@ -4678,7 +4483,7 @@ $PeopleWhoAnswered = "Erantzun hau aukeratu duten pertsonak";
 $SurveyPublication = "Inkesta argitaratzea";
 $AdditonalUsers = "Erabiltzaile gehigarriak";
 $MailText = "Mezu elektronikoaren testua";
-$UseLinkSyntax = "Hautatutako erabiltzaileek mezu elektroniko bat jasoko dute gainean dagoen testua eta inkesta betetzeko klikatu beharko duten lotura bakarra dituena. Lotura testuaren edonon ipini nahiko bazenu, honakoa sartu beharko zenuke: ** lotura **. Orduan, lotura bakarrak automatikoki ordeztuko du etiketa hori. Zure testuari ** lotura ** gehitzen ez badiozu, lotura mezuaren amaieran gehituko da.";
+$UseLinkSyntax = "Hautatutako erabiltzaileek mezu elektroniko bat jasoko dute gainean dagoen testua eta inkesta betetzeko klikatu beharko duten lotura bakarra dituena. Lotura testuaren edonon ipini nahiko bazenu, honakoa sartu beharko zenuke: **link**. Orduan, lotura bakarrak automatikoki ordeztuko du etiketa hori. Zure testuari **link** gehitzen ez badiozu, lotura mezuaren amaieran gehituko da.";
 $DetailedReportByUser = "Erabiltzaile bakoitzaren gaineko txosten zehatza";
 $DetailedReportByQuestion = "Galdera bakoitzaren gaineko txosten zehatza";
 $ComparativeReportDetail = "Txosten honetan, bi galdera alderatu ditzakezu";
@@ -4946,7 +4751,7 @@ $Assignment = "Egiteko lanak";
 $ExpiryDateToSendWorkIs = "Lanak egiteko mugaeguna";
 $EnableExpiryDate = "Aktibatu mugaeguna";
 $EnableEndDate = "Aktibatu amaierako eguna";
-$IsNotPosibleSaveTheDocument = "Ezin izan da dokumentua gorde";
+$ImpossibleToSaveTheDocument = "Ezin izan da dokumentua gorde";
 $EndDateCannotBeBeforeTheExpireDate = "Amaierako data ezin da mugaegunaren aurrekoa izan";
 $SelectAFilter = "Hautatu iragazki bat";
 $FilterByNotExpired = "Iragazi amaitu gabekoak";
@@ -6142,12 +5947,9 @@ $EndDateMustBeMoreThanStartDate = "Azken data lehenagokoa izan behar da hasierak
 $ToAttend = "Asistentzia emateko";
 $AllUsersAreAutomaticallyRegistered = "Erabiltzaile guztiak automatikoki erregistratuko dira";
 $AssignCoach = "Eman arduraduna";
-$chamilo = "chamilo";
 $YourAccountOnXHasJustBeenApprovedByOneOfOurAdministrators = "Gure kudeatzaileetako batek %s -n egin duzun kontua onartu du.";
-$php = "php";
 $Off = "Desaktibaturik";
-$webserver = "Web zerbitzaria";
-$mysql = "MySQL";
+$WebServer = "Web zerbitzaria";
 $NotInserted = "Ez da sartu";
 $YouCanNowLoginAtXUsingTheLoginAndThePasswordYouHaveProvided = "Orain, %s -n identifikatu ahalko duzu, zuri emandako erabiltzaile izena eta pasahitza erabiliz.";
 $HaveFun = "Ongi pasa";
@@ -6966,6 +6768,7 @@ $CasMainPortComment = "CAS zerbitzari nagusiarekin konektatzeko ataka";
 $CasMainProtocolTitle = "CAS zerbitzari nagusiaren protokoloa";
 $CAS1Text = "CAS 1";
 $CAS2Text = "CAS 2";
+$CAS3Text = "CAS 3";
 $SAMLText = "SAML";
 $CasMainProtocolComment = "Gu CAS zerbitzariarekin konektatzeko protokoloa";
 $CasUserAddActivateTitle = "Gaitu erabiltzaileak CAS bidez erregistratzea";
@@ -7413,4 +7216,8 @@ $DataTableSearch = "Bilatu";
 $HideColumn = "Ezkutatu zutabea";
 $DisplayColumn = "Erakutsi zutabea";
 $LegalAgreementAccepted = "Lege hitzarmena onartu da";
+$TimeSpentInLp = "Ikasgaian emandako denbora";
+$IHaveFinishedTheLessonsNotifyTheTeacher = "Bukatu ditut ikastaroko ikasgaiak. Irakasleari jakinaraztea";
+$TimeSpentTimeRequired = "Erabilitako denbora / Behar izandako denbora";
+$ProgressSpentInLp = "Aurrerapena edukietan";
 ?>

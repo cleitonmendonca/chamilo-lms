@@ -1,17 +1,18 @@
 <?php
+/* For license terms, see /license.txt */
+
 /**
- * List of courses
+ * List of courses.
+ *
  * @package chamilo.plugin.buycourses
- */
-/**
- * Initialization
  */
 $cidReset = true;
 
-require_once '../../../main/inc/global.inc.php';
+require_once __DIR__.'/../../../main/inc/global.inc.php';
 
 $plugin = BuyCoursesPlugin::create();
 $includeSessions = $plugin->get('include_sessions') === 'true';
+$includeServices = $plugin->get('include_services') === 'true';
 
 if (!$includeSessions) {
     api_not_allowed(true);
@@ -21,7 +22,14 @@ $nameFilter = null;
 $minFilter = 0;
 $maxFilter = 0;
 
-$form = new FormValidator('search_filter_form', 'get', null, null, [], FormValidator::LAYOUT_INLINE);
+$form = new FormValidator(
+    'search_filter_form',
+    'get',
+    null,
+    null,
+    [],
+    FormValidator::LAYOUT_INLINE
+);
 
 if ($form->validate()) {
     $formValues = $form->getSubmitValues();
@@ -47,17 +55,24 @@ $form->addElement(
 $form->addHtml('<hr>');
 $form->addButtonFilter(get_lang('Search'));
 
-$sessionList = $plugin->getCatalogSessionList($nameFilter, $minFilter, $maxFilter);
+$pageSize = BuyCoursesPlugin::PAGINATION_PAGE_SIZE;
+$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$first = $pageSize * ($currentPage - 1);
+$sessionList = $plugin->getCatalogSessionList($first, $pageSize, $nameFilter, $minFilter, $maxFilter);
+$totalItems = $plugin->getCatalogSessionList($first, $pageSize, $nameFilter, $minFilter, $maxFilter, 'count');
+$pagesCount = ceil($totalItems / $pageSize);
+$url = api_get_self().'?';
+$pagination = Display::getPagination($url, $currentPage, $pagesCount, $totalItems);
 
-//View
+// View
 if (api_is_platform_admin()) {
     $interbreadcrumb[] = [
-        'url' => 'configuration.php',
-        'name' => $plugin->get_lang('AvailableCoursesConfiguration')
+        'url' => 'list.php',
+        'name' => $plugin->get_lang('AvailableCoursesConfiguration'),
     ];
     $interbreadcrumb[] = [
         'url' => 'paymentsetup.php',
-        'name' => $plugin->get_lang('PaymentsConfiguration')
+        'name' => $plugin->get_lang('PaymentsConfiguration'),
     ];
 }
 
@@ -66,8 +81,10 @@ $templateName = $plugin->get_lang('CourseListOnSale');
 $template = new Template($templateName);
 $template->assign('search_filter_form', $form->returnForm());
 $template->assign('sessions_are_included', $includeSessions);
+$template->assign('services_are_included', $includeServices);
 $template->assign('showing_sessions', true);
 $template->assign('sessions', $sessionList);
+$template->assign('pagination', $pagination);
 
 $content = $template->fetch('buycourses/view/catalog.tpl');
 

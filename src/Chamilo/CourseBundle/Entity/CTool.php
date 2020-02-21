@@ -6,7 +6,7 @@ namespace Chamilo\CourseBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * CTool
+ * CTool.
  *
  * @ORM\Table(
  *  name="c_tool",
@@ -20,114 +20,134 @@ use Doctrine\ORM\Mapping as ORM;
 class CTool
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="iid", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue
      */
-    private $iid;
+    protected $iid;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=true)
      */
-    private $id;
+    protected $id;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="c_id", type="integer")
      */
-    private $cId;
+    protected $cId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      */
-    private $name;
+    protected $name;
 
     /**
      * @var string
      *
      * @ORM\Column(name="link", type="string", length=255, nullable=false)
      */
-    private $link;
+    protected $link;
 
     /**
      * @var string
      *
      * @ORM\Column(name="image", type="string", length=255, nullable=true)
      */
-    private $image;
+    protected $image;
 
     /**
-     * @var boolean
+     * @var bool
      *
      * @ORM\Column(name="visibility", type="boolean", nullable=true)
      */
-    private $visibility;
+    protected $visibility;
 
     /**
      * @var string
      *
      * @ORM\Column(name="admin", type="string", length=255, nullable=true)
      */
-    private $admin;
+    protected $admin;
 
     /**
      * @var string
      *
      * @ORM\Column(name="address", type="string", length=255, nullable=true)
      */
-    private $address;
+    protected $address;
 
     /**
-     * @var boolean
+     * @var bool
      *
      * @ORM\Column(name="added_tool", type="boolean", nullable=true)
      */
-    private $addedTool;
+    protected $addedTool;
 
     /**
      * @var string
      *
      * @ORM\Column(name="target", type="string", length=20, nullable=false)
      */
-    private $target;
+    protected $target;
 
     /**
      * @var string
      *
      * @ORM\Column(name="category", type="string", length=20, nullable=false, options={"default" = "authoring"})
      */
-    private $category;
+    protected $category;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="session_id", type="integer", nullable=true)
      */
-    private $sessionId;
+    protected $sessionId;
 
     /**
      * @var string
      *
      * @ORM\Column(name="description", type="text", nullable=true)
      */
-    private $description;
+    protected $description;
 
     /**
      * @var string
      *
      * @ORM\Column(name="custom_icon", type="string", length=255, nullable=true)
      */
-    private $customIcon;
+    protected $customIcon;
 
     /**
-     * Set name
+     * @return int
+     */
+    public function getIid()
+    {
+        return $this->iid;
+    }
+
+    /**
+     * @param int $iid
+     *
+     * @return CTool
+     */
+    public function setIid($iid)
+    {
+        $this->iid = $iid;
+
+        return $this;
+    }
+
+    /**
+     * Set name.
      *
      * @param string $name
      *
@@ -141,7 +161,7 @@ class CTool
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -151,9 +171,10 @@ class CTool
     }
 
     /**
-     * Set link
+     * Set link.
      *
      * @param string $link
+     *
      * @return CTool
      */
     public function setLink($link)
@@ -164,7 +185,7 @@ class CTool
     }
 
     /**
-     * Get link
+     * Get link.
      *
      * @return string
      */
@@ -174,9 +195,10 @@ class CTool
     }
 
     /**
-     * Set image
+     * Set image.
      *
      * @param string $image
+     *
      * @return CTool
      */
     public function setImage($image)
@@ -187,7 +209,7 @@ class CTool
     }
 
     /**
-     * Get image
+     * Get image.
      *
      * @return string
      */
@@ -197,9 +219,10 @@ class CTool
     }
 
     /**
-     * Set visibility
+     * Set visibility.
      *
-     * @param boolean $visibility
+     * @param bool $visibility
+     *
      * @return CTool
      */
     public function setVisibility($visibility)
@@ -210,9 +233,9 @@ class CTool
     }
 
     /**
-     * Get visibility
+     * Get visibility.
      *
-     * @return boolean
+     * @return bool
      */
     public function getVisibility()
     {
@@ -220,9 +243,10 @@ class CTool
     }
 
     /**
-     * Set admin
+     * Set admin.
      *
      * @param string $admin
+     *
      * @return CTool
      */
     public function setAdmin($admin)
@@ -233,7 +257,7 @@ class CTool
     }
 
     /**
-     * Get admin
+     * Get admin.
      *
      * @return string
      */
@@ -243,9 +267,10 @@ class CTool
     }
 
     /**
-     * Set address
+     * Set address.
      *
      * @param string $address
+     *
      * @return CTool
      */
     public function setAddress($address)
@@ -256,7 +281,7 @@ class CTool
     }
 
     /**
-     * Get address
+     * Get address.
      *
      * @return string
      */
@@ -266,9 +291,10 @@ class CTool
     }
 
     /**
-     * Set addedTool
+     * Set addedTool.
      *
-     * @param boolean $addedTool
+     * @param bool $addedTool
+     *
      * @return CTool
      */
     public function setAddedTool($addedTool)
@@ -279,9 +305,9 @@ class CTool
     }
 
     /**
-     * Get addedTool
+     * Get addedTool.
      *
-     * @return boolean
+     * @return bool
      */
     public function getAddedTool()
     {
@@ -289,9 +315,10 @@ class CTool
     }
 
     /**
-     * Set target
+     * Set target.
      *
      * @param string $target
+     *
      * @return CTool
      */
     public function setTarget($target)
@@ -302,7 +329,7 @@ class CTool
     }
 
     /**
-     * Get target
+     * Get target.
      *
      * @return string
      */
@@ -312,9 +339,10 @@ class CTool
     }
 
     /**
-     * Set category
+     * Set category.
      *
      * @param string $category
+     *
      * @return CTool
      */
     public function setCategory($category)
@@ -325,7 +353,7 @@ class CTool
     }
 
     /**
-     * Get category
+     * Get category.
      *
      * @return string
      */
@@ -335,9 +363,10 @@ class CTool
     }
 
     /**
-     * Set sessionId
+     * Set sessionId.
      *
-     * @param integer $sessionId
+     * @param int $sessionId
+     *
      * @return CTool
      */
     public function setSessionId($sessionId)
@@ -348,9 +377,9 @@ class CTool
     }
 
     /**
-     * Get sessionId
+     * Get sessionId.
      *
-     * @return integer
+     * @return int
      */
     public function getSessionId()
     {
@@ -358,9 +387,10 @@ class CTool
     }
 
     /**
-     * Set id
+     * Set id.
      *
-     * @param integer $id
+     * @param int $id
+     *
      * @return CTool
      */
     public function setId($id)
@@ -371,9 +401,9 @@ class CTool
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -381,9 +411,10 @@ class CTool
     }
 
     /**
-     * Set cId
+     * Set cId.
      *
-     * @param integer $cId
+     * @param int $cId
+     *
      * @return CTool
      */
     public function setCId($cId)
@@ -394,9 +425,9 @@ class CTool
     }
 
     /**
-     * Get cId
+     * Get cId.
      *
-     * @return integer
+     * @return int
      */
     public function getCId()
     {
@@ -413,6 +444,7 @@ class CTool
 
     /**
      * @param string $description
+     *
      * @return CTool
      */
     public function setDescription($description)
@@ -432,6 +464,7 @@ class CTool
 
     /**
      * @param string $customIcon
+     *
      * @return CTool
      */
     public function setCustomIcon($customIcon)

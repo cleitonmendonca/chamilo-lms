@@ -1,19 +1,23 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CoreBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * ExtraFieldOptionRelFieldOption
+ * ExtraFieldOptionRelFieldOption.
  *
- * @ORM\Table(name="extra_field_option_rel_field_option", uniqueConstraints={@ORM\UniqueConstraint(name="idx", columns={"field_id", "role_id", "field_option_id", "related_field_option_id"})})
+ * @ORM\Table(
+ *     name="extra_field_option_rel_field_option",
+ *     uniqueConstraints={@ORM\UniqueConstraint(name="idx", columns={"field_id", "role_id", "field_option_id", "related_field_option_id"})}
+ * )
  * @ORM\Entity
  */
 class ExtraFieldOptionRelFieldOption
 {
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", precision=0, scale=0, nullable=false, unique=false)
      * @ORM\Id
@@ -22,37 +26,37 @@ class ExtraFieldOptionRelFieldOption
     protected $id;
 
     /**
-     * @var integer
-     *
-     * @ORM\Column(name="field_id", type="integer", precision=0, scale=0, nullable=true, unique=false)
-     */
-    private $fieldId;
-
-    /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="field_option_id", type="integer", precision=0, scale=0, nullable=true, unique=false)
      */
     protected $fieldOptionId;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="related_field_option_id", type="integer", precision=0, scale=0, nullable=true, unique=false)
      */
     protected $relatedFieldOptionId;
 
-     /**
-     * @var integer
+    /**
+     * @var int
      *
      * @ORM\Column(name="role_id", type="integer", precision=0, scale=0, nullable=true, unique=false)
      */
     protected $roleId;
 
     /**
-     * Get id
+     * @var int
      *
-     * @return integer
+     * @ORM\Column(name="field_id", type="integer", precision=0, scale=0, nullable=true, unique=false)
+     */
+    protected $fieldId;
+
+    /**
+     * Get id.
+     *
+     * @return int
      */
     public function getId()
     {
@@ -60,9 +64,10 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Set fieldId
+     * Set fieldId.
      *
-     * @param integer $fieldId
+     * @param int $fieldId
+     *
      * @return ExtraFieldOptionRelFieldOption
      */
     public function setFieldId($fieldId)
@@ -73,9 +78,9 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Get fieldId
+     * Get fieldId.
      *
-     * @return integer
+     * @return int
      */
     public function getFieldId()
     {
@@ -83,9 +88,10 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Set fieldOptionId
+     * Set fieldOptionId.
      *
-     * @param integer $fieldOptionId
+     * @param int $fieldOptionId
+     *
      * @return ExtraFieldOptionRelFieldOption
      */
     public function setFieldOptionId($fieldOptionId)
@@ -96,9 +102,9 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Get fieldOptionId
+     * Get fieldOptionId.
      *
-     * @return integer
+     * @return int
      */
     public function getFieldOptionId()
     {
@@ -106,9 +112,10 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Set relatedFieldOptionId
+     * Set relatedFieldOptionId.
      *
-     * @param integer $relatedFieldOptionId
+     * @param int $relatedFieldOptionId
+     *
      * @return ExtraFieldOptionRelFieldOption
      */
     public function setRelatedFieldOptionId($relatedFieldOptionId)
@@ -119,19 +126,20 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Get relatedFieldOptionId
+     * Get relatedFieldOptionId.
      *
-     * @return integer
+     * @return int
      */
     public function getRelatedFieldOptionId()
     {
         return $this->relatedFieldOptionId;
     }
 
-     /**
-     * Set roleId
+    /**
+     * Set roleId.
      *
-     * @param integer $roleId
+     * @param int $roleId
+     *
      * @return ExtraFieldOptionRelFieldOption
      */
     public function setRoleId($roleId)
@@ -142,9 +150,9 @@ class ExtraFieldOptionRelFieldOption
     }
 
     /**
-     * Get roleId
+     * Get roleId.
      *
-     * @return integer
+     * @return int
      */
     public function getRoleId()
     {

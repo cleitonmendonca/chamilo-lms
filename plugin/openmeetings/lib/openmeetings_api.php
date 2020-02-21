@@ -1,10 +1,11 @@
 <?php
 /**
- * OpenMeetings API
+ * OpenMeetings API.
+ *
  * @package chamilo.plugin.openmeetings
  */
 /**
- * Class OpenMeetingsAPI
+ * Class OpenMeetingsAPI.
  */
 class OpenMeetingsAPI
 {
@@ -13,12 +14,12 @@ class OpenMeetingsAPI
     private $_serverBaseUrl;
 
     /**
-     * Constructor
+     * Constructor.
      */
     public function __construct()
     {
         $this->_user = CONFIG_OPENMEETINGS_USER;
         $this->_pass = CONFIG_OPENMEETINGS_PASS;
-        $this->_serverBaseUrl  = CONFIG_OPENMEETINGS_SERVER_URL;
+        $this->_serverBaseUrl = CONFIG_OPENMEETINGS_SERVER_URL;
     }
 }

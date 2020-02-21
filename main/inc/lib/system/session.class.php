@@ -4,7 +4,7 @@
 namespace System;
 
 /**
- * Session Management
+ * Session Management.
  *
  * @see ChamiloSession
  *
@@ -13,18 +13,70 @@ namespace System;
  */
 class Session implements \ArrayAccess
 {
+    /**
+     * @param string $name
+     */
+    public function __unset($name)
+    {
+        unset($_SESSION[$name]);
+    }
 
-    static function read($variable, $default = null)
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        return self::has($name);
+    }
+
+    /**
+     * It it exists returns the value stored at the specified offset.
+     * If offset does not exists returns null. Do not trigger a warning.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return self::read($name);
+    }
+
+    /**
+     * @param string $name
+     * @param mixed  $value
+     */
+    public function __set($name, $value)
+    {
+        self::write($name, $value);
+    }
+
+    /**
+     * @param string $variable
+     * @param null   $default
+     *
+     * @return mixed
+     */
+    public static function read($variable, $default = null)
     {
         return isset($_SESSION[$variable]) ? $_SESSION[$variable] : $default;
     }
 
-    static function write($variable, $value)
+    /**
+     * @param string $variable
+     * @param mixed  $value
+     */
+    public static function write($variable, $value)
     {
         $_SESSION[$variable] = $value;
     }
 
-    static function erase($variable)
+    /**
+     * @param string $variable
+     */
+    public static function erase($variable)
     {
         $variable = (string) $variable;
         if (isset($GLOBALS[$variable])) {
@@ -39,31 +91,37 @@ class Session implements \ArrayAccess
      * Returns true if session has variable set up, false otherwise.
      *
      * @param string $variable
-     * @return mixed value
+     *
+     * @return bool
      */
-    static function has($variable)
+    public static function has($variable)
     {
         return isset($_SESSION[$variable]);
     }
 
-    static function clear()
+    /**
+     * Clear session.
+     */
+    public static function clear()
     {
         session_regenerate_id();
         session_unset();
-        $_SESSION = array();
+        $_SESSION = [];
     }
 
-    static function destroy()
+    /**
+     * Destroy session.
+     */
+    public static function destroy()
     {
         session_unset();
-        $_SESSION = array();
+        $_SESSION = [];
         session_destroy();
     }
 
     /*
      * ArrayAccess
      */
-
     public function offsetExists($offset)
     {
         return isset($_SESSION[$offset]);
@@ -74,7 +132,8 @@ class Session implements \ArrayAccess
      * If offset does not exists returns null. Do not trigger a warning.
      *
      * @param string $offset
-     * @return any
+     *
+     * @return mixed
      */
     public function offsetGet($offset)
     {
@@ -90,43 +149,4 @@ class Session implements \ArrayAccess
     {
         unset($_SESSION[$offset]);
     }
-
-    /**
-     * Magical methods
-     *
-     */
-
-    public function __unset($name)
-    {
-        unset($_SESSION[$name]);
-    }
-
-    public function __isset($name)
-    {
-        return self::has($name);
-    }
-
-    /**
-     * It it exists returns the value stored at the specified offset.
-     * If offset does not exists returns null. Do not trigger a warning.
-     *
-     * @param string $name
-     * @return any
-     *
-     */
-    function __get($name)
-    {
-        return self::read($name);
-    }
-
-    /**
-     *
-     * @param string $name
-     * @param any $value
-     */
-    function __set($name, $value)
-    {
-        self::write($name, $value);
-    }
-
 }

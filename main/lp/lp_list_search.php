@@ -2,39 +2,33 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * Script to draw the results from a query
+ * Script to draw the results from a query.
+ *
  * @package chamilo.learnpath
+ *
  * @author Diego Escalante Urrelo <diegoe@gmail.com>
  * @author Marco Antonio Villegas Vega <marvil07@gmail.com>
  * @author Julio Montoya <gugli100@gmail.com> bug fixing
- *
  */
-
 require api_get_path(LIBRARY_PATH).'search/search_widget.php';
 require api_get_path(LIBRARY_PATH).'search/ChamiloQuery.php';
-require_once api_get_path(LIBRARY_PATH).'search/IndexableChunk.class.php';
 require_once api_get_path(LIBRARY_PATH).'specific_fields_manager.lib.php';
 
-$htmlHeadXtra[] = '<link rel="stylesheet" type="text/css" href="'. api_get_path(WEB_CODE_PATH) .'lp/lp_list_search.css" />';
 Event::event_access_tool(TOOL_SEARCH);
 
-if (isset($_SESSION['gradebook'])) {
-    $gradebook = $_SESSION['gradebook'];
+if (api_is_in_gradebook()) {
+    $interbreadcrumb[] = [
+        'url' => Category::getUrl(),
+        'name' => get_lang('ToolGradebook'),
+    ];
 }
 
-if (!empty($gradebook) && $gradebook == 'view') {
-    $interbreadcrumb[]= array(
-        'url' => '../gradebook/'.$_SESSION['gradebook_dest'],
-        'name' => get_lang('ToolGradebook')
-    );
-}
-
-$interbreadcrumb[] = array('url' => './index.php', 'name' => get_lang(ucfirst(TOOL_SEARCH)));
+$interbreadcrumb[] = ['url' => './index.php', 'name' => get_lang(ucfirst(TOOL_SEARCH))];
 search_widget_prepare($htmlHeadXtra);
 Display::display_header(null, 'Path');
 
 if (api_get_setting('search_enabled') !== 'true') {
-    Display::display_error_message(get_lang('SearchFeatureNotEnabledComment'));
+    echo Display::return_message(get_lang('SearchFeatureNotEnabledComment'), 'error');
 } else {
     if (!empty($_GET['action'])) {
         search_widget_show($_GET['action']);
@@ -45,7 +39,7 @@ if (api_get_setting('search_enabled') !== 'true') {
 
 // Initialize.
 $op = 'or';
-if (!empty($_REQUEST['operator']) && in_array($op, array('or', 'and'))) {
+if (!empty($_REQUEST['operator']) && in_array($op, ['or', 'and'])) {
     $op = $_REQUEST['operator'];
 }
 
@@ -56,17 +50,20 @@ if (isset($_REQUEST['query'])) {
 }
 
 $mode = 'default';
-if (isset($_GET['mode']) && in_array($_GET['mode'], array('gallery', 'default'))) {
+if (isset($_GET['mode']) && in_array($_GET['mode'], ['gallery', 'default'])) {
     $mode = $_GET['mode'];
 }
 
-$term_array = array();
+$term_array = [];
 $specific_fields = get_specific_field_list();
 foreach ($specific_fields as $specific_field) {
-    if (!empty($_REQUEST['sf_'. $specific_field['code']])) {
-        $values = $_REQUEST['sf_'. $specific_field['code']];
+    if (!empty($_REQUEST['sf_'.$specific_field['code']])) {
+        $values = $_REQUEST['sf_'.$specific_field['code']];
         if (in_array('__all__', $values)) {
-            $sf_terms_for_code = xapian_get_all_terms(1000, $specific_field['code']);
+            $sf_terms_for_code = xapian_get_all_terms(
+                1000,
+                $specific_field['code']
+            );
             foreach ($sf_terms_for_code as $term) {
                 if (!empty($term)) {
                     $term_array[] = chamilo_get_boolean_query($term['name']); // Here name includes prefix.
@@ -76,7 +73,7 @@ foreach ($specific_fields as $specific_field) {
             foreach ($values as $term) {
                 if (!empty($term)) {
                     $prefix = $specific_field['code'];
-                    $term_array[] = chamilo_get_boolean_query($prefix . $term);
+                    $term_array[] = chamilo_get_boolean_query($prefix.$term);
                 }
             }
         }
@@ -92,11 +89,11 @@ foreach ($specific_fields as $specific_field) {
 }
 
 // Get right group of terms to show on multiple select.
-$fixed_queries = array();
+$fixed_queries = [];
 $course_filter = null;
-if (($cid=api_get_course_id()) != -1 ) {
+if (($cid = api_get_course_id()) != -1) {
     // Results only from actual course.
-    $course_filter = chamilo_get_boolean_query(XAPIAN_PREFIX_COURSEID . $cid);
+    $course_filter = chamilo_get_boolean_query(XAPIAN_PREFIX_COURSEID.$cid);
 }
 
 if (count($term_array)) {
@@ -111,7 +108,7 @@ if (count($term_array)) {
     }
 } else {
     if (!empty($query)) {
-        $fixed_queries = array($course_filter);
+        $fixed_queries = [$course_filter];
     }
 }
 
@@ -128,7 +125,7 @@ if ($query) {
 }
 
 // Prepare blocks to show.
-$blocks = array();
+$blocks = [];
 
 if ($count > 0) {
     foreach ($results as $result) {
@@ -146,13 +143,12 @@ if ($count > 0) {
         }
 
         if ($mode == 'gallery') {
-            $title = $a_prefix.str_replace('_', ' ', $result['title']). $a_suffix;
-            $blocks[] = array(1 => 
-                $a_prefix .'<img src="'.$result['thumbnail'].'" />'. $a_suffix .'<br />'.$title.'<br />'.$result['author'],
-            );
+            $title = $a_prefix.str_replace('_', ' ', $result['title']).$a_suffix;
+            $blocks[] = [1 => $a_prefix.'<img src="'.$result['thumbnail'].'" />'.$a_suffix.'<br />'.$title.'<br />'.$result['author'],
+            ];
         } else {
-            $title = '<div style="text-align:left;">'. $a_prefix . $result['title']. $a_suffix .(!empty($result['author']) ? ' '.$result['author'] : '').'<div>';
-            $blocks[] = array(1 => $title);
+            $title = '<div style="text-align:left;">'.$a_prefix.$result['title'].$a_suffix.(!empty($result['author']) ? ' '.$result['author'] : '').'<div>';
+            $blocks[] = [1 => $title];
         }
     }
 }
@@ -163,25 +159,24 @@ if (count($blocks) > 0) {
     $s->display_mode = $mode; // default
     $s->display_mode_params = 3;
     $s->per_page = 9;
-    $additional_parameters = array(
+    $additional_parameters = [
         'mode' => $mode,
         'action' => 'search',
         'query' => Security::remove_XSS($_REQUEST['query']),
-    );
+    ];
     $get_params = '';
     foreach ($specific_fields as $specific_field) {
-        if (isset($_REQUEST['sf_'. $specific_field['code']])) {
-            $values = $_REQUEST['sf_'. $specific_field['code']];
+        if (isset($_REQUEST['sf_'.$specific_field['code']])) {
+            $values = $_REQUEST['sf_'.$specific_field['code']];
             //Sortable additional_parameters doesn't accept multi dimensional arrays
             //$additional_parameters[ 'sf_'. $specific_field['code'] ] = $values;
-            foreach ( $values as $value ) {
-                $get_params .= '&sf_' . $specific_field['code'] .'[]='. $value;
+            foreach ($values as $value) {
+                $get_params .= '&sf_'.$specific_field['code'].'[]='.$value;
             }
             $get_params .= '&';
         }
     }
     $additional_parameters['operator'] = $op;
-
     $s->additional_parameters = $additional_parameters;
 
     if ($mode == 'default') {

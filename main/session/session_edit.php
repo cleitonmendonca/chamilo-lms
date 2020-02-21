@@ -1,28 +1,26 @@
 <?php
+
 /* For licensing terms, see /license.txt */
 
 /**
- * Sessions edition script
- * @package chamilo.admin
+ * Sessions edition script.
  */
-
 $cidReset = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 // setting the section (for the tabs)
 $this_section = SECTION_PLATFORM_ADMIN;
-
 $formSent = 0;
 
 // Crop picture plugin for session images
-$htmlHeadXtra[] = '<link  href="'. api_get_path(WEB_PATH) .'web/assets/cropper/dist/cropper.min.css" rel="stylesheet">';
-$htmlHeadXtra[] = '<script src="'. api_get_path(WEB_PATH) .'web/assets/cropper/dist/cropper.min.js"></script>';
+$htmlHeadXtra[] = api_get_css_asset('cropper/dist/cropper.min.css');
+$htmlHeadXtra[] = api_get_asset('cropper/dist/cropper.min.js');
 
 // Database Table Definitions
 $tbl_user = Database::get_main_table(TABLE_MAIN_USER);
 $tbl_session = Database::get_main_table(TABLE_MAIN_SESSION);
 
-$id = intval($_GET['id']);
+$id = (int) $_GET['id'];
 
 SessionManager::protectSession($id);
 
@@ -52,15 +50,13 @@ if (!empty($sessionInfo['coach_access_end_date'])) {
     $sessionInfo['coach_access_end_date'] = api_get_local_time($sessionInfo['coach_access_end_date']);
 }
 
-$id_coach = $sessionInfo['id_coach'];
 $tool_name = get_lang('EditSession');
 
-//$interbreadcrumb[] = array('url' => 'index.php',"name" => get_lang('PlatformAdmin'));
-$interbreadcrumb[] = array('url' => "session_list.php","name" => get_lang('SessionList'));
-$interbreadcrumb[] = array('url' => "resume_session.php?id_session=".$id,"name" => get_lang('SessionOverview'));
+$interbreadcrumb[] = ['url' => 'session_list.php', 'name' => get_lang('SessionList')];
+$interbreadcrumb[] = ['url' => 'resume_session.php?id_session='.$id, 'name' => get_lang('SessionOverview')];
 
 if (isset($_POST['formSent']) && $_POST['formSent']) {
-	$formSent = 1;
+    $formSent = 1;
 }
 
 $order_clause = 'ORDER BY ';
@@ -71,24 +67,24 @@ $sql = "SELECT user_id,lastname,firstname,username
         WHERE status='1'".$order_clause;
 
 if (api_is_multiple_url_enabled()) {
-	$table_access_url_rel_user= Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
-	$access_url_id = api_get_current_access_url_id();
-	if ($access_url_id != -1) {
-		$sql = "SELECT DISTINCT u.user_id,lastname,firstname,username
-		        FROM $tbl_user u
+    $table_access_url_rel_user = Database::get_main_table(TABLE_MAIN_ACCESS_URL_REL_USER);
+    $access_url_id = api_get_current_access_url_id();
+    if ($access_url_id != -1) {
+        $sql = "SELECT DISTINCT u.user_id,lastname,firstname,username
+                FROM $tbl_user u
                 INNER JOIN $table_access_url_rel_user url_rel_user
                 ON (url_rel_user.user_id = u.user_id)
-			    WHERE status='1' AND access_url_id = '$access_url_id' $order_clause";
-	}
+                WHERE status='1' AND access_url_id = '$access_url_id' $order_clause";
+    }
 }
 
 $result = Database::query($sql);
 $coaches = Database::store_result($result);
 $thisYear = date('Y');
 
-$coachesOption = array(
-    '' => '----- ' . get_lang('None') . ' -----'
-);
+$coachesOption = [
+    '' => '----- '.get_lang('None').' -----',
+];
 
 foreach ($coaches as $coach) {
     $personName = api_get_person_name($coach['firstname'], $coach['lastname']);
@@ -97,9 +93,9 @@ foreach ($coaches as $coach) {
 
 $categoriesList = SessionManager::get_all_session_category();
 
-$categoriesOption = array(
-    '0' => get_lang('None')
-);
+$categoriesOption = [
+    '0' => get_lang('None'),
+];
 
 if ($categoriesList != false) {
     foreach ($categoriesList as $categoryItem) {
@@ -107,15 +103,15 @@ if ($categoriesList != false) {
     }
 }
 
-$formAction = api_get_self() . '?';
-$formAction .= http_build_query(array(
+$formAction = api_get_self().'?';
+$formAction .= http_build_query([
     'page' => Security::remove_XSS($_GET['page']),
-    'id' => $id
-));
+    'id' => $id,
+]);
 
 $form = new FormValidator('edit_session', 'post', $formAction);
 $form->addElement('header', $tool_name);
-$result = SessionManager::setForm($form, $id);
+$result = SessionManager::setForm($form, $sessionInfo);
 
 $htmlHeadXtra[] = '
 <script>
@@ -157,8 +153,9 @@ if ($form->validate()) {
     if ($params['access'] == 1) {
         $duration = null;
     }
+
     $description = $params['description'];
-    $showDescription = isset($params['show_description']) ? 1: 0;
+    $showDescription = isset($params['show_description']) ? 1 : 0;
     $sendSubscriptionNotification = isset($params['send_subscription_notification']);
     $isThisImageCropped = isset($params['picture_crop_result']);
 
@@ -172,6 +169,8 @@ if ($form->validate()) {
     if (isset($extraFields['extra_image']) && $isThisImageCropped) {
         $extraFields['extra_image']['crop_parameters'] = $params['picture_crop_result'];
     }
+
+    $status = isset($params['status']) ? $params['status'] : 0;
 
     $return = SessionManager::edit_session(
         $id,
@@ -190,13 +189,15 @@ if ($form->validate()) {
         $duration,
         $extraFields,
         null,
-        $sendSubscriptionNotification
+        $sendSubscriptionNotification,
+        $status
     );
 
-    if ($return == strval(intval($return))) {
-		header('Location: resume_session.php?id_session=' . $return);
-		exit();
-	}
+    if ($return) {
+        Display::addFlash(Display::return_message(get_lang('Updated')));
+        header('Location: resume_session.php?id_session='.$return);
+        exit();
+    }
 }
 
 // display the header
@@ -205,8 +206,7 @@ $form->display();
 ?>
 
 <script>
-$(document).ready( function() {
-
+$(function() {
 <?php
     if (!empty($sessionInfo['duration'])) {
         echo 'accessSwitcher(0);';
@@ -223,16 +223,14 @@ function accessSwitcher(accessFromReady) {
         access = accessFromReady;
         $('[name=access]').val(access);
     }
-
     if (access == 1) {
-        $('#duration').hide();
+        $('#duration_div').hide();
         $('#date_fields').show();
+        emptyDuration();
     } else {
-
-        $('#duration').show();
+        $('#duration_div').show();
         $('#date_fields').hide();
     }
-    emptyDuration();
 }
 
 function emptyDuration() {
@@ -241,7 +239,7 @@ function emptyDuration() {
     }
 }
 
-$(document).on('ready', function (){
+$(function() {
     $('#show-options').on('click', function (e) {
         e.preventDefault();
         var display = $('#options').css('display');

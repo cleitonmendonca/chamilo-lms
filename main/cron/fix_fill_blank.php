@@ -1,7 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_admin_script();
 
@@ -9,7 +9,7 @@ $table = Database::get_course_table(TABLE_QUIZ_ANSWER);
 
 $execute = isset($_GET['execute']) ? $_GET['execute'] : null;
 $courseId = isset($_GET['c_id']) ? $_GET['c_id'] : null;
-$questionId  = isset($_GET['question_id']) ? $_GET['question_id'] : null;
+$questionId = isset($_GET['question_id']) ? $_GET['question_id'] : null;
 
 $sql2 = "SELECT * FROM $table WHERE answer LIKE '%[%]%'";
 
@@ -69,9 +69,9 @@ while ($row = Database::fetch_array($res2)) {
             echo '<pre>';
             var_dump($sql4);
             echo 'Original:<br />';
-            echo($answerOriginal);
+            echo $answerOriginal;
             echo 'Fixed:<br />';
-            echo($answerFixedNotEscape);
+            echo $answerFixedNotEscape;
             echo '</pre>';
             echo '----------<br />';
         }

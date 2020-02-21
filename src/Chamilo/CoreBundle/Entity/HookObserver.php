@@ -1,11 +1,12 @@
 <?php
+/* For licensing terms, see /license.txt */
 
 namespace Chamilo\CoreBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * HookObserver
+ * HookObserver.
  *
  * @ORM\Table(name="hook_observer", uniqueConstraints={@ORM\UniqueConstraint(name="class_name", columns={"class_name"})})
  * @ORM\Entity
@@ -17,37 +18,36 @@ class HookObserver
      *
      * @ORM\Column(name="class_name", type="string", length=255, nullable=true)
      */
-    private $className;
+    protected $className;
 
     /**
      * @var string
      *
      * @ORM\Column(name="path", type="string", length=255, nullable=false)
      */
-    private $path;
+    protected $path;
 
     /**
      * @var string
      *
      * @ORM\Column(name="plugin_name", type="string", length=255, nullable=true)
      */
-    private $pluginName;
+    protected $pluginName;
 
     /**
-     * @var integer
+     * @var int
      *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      */
-    private $id;
-
-
+    protected $id;
 
     /**
-     * Set className
+     * Set className.
      *
      * @param string $className
+     *
      * @return HookObserver
      */
     public function setClassName($className)
@@ -58,7 +58,7 @@ class HookObserver
     }
 
     /**
-     * Get className
+     * Get className.
      *
      * @return string
      */
@@ -68,9 +68,10 @@ class HookObserver
     }
 
     /**
-     * Set path
+     * Set path.
      *
      * @param string $path
+     *
      * @return HookObserver
      */
     public function setPath($path)
@@ -81,7 +82,7 @@ class HookObserver
     }
 
     /**
-     * Get path
+     * Get path.
      *
      * @return string
      */
@@ -91,9 +92,10 @@ class HookObserver
     }
 
     /**
-     * Set pluginName
+     * Set pluginName.
      *
      * @param string $pluginName
+     *
      * @return HookObserver
      */
     public function setPluginName($pluginName)
@@ -104,7 +106,7 @@ class HookObserver
     }
 
     /**
-     * Get pluginName
+     * Get pluginName.
      *
      * @return string
      */
@@ -114,9 +116,9 @@ class HookObserver
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {

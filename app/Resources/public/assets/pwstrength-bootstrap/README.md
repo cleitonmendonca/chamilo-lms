@@ -38,7 +38,7 @@ from this [repository](https://github.com/ablanco/jquery.pwstrength.bootstrap/tr
 Load it into your HTML after your original bootstrap and jQuery javascript files:
 
 ```html
-<script type="text/javascript" src="file/location/pwstrength-bootstrap-1.2.8.min.js"></script>
+<script type="text/javascript" src="dist/pwstrength-bootstrap.min.js"></script>
 ```
 
 Then just invoke the plugin on the password fields you want to attach a strength
@@ -131,9 +131,19 @@ $("#passwdfield").pwstrength("ruleActive", "wordSequences", false);
 That would avoid looking for sequences in the password being tested.
 
 
+### Know if all password inputs pass a specific rule
+
+This method allows to make a quick check to test if all password inputs in the
+page pass a rule, the method returns a boolean value. Example:
+
+```javascript
+$("#passwdfield").pwstrength("ruleIsMet", "wordSequences");
+```
+
+
 ## Callback Functions
 
-The plugin provides two callback functions, onLoad and onKeyUp.  You can use
+The plugin provides three callback functions, onLoad, onKeyUp, and scoreCalculated.  You can use
 them like this:
 
 ```javascript
@@ -145,6 +155,18 @@ $(document).ready(function () {
         },
         onKeyUp: function (evt, data) {
             $("#length-help-text").text("Current length: " + $(evt.target).val().length + " and score: " + data.score);
+        },
+        onScore: function (options, word, totalScoreCalculated) {
+            // If my word meets a specific scenario, I want the min score to
+            // be the level 1 score, for example.
+            if (word.length === 20 && totalScoreCalculated < options.ui.scores[1]) {
+                // Score doesn't meet the score[1]. So we will return the min
+                // numbers of points to get that score instead.
+                return options.ui.score[1]
+            }
+            // Fall back to the score that was calculated by the rules engine.
+            // Must pass back the score to set the total score variable.
+            return totalScoreCalculated;
         }
     };
     $(':password').pwstrength(options);

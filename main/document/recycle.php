@@ -1,7 +1,7 @@
 <?php
 /* For licensing terms, see /license.txt */
 
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 api_protect_admin_script();
 
@@ -26,7 +26,7 @@ $actions .= Display::url(
 );
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
-$id = isset($_GET['id']) ? intval($_GET['id']) : '';
+$id = isset($_GET['id']) ? (int) $_GET['id'] : '';
 $currentUrl = api_get_self().'?'.api_get_cidreq();
 
 switch ($action) {
@@ -50,16 +50,18 @@ switch ($action) {
         break;
 }
 
-$interbreadcrumb[] = array(
-    "url" => api_get_path(WEB_CODE_PATH).'document/document.php?'.api_get_cidreq(),
-    "name" => get_lang('Documents'),
-);
+$interbreadcrumb[] = [
+    'url' => api_get_path(WEB_CODE_PATH).'document/document.php?'.api_get_cidreq(),
+    'name' => get_lang('Documents'),
+];
 $template = new Template(get_lang('DeletedDocuments'));
 $template->assign('files', $files);
-$template->assign('actions', $actions);
+$template->assign(
+    'actions',
+    Display::toolbarAction('toolbar', [$actions])
+);
 $template->assign('web_cid_query', api_get_cidreq());
-
-$content = $template->fetch('default/document/recycle.tpl');
+$templateName = $template->get_template('document/recycle.tpl');
+$content = $template->fetch($templateName);
 $template->assign('content', $content);
 $template->display_one_col_template();
-

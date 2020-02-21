@@ -3,21 +3,20 @@
 
 namespace Chamilo\CoreBundle\Entity\Repository;
 
-use Doctrine\ORM\EntityRepository;
 use Chamilo\CoreBundle\Entity\Course;
 use Chamilo\UserBundle\Entity\User;
+use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr\Join;
 
 /**
- * TemplatesRepository class
+ * TemplatesRepository class.
  */
 class TemplatesRepository extends EntityRepository
 {
     /**
-     * Get the course template for a user
-     * @param Course $course
-     * @param User $user
-     * @return ArrayCollection
+     * Get the course template for a user.
+     *
+     * @return array
      */
     public function getCourseTemplates(Course $course, User $user)
     {

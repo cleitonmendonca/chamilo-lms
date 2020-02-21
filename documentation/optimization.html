@@ -194,10 +194,50 @@ ALTER TABLE c_lp_item_view ADD INDEX idx_clpiv_c_i_v (c_id, id, view_count);
     find out about these possible bottlenecks after we release stable versions of Chamilo. This is why we list those
     queries here. However, as soon as we confirm them with a few real life scenarios, we add them into the core of
     Chamilo so you can benefit from them immediately by installing a new version.
+    <p>In Chamilo 1.11.x you can boost the DB tables related surveys invitations by adding the following indexes:</p>
+    <pre>
+        CREATE INDEX idx_survey_q_qid ON c_survey_question (question_id);
+        CREATE INDEX idx_survey_code ON c_survey (code);
+        CREATE INDEX idx_survey_inv_code ON c_survey_invitation (survey_code);
+        CREATE INDEX idx_survey_qo_qid ON c_survey_question_option (question_id);
+        CREATE INDEX idx_c_survey_answerucsq ON c_survey_answer (user, c_id, survey_id, question_id);
+    </pre>
+    Also by adding a index on access_url_rel_session to improve the course/session list
+    <pre>
+        CREATE INDEX idx_accessurs_sid ON access_url_rel_session (session_id);
+    </pre>
+    If you have lots of gradebook stuff, add this
+    <pre>
+        ALTER TABLE gradebook_result ADD INDEX idx_gb_uid_eid (user_id, evaluation_id);
+        ALTER TABLE gradebook_category ADD INDEX idx_gb_cat_parent (parent_id);
+        ALTER TABLE gradebook_evaluation ADD INDEX idx_ge_cat (category_id);
+        ALTER TABLE gradebook_link ADD INDEX idx_gl_cat (category_id);
+    </pre>
+    If you have to delete a lot of users, you'll realize deleting users is a slow operation.
+    Using the following queries might help:
+    <pre>
+        ALTER TABLE extra_field_values ADD INDEX idx_efv_item (item_id);
+        ALTER TABLE c_item_property ADD INDEX idx_cip_lasteditu (lastedit_user_id);
+    </pre>
 
+    Improvements after 1.11.10
+    <pre>
+        ALTER TABLE message ADD INDEX idx_message_status (msg_status);
+        ALTER TABLE track_e_default ADD INDEX idx_default_user_id (default_user_id);
+
+        ALTER TABLE c_document ADD INDEX idx_cdoc_path (path);
+        ALTER TABLE c_document ADD INDEX idx_cdoc_size (size);
+        ALTER TABLE c_document ADD INDEX idx_cdoc_id (id);
+        ALTER TABLE c_document add index idx_cdoc_type (filetype);
+        ALTER TABLE c_document add index idx_cdoc_sid (session_id);
+        ALTER TABLE c_item_property ADD INDEX idx_item_property_visibility (visibility);
+        ALTER TABLE track_e_attempt ADD INDEX idx_track_e_attempt_tms (tms);
+        ALTER TABLE track_e_login ADD INDEX idx_track_e_login_date (login_date);
+
+    </pre>
 <hr />
 <h2><a name="3.Indexes-caching"></a>3. Indexes caching</h2>
-One good reference: <a href="http://dev.mysql.com/doc/refman/5.1/en/multiple-key-caches.html">MySQL documentation on multiple key caches</a><br />
+One good reference: <a href="http://dev.mysql.com/doc/refman/5.6/en/multiple-key-caches.html">MySQL documentation on multiple key caches</a><br />
 <hr />
 
 <h2><a name="4.Sessions-directories"></a>4. Sessions directories</h2>
@@ -380,11 +420,11 @@ The logic behind this verification is that, whatever resources that needs to be
     (usually called download.php but there are more than one depending on the
     type of resource).<br /><br />
 If you want to speed up files accesses and you don't really care about whom can
-    see your files, then an option is to simply remove this redirection to
-    download.php and let Apache treat the file on its own.<br /><br />
+    see your files, then an option is to simply change this redirection to
+    download.php and let Apache treat the file directly.<br /><br />
 Furthermore, using a PHP script for the download (unless you have special rules)
     will usually prevent static content caching, which will multiply downloads
-    and use large amount of additional bandwidth.<br /><br />
+    and use large amounts of additional bandwidth.<br /><br />
 Typically, the .htaccess will look like this (with additional comments):<br />
 <pre>
 <IfModule mod_rewrite.c>
@@ -397,13 +437,14 @@ RewriteRule ([^/]+)/document/(.*)$ /main/document/download.php?doc_url=/$2&cDir=
 RewriteRule ([^/]+)/work/(.*)$ /main/work/download.php?file=work/$2&cDir=$1 [QSA,L]
 </IfModule>
 </pre><br />
-The idea is to remove the "scorm" line, so you are left with:
+The idea is to allow direct access (without access validation) to resources in the "scorm" directory with:
 <pre>
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /courses/
 RewriteCond %{REQUEST_URI} !^/main/
 RewriteRule ([^/]+)/document/(.*)&(.*)$ $1/document/$2///$3 [N]
+RewriteRule ([^/]+)/scorm/(.*)$ /app/courses/$1/scorm/$2 [QSA,L]
 RewriteRule ([^/]+)/document/(.*)$ /main/document/download.php?doc_url=/$2&cDir=$1 [QSA,L]
 RewriteRule ([^/]+)/work/(.*)$ /main/work/download.php?file=work/$2&cDir=$1 [QSA,L]
 </IfModule>
@@ -431,6 +472,16 @@ add theses line after RewriteBase /courses/:
 &lt;/IfModule&gt;
 # also adjust files here
 RewriteRule (\.(html|gif|jpg|jpeg|png|js|pdf|ico|icon|css|swf|avi|mp3|ogg|wav|ttf|otf|eot|woff))$ - [L]
+</pre>
+</p>
+<p>
+Since version 1.11.10, the .htaccess has been modified to do this by default with media files, and a change post-1.11.10 also does it for documents that are not in a SCORM folder. These changes will improve speed considerably but will lower the security on media files, as a direct link could be used to open the file with no validation. As such, you can comment those lines with media files to ensure increased security, at the cost of performance. These are the two lines (followed by their more wide-ranging rule) that have to be present in .htaccess for maximum efficiency.
+<pre>
+RewriteRule ^courses/([^/]+)/scorm/(.*([\.js|\.css|\.png|\.jpg|\.jpeg|\.gif]))$ app/courses/$1/scorm/$2 [QSA,L]
+RewriteRule ^courses/([^/]+)/scorm/(.*)$ main/document/download_scorm.php?doc_url=/$2&cDir=$1 [QSA,L]
+[...]
+RewriteRule ^courses/([^/]+)/document/(.*([\.js|\.css|\.png|\.jpg|\.jpeg|\.gif|\.mp4|\.webm|\.avi|\.mpeg|\.mp3|\.wav|\.ogg]))$ app/courses/$1/document/$2 [QSA,L]
+RewriteRule ^courses/([^/]+)/document/(.*)$ main/document/download.php?doc_url=/$2&cDir=$1 [QSA,L]
 </pre>
 </p>
 <hr />

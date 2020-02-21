@@ -1,13 +1,14 @@
 <?php
 /* For licensing terms, see /license.txt */
 /**
- * Maintenance for session coach
+ * Maintenance for session coach.
+ *
  * @author Julio Montoya <julio.montoya@beeznest.com>
  * @author Angel Fernando Quiroz Campos <angel.quiroz@beeznest.com>
+ *
  * @package chamilo.course_info
  */
-
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 
 $current_course_tool = TOOL_COURSE_MAINTENANCE;
 $this_section = SECTION_COURSES;
@@ -22,17 +23,16 @@ if ($sessionsCopy !== 'true') {
     api_not_allowed(true);
 }
 
-Display :: display_header($nameTools);
+Display::display_header($nameTools);
 
 echo Display::page_subheader(
     Display::return_icon(
-        'save_import.gif', get_lang('Backup')
-    ) . '&nbsp;&nbsp;' . get_lang('Backup')
+        'save_import.gif',
+        get_lang('Backup')
+    ).'&nbsp;&nbsp;'.get_lang('Backup')
 );
 
-$url = api_get_path(
-        WEB_CODE_PATH
-    ) . 'coursecopy/copy_course_session_selected.php?' . api_get_cidreq();
+$url = api_get_path(WEB_CODE_PATH).'coursecopy/copy_course_session_selected.php?'.api_get_cidreq();
 
 $link = Display::url(get_lang('CopyCourse'), $url);
 ?>

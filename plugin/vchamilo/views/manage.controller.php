@@ -18,7 +18,7 @@ switch ($action) {
         break;
     case 'newinstance':
     case 'instance':
-        $registeronly = $_REQUEST['registeronly'];
+        $registeronly = isset($_REQUEST['registeronly']) ? $_REQUEST['registeronly'] : 0;
         Virtual::redirect(api_get_path(WEB_PLUGIN_PATH).'vchamilo/views/editinstance.php?registeronly='.$registeronly);
         break;
     case 'editinstance':
@@ -50,44 +50,51 @@ switch ($action) {
         // Removes everything.
         if (empty($automation)) {
             if (!empty($vidlist)) {
-                $todelete = Database::select('*', 'vchamilo', array('where' => array("id IN ('$vidlist')" => array())));
+                $todelete = Database::select('*', 'vchamilo', ['where' => ["id IN ('$vidlist')" => []]]);
             }
         } else {
             $todelete = Database::select(
                 '*',
                 'vchamilo',
-                array('where' => array("root_web = '{$n->root_web}' " => array()))
+                ['where' => ["root_web = '{$n->root_web}' " => []]]
             );
         }
+
         if ($todelete) {
             foreach ($todelete as $fooid => $instance) {
                 $slug = $instance['slug'];
 
-                if (empty($slug)) {
-                    continue;
-                }
+                if (!empty($slug)) {
+                    // Remove all files and eventual symlinks
+                    $absalternatecourse = Virtual::getConfig('vchamilo', 'course_real_root');
+                    $coursedir = $absalternatecourse.$slug;
 
-                // Remove all files and eventual symlinks
-                $absalternatecourse = Virtual::getConfig('vchamilo', 'course_real_root');
-                $coursedir = $absalternatecourse.$slug;
+                    Display::addFlash(Display::return_message("Deleting $coursedir"));
 
-                Display::addFlash(Display::return_message("Deleting $coursedir"));
+                    removeDir($coursedir);
 
-                removeDir($coursedir);
+                    if ($absalternatehome = Virtual::getConfig('vchamilo', 'home_real_root')) {
+                        $homedir = $absalternatehome.'/'.$slug;
 
-                if ($absalternatehome = Virtual::getConfig('vchamilo', 'home_real_root')) {
-                    $homedir = $absalternatehome.'/'.$slug;
+                        Display::addFlash(Display::return_message("Deleting $homedir"));
+                        removeDir($homedir);
+                    }
 
-                    Display::addFlash(Display::return_message("Deleting $homedir"));
-                    removeDir($homedir);
-                }
+                    // delete archive
+                    if ($absalternatearchive = Virtual::getConfig('vchamilo', 'archive_real_root')) {
+                        $archivedir = $absalternatearchive.'/'.$slug;
 
-                // delete archive
-                if ($absalternatearchive = Virtual::getConfig('vchamilo', 'archive_real_root')) {
-                    $archivedir = $absalternatearchive.'/'.$slug;
+                        Display::addFlash(Display::return_message("Deleting $archivedir"));
+                        removeDir($archivedir);
+                    }
 
-                    Display::addFlash(Display::return_message("Deleting $archivedir"));
-                    removeDir($archivedir);
+                    // Delete upload
+                    if ($dir = Virtual::getConfig('vchamilo', 'upload_real_root')) {
+                        $dir = $dir.'/'.$slug;
+
+                        Display::addFlash(Display::return_message("Deleting $dir"));
+                        removeDir($dir);
+                    }
                 }
 
                 $sql = "DELETE FROM {$table} WHERE id = ".$instance['id'];
@@ -100,14 +107,14 @@ switch ($action) {
         }
         break;
     case 'snapshotinstance':
-        $interbreadcrumb[] = array('url' => 'manage.php', 'name' => get_lang('VChamilo'));
+        $interbreadcrumb[] = ['url' => 'manage.php', 'name' => get_lang('VChamilo')];
 
         $vid = isset($_REQUEST['vid']) ? $_REQUEST['vid'] : '';
         if ($vid) {
-            $vhosts = Database::select('*', 'vchamilo', array('where' => array('id = ?' => $vid)));
-            $vhost = (object)array_pop($vhosts);
+            $vhosts = Database::select('*', 'vchamilo', ['where' => ['id = ?' => $vid]]);
+            $vhost = (object) array_pop($vhosts);
         } else {
-            $vhost = (object)$_configuration;
+            $vhost = (object) $_configuration;
             $vhost->slug = Virtual::getSlugFromUrl($vhost->root_web);
             $vhost->id = 0;
         }
@@ -118,6 +125,7 @@ switch ($action) {
 
         // Make template directory (files and SQL).
         $separator = DIRECTORY_SEPARATOR;
+        $dirMode = api_get_permissions_for_new_directories();
 
         $backupDir = api_get_path(SYS_PATH).'plugin'.$separator.'vchamilo'.$separator.'templates'.$separator.$vhost->slug.$separator;
 
@@ -125,7 +133,7 @@ switch ($action) {
         $absolute_sqldir = $backupDir.'dump.sql';
 
         if (!is_dir($backupDir)) {
-            $result = mkdir($backupDir, 0777, true);
+            $result = mkdir($backupDir, $dirMode, true);
             if ($result) {
                 Display::addFlash(
                     Display::return_message('Directory created: '.$backupDir)
@@ -140,8 +148,8 @@ switch ($action) {
         if ($vchamilostep == 0) {
             // Create directories, if necessary.
             if (!is_dir($absolute_datadir)) {
-                mkdir($absolute_datadir, 0777, true);
-                mkdir($absolute_datadir.'/home', 0777, true);
+                mkdir($absolute_datadir, $dirMode, true);
+                mkdir($absolute_datadir.'/home', $dirMode, true);
             }
 
             if (empty($fullautomation)) {
@@ -155,7 +163,6 @@ switch ($action) {
                 $content .= '</div>';
 
                 $tpl = new Template(get_lang('Snapshot'), true, true, false, true, false);
-                $tpl->assign('actions', '');
                 $tpl->assign('message', '<h4>'.$plugin->get_lang('vchamilosnapshot1').'</h4>');
                 $tpl->assign('content', $content);
                 $tpl->display_one_col_template();
@@ -174,24 +181,27 @@ switch ($action) {
                 $coursePath = api_get_path(SYS_COURSE_PATH);
                 $homePath = api_get_path(SYS_HOME_PATH);
                 $archivePath = api_get_path(SYS_ARCHIVE_PATH);
+                $uploadPath = api_get_path(SYS_UPLOAD_PATH);
             } else {
                 // Get Vchamilo known record.
-                $vchamilo = Database::select('*', 'vchamilo', array('where' => array('root_web = ?' => array($wwwroot))), 'first');
+                $vchamilo = Database::select('*', 'vchamilo', ['where' => ['root_web = ?' => [$wwwroot]]], 'first');
                 $vchamilo = (object) $vchamilo;
                 $coursePath = Virtual::getConfig('vchamilo', 'course_real_root');
                 $homePath = Virtual::getConfig('vchamilo', 'home_real_root');
                 $archivePath = Virtual::getConfig('vchamilo', 'archive_real_root');
+                $uploadPath = Virtual::getConfig('vchamilo', 'upload_real_root');
 
                 $coursePath = $coursePath.'/'.$vchamilo->slug;
                 $homePath = $homePath.'/'.$vchamilo->slug;
                 $archivePath = $archivePath.'/'.$vchamilo->slug;
+                $uploadPath = $uploadPath.'/'.$vchamilo->slug;
             }
 
             $content = '';
             if ($vchamilostep == 1) {
                 // Auto dump the databases in a master template folder.
                 // this will create three files : dump.sql
-                $result = Virtual::dumpDatabase($vchamilo, $absolute_sqldir);
+                $result = Virtual::backupDatabase($vchamilo, $absolute_sqldir);
 
                 if (empty($fullautomation)) {
                     if (!$result) {
@@ -217,7 +227,6 @@ switch ($action) {
                     }
 
                     $tpl = new Template(get_lang('Snapshot'), true, true, false, true, false);
-                    $tpl->assign('actions', '');
                     $tpl->assign('message', '<h4>'.$message.'</h4>');
                     $tpl->assign('content', $content);
                     $tpl->display_one_col_template();
@@ -232,6 +241,9 @@ switch ($action) {
             Display::addFlash(Display::return_message("Copying from '$coursePath' to '$absolute_datadir/courses' "));
             copyDirTo($coursePath, $absolute_datadir.'/courses/', false);
 
+            Display::addFlash(Display::return_message("Copying from '$uploadPath' to '$absolute_datadir/upload' "));
+            copyDirTo($uploadPath, $absolute_datadir.'/upload/', false);
+
             // Store original hostname and some config info for further database or filestore replacements.
             $FILE = fopen($backupDir.$separator.'manifest.php', 'w');
             fwrite($FILE, '<'.'?php ');
@@ -242,7 +254,8 @@ switch ($action) {
             // Every step was SUCCESS.
             if (empty($fullautomation)) {
                 Display::addFlash(
-                    Display::return_message($plugin->get_lang('successfinishedcapture'),
+                    Display::return_message(
+                        $plugin->get_lang('successfinishedcapture'),
                         'success'
                     )
                 );
@@ -260,7 +273,7 @@ switch ($action) {
                             'category' => 'Plugins',
                             'variable' => 'vchamilo_default_template',
                             'selected_value' => $vhost->slug,
-                            'access_url_changeable' => 0
+                            'access_url_changeable' => 0,
                         ];
                         api_set_setting_simple($params);
                     } else {
@@ -276,7 +289,6 @@ switch ($action) {
                 $content .= '</form>';
 
                 $tpl = new Template(get_lang('Snapshot'), true, true, false, true, false);
-                $tpl->assign('actions', '');
                 $tpl->assign('message', $plugin->get_lang('vchamilosnapshot3'));
                 $tpl->assign('content', $content);
                 $tpl->display_one_col_template();
@@ -288,23 +300,23 @@ switch ($action) {
     case 'clearcache':
         // Removes cache directory.
         if (empty($automation)) {
-            if (array_key_exists('vids', $_REQUEST))  {
-                $toclear = Database::select('*', 'vchamilo', array('where' => array("id IN ('$vidlist')" => array())));
+            if (array_key_exists('vids', $_REQUEST)) {
+                $toclear = Database::select('*', 'vchamilo', ['where' => ["id IN ('$vidlist')" => []]]);
             } else {
                 $vid = isset($_REQUEST['vid']) ? $_REQUEST['vid'] : 0;
                 if ($vid) {
-                    $vhosts = Database::select('*', 'vchamilo', array('where' => array('id = ?' => $vid)));
-                    $vhost = (object)array_pop($vhosts);
+                    $vhosts = Database::select('*', 'vchamilo', ['where' => ['id = ?' => $vid]]);
+                    $vhost = (object) array_pop($vhosts);
                     $toclear[$vhost->id] = $vhost;
                 } else {
-                    $toclear[0] = (object)$_configuration;
+                    $toclear[0] = (object) $_configuration;
                 }
             }
         } else {
             $toclear = Database::select(
                 '*',
                 'vchamilo',
-                array('where' => array("root_web = '{$n->root_web}' " => array()))
+                ['where' => ["root_web = '{$n->root_web}' " => []]]
             );
         }
 
@@ -317,9 +329,10 @@ switch ($action) {
                 $coursePath = Virtual::getConfig('vchamilo', 'course_real_root');
                 $homePath = Virtual::getConfig('vchamilo', 'home_real_root');
                 $archivePath = Virtual::getConfig('vchamilo', 'archive_real_root');
+                //$uploadPath = Virtual::getConfig('vchamilo', 'upload_real_root');
 
                 // Get instance archive
-                $archivepath = api_get_path(SYS_ARCHIVE_PATH, (array)$instance);
+                $archivepath = api_get_path(SYS_ARCHIVE_PATH, (array) $instance);
                 $templatepath = $archivePath.'/'.$instance['slug'].'/twig';
                 Display::addFlash(Display::return_message("Deleting cache $templatepath \n"));
                 removeDir($templatepath);

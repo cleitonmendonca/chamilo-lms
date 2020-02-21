@@ -2,24 +2,22 @@
 /* For licensing terms, see /license.txt */
 /**
  * Quick form to ask for password reminder.
+ *
  * @package chamilo.custompages
  */
+require_once api_get_path(SYS_PATH).'main/inc/global.inc.php';
+require_once __DIR__.'/language.php';
 
-require_once('../../main/inc/global.inc.php');
-require_once('language.php');
 $rootWeb = api_get_path('WEB_PATH');
 ?>
 <html>
 <head>
-	<title><?php echo custompages_get_lang('LostPassword');?></title>
+	<title><?php echo custompages_get_lang('LostPassword'); ?></title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<!--[if !IE 6]><!-->
-	<link rel="stylesheet" type="text/css" href="../../custompages/style.css" />
-	<!--<![endif]-->
-	<!--[if IE 6]>
-	<link rel="stylesheet" type="text/css" href="../../custompages/style-ie6.css" />
-	<![endif]-->
-	<script type="text/javascript" src="<?php echo $rootWeb ?>web/assets/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="<?php echo $rootWeb; ?>web/assets/jquery/dist/jquery.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="<?php echo $rootWeb; ?>web/assets/bootstrap/dist/css/bootstrap.min.css" />
+    <script type="text/javascript" src="<?php echo $rootWeb; ?>web/assets/bootstrap/dist/js/bootstrap.min.js"></script>
 
 	<script type="text/javascript">
 		$(document).ready(function() {
@@ -43,10 +41,10 @@ $rootWeb = api_get_path('WEB_PATH');
 		<div id="lostpassword-form-box" class="form-box">
             <?php
             if (isset($content['info']) && !empty($content['info'])) {
-                echo '<div id="registration-form-error" class="form-error"><ul>' . $content['info'] . '</ul></div>';
+                echo '<div id="registration-form-error" class="form-error"><ul>'.$content['info'].'</ul></div>';
             }
 
-            echo isset($content['form']) ? $content['form'] : ''
+            echo isset($content['form']) ? $content['form'] : '';
             ?>
 		</div> <!-- #form -->
 		<div id="footer">

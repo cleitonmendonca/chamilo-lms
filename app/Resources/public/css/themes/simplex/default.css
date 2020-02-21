@@ -123,9 +123,6 @@ background: #111111;
     background-color: #222222;
 }
 @media (max-width: 767px) {
-  .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: #ffffff;
-  }
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
     color: #ededed;
     background-color: #6D0019;
@@ -148,15 +145,15 @@ background: #111111;
 .panel-default{
     border-color: #F3F3F4;
 }
-footer{
+footer.bgfooter{
 background: #111111;
 color: #FBD232;
 border-top: 5px solid #FBD232;
 }
-footer a{
+footer.bgfooter a{
   color: #ffffff;
 }
-footer a:hover{
+footer.bgfooter a:hover{
   color: #CCC;
 }
 .menu-column .panel-heading{

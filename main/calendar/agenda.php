@@ -7,7 +7,7 @@
 
 // use anonymous mode when accessing this course tool
 $use_anonymous = true;
-require_once '../inc/global.inc.php';
+require_once __DIR__.'/../inc/global.inc.php';
 $current_course_tool = TOOL_CALENDAR_EVENT;
 $course_info = api_get_course_info();
 
@@ -15,8 +15,7 @@ if (!empty($course_info)) {
     api_protect_course_script(true);
 }
 
-$action = isset($_GET['action']) ? $_GET['action'] : null;
-$origin = isset($_GET['origin']) ? $_GET['origin'] : null;
+$action = isset($_GET['action']) ? Security::remove_XSS($_GET['action']) : null;
 
 $this_section = SECTION_COURSES;
 $url = null;
@@ -30,10 +29,17 @@ if (empty($action)) {
     exit;
 }
 
-/* 	Resource linker */
-$_SESSION['source_type'] = 'Agenda';
-require_once '../resourcelinker/resourcelinker.inc.php';
+$logInfo = [
+    'tool' => TOOL_CALENDAR_EVENT,
+    'tool_id' => 0,
+    'tool_id_detail' => 0,
+    'action' => $action,
+    'info' => '',
+];
+Event::registerLog($logInfo);
+
 $group_id = api_get_group_id();
+$groupInfo = GroupManager::get_group_properties($group_id);
 $eventId = isset($_REQUEST['id']) ? $_REQUEST['id'] : null;
 $type = $event_type = isset($_GET['type']) ? $_GET['type'] : null;
 
@@ -53,7 +59,6 @@ function plus_repeated_event() {
     });
 </script>";
 
-
 $htmlHeadXtra[] = '<script>
 var counter_image = 1;
 function add_image_form() {
@@ -66,10 +71,11 @@ function add_image_form() {
 	}
 	var elem1 = document.createElement("div");
 	elem1.setAttribute("id","filepath_"+counter_image);
+	
 	filepaths.appendChild(elem1);
 	id_elem1 = "filepath_"+counter_image;
 	id_elem1 = "\'"+id_elem1+"\'";
-	document.getElementById("filepath_"+counter_image).innerHTML = "<input type=\"file\" name=\"attach_"+counter_image+"\" />&nbsp; <br />'.get_lang('Description').'&nbsp;&nbsp;<input type=\"text\" name=\"legend[]\"  /><br /><br />";
+	document.getElementById("filepath_"+counter_image).innerHTML = "<input type=\"file\" name=\"attach_"+counter_image+"\" /><label>'.get_lang('Description').'</label><input class=\"form-control\" type=\"text\" name=\"legend[]\"  />";
 	if (filepaths.childNodes.length == 6) {
 		var link_attach = document.getElementById("link-more-attach");
 		if (link_attach) {
@@ -84,53 +90,50 @@ $nameTools = get_lang('Agenda');
 
 Event::event_access_tool(TOOL_CALENDAR_EVENT);
 
-// permission stuff - also used by loading from global in agenda.inc.php
-$is_allowed_to_edit = api_is_allowed_to_edit(false, true) || (api_get_course_setting('allow_user_edit_agenda') && !api_is_anonymous());
-$agenda = new Agenda();
-$agenda->type = $type;
-$actions = $agenda->displayActions('calendar');
-
 if ($type === 'fromjs') {
-    $id_list = explode('_', $eventId);
+    // split the "id" parameter only if string and there are _ separators
+    if (preg_match('/_/', $eventId)) {
+        $id_list = explode('_', $eventId);
+    } else {
+        $id_list = $eventId;
+    }
     $eventId = $id_list[1];
     $event_type = $id_list[0];
+    $event_type = $event_type === 'platform' ? 'admin' : $event_type;
 }
 
-if (!api_is_allowed_to_edit(null, true) && $event_type === 'course') {
+$agenda = new Agenda($event_type);
+$allowToEdit = $agenda->getIsAllowedToEdit();
+$actions = $agenda->displayActions('calendar');
+
+if (!$allowToEdit && $event_type === 'course') {
     api_not_allowed(true);
 }
+
 if ($event_type === 'course') {
     $agendaUrl = api_get_path(WEB_CODE_PATH).'calendar/agenda_js.php?'.api_get_cidreq().'&type=course';
 } else {
     $agendaUrl = api_get_path(WEB_CODE_PATH).'calendar/agenda_js.php?&type='.$event_type;
 }
 $course_info = api_get_course_info();
-$agenda->type = $event_type;
 
 $content = null;
-if (api_is_allowed_to_edit(false, true) ||
-    (api_get_course_setting('allow_user_edit_agenda') &&
-        !api_is_anonymous() &&
-        api_is_allowed_to_session_edit(false, true)) ||
-    GroupManager::user_has_access(api_get_user_id(), $group_id, GroupManager::GROUP_TOOL_CALENDAR) &&
-    GroupManager::is_tutor_of_group(api_get_user_id(), $group_id)
-) {
+if ($allowToEdit) {
     switch ($action) {
         case 'add':
             $actionName = get_lang('Add');
-            $form = $agenda->getForm(array('action' => 'add'));
+            $form = $agenda->getForm(['action' => 'add']);
 
             if ($form->validate()) {
                 $values = $form->getSubmitValues();
 
                 $sendEmail = isset($values['add_announcement']) ? true : false;
                 $allDay = isset($values['all_day']) ? 'true' : 'false';
-
                 $sendAttachment = isset($_FILES) && !empty($_FILES) ? true : false;
                 $attachmentList = $sendAttachment ? $_FILES : null;
                 $attachmentCommentList = isset($values['legend']) ? $values['legend'] : null;
                 $comment = isset($values['comment']) ? $values['comment'] : null;
-
+                $usersToSend = isset($values['users_to_send']) ? $values['users_to_send'] : '';
                 $startDate = $values['date_range_start'];
                 $endDate = $values['date_range_end'];
 
@@ -140,7 +143,7 @@ if (api_is_allowed_to_edit(false, true) ||
                     $allDay,
                     $values['title'],
                     $values['content'],
-                    $values['users_to_send'],
+                    $usersToSend,
                     $sendEmail,
                     null,
                     $attachmentList,
@@ -160,13 +163,16 @@ if (api_is_allowed_to_edit(false, true) ||
                 }
                 $message = Display::return_message(get_lang('AddSuccess'), 'confirmation');
                 if ($sendEmail) {
-                    $message .= Display::return_message(get_lang('AdditionalMailWasSentToSelectedUsers'), 'confirmation');
+                    $message .= Display::return_message(
+                        get_lang('AdditionalMailWasSentToSelectedUsers'),
+                        'confirmation'
+                    );
                 }
                 Display::addFlash($message);
                 header("Location: $agendaUrl");
                 exit;
             } else {
-                $content = $form->return_form();
+                $content = $form->returnForm();
             }
             break;
         case 'edit':
@@ -192,12 +198,10 @@ if (api_is_allowed_to_edit(false, true) ||
 
                 $sendAttachment = isset($_FILES) && !empty($_FILES) ? true : false;
                 $attachmentList = $sendAttachment ? $_FILES : null;
-                $attachmentCommentList = isset($values['legend']) ? $values['legend'] : null;
-
-                $comment = isset($values['comment']) ? $values['comment'] : null;
+                $attachmentCommentList = isset($values['legend']) ? $values['legend'] : '';
+                $comment = isset($values['comment']) ? $values['comment'] : '';
 
                 // This is a sub event. Delete the current and create another BT#7803
-
                 if (!empty($event['parent_event_id'])) {
                     $agenda->deleteEvent($eventId);
 
@@ -221,6 +225,8 @@ if (api_is_allowed_to_edit(false, true) ||
                     exit;
                 }
 
+                $usersToSend = isset($values['users_to_send']) ? $values['users_to_send'] : '';
+
                 // Editing normal event.
                 $agenda->editEvent(
                     $eventId,
@@ -229,7 +235,7 @@ if (api_is_allowed_to_edit(false, true) ||
                     $allDay,
                     $values['title'],
                     $values['content'],
-                    $values['users_to_send'],
+                    $usersToSend,
                     $attachmentList,
                     $attachmentCommentList,
                     $comment,
@@ -248,7 +254,7 @@ if (api_is_allowed_to_edit(false, true) ||
                     );
                 }
 
-                $deleteAttachmentList = isset($values['delete_attachment']) ? $values['delete_attachment'] : array();
+                $deleteAttachmentList = isset($values['delete_attachment']) ? $values['delete_attachment'] : [];
 
                 if (!empty($deleteAttachmentList)) {
                     foreach ($deleteAttachmentList as $deleteAttachmentId => $value) {
@@ -289,7 +295,9 @@ if (api_is_allowed_to_edit(false, true) ||
             $content = $form->returnForm();
             break;
         case "delete":
-            if (!(api_is_course_coach() && !api_is_element_in_the_session(TOOL_AGENDA, $eventId) )) {
+            if (!(api_is_session_general_coach() &&
+                !api_is_element_in_the_session(TOOL_AGENDA, $eventId))
+            ) {
                 // a coach can only delete an element belonging to his session
                 $content = $agenda->deleteEvent($eventId);
             }
@@ -299,20 +307,22 @@ if (api_is_allowed_to_edit(false, true) ||
 
 if (!empty($group_id)) {
     $group_properties = GroupManager :: get_group_properties($group_id);
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         "url" => api_get_path(WEB_CODE_PATH)."group/group.php?".api_get_cidreq(),
-        "name" => get_lang('Groups')
-    );
-    $interbreadcrumb[] = array(
+        "name" => get_lang('Groups'),
+    ];
+    $interbreadcrumb[] = [
         "url" => api_get_path(WEB_CODE_PATH)."group/group_space.php?".api_get_cidreq(),
-        "name" => get_lang('GroupSpace').' '.$group_properties['name']
-    );
+        "name" => get_lang('GroupSpace').' '.$group_properties['name'],
+    ];
 }
 if (!empty($actionName)) {
-    $interbreadcrumb[] = array(
+    $interbreadcrumb[] = [
         "url" => $url,
-        "name" => get_lang('Agenda')
-    );
+        "name" => get_lang('Agenda'),
+    ];
+} else {
+    $actionName = '';
 }
 
 // Tool introduction
@@ -322,5 +332,4 @@ $tpl = new Template($actionName);
 $tpl->assign('content', $content);
 $tpl->assign('actions', $actions);
 
-// Loading main Chamilo 1 col template
 $tpl->display_one_col_template();

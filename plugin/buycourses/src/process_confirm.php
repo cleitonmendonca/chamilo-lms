@@ -1,11 +1,10 @@
 <?php
 /* For license terms, see /license.txt */
+
 /**
- * Process purchase confirmation script for the Buy Courses plugin
+ * Process purchase confirmation script for the Buy Courses plugin.
+ *
  * @package chamilo.plugin.buycourses
- */
-/**
- * Init
  */
 require_once '../config.php';
 
@@ -19,11 +18,14 @@ if (empty($saleId)) {
 
 $sale = $plugin->getSale($saleId);
 
+$userInfo = api_get_user_info($sale['user_id']);
+
 if (empty($sale)) {
     api_not_allowed(true);
 }
 
 $currency = $plugin->getCurrency($sale['currency_id']);
+$globalParameters = $plugin->getGlobalParameters();
 
 switch ($sale['payment_type']) {
     case BuyCoursesPlugin::PAYMENT_TYPE_PAYPAL:
@@ -34,7 +36,7 @@ switch ($sale['payment_type']) {
         $paypalPassword = $paypalParams['password'];
         $paypalSignature = $paypalParams['signature'];
 
-        require_once("paypalfunctions.php");
+        require_once "paypalfunctions.php";
 
         $i = 0;
         $extra = "&L_PAYMENTREQUEST_0_NAME0={$sale['product_name']}";
@@ -45,8 +47,8 @@ switch ($sale['payment_type']) {
             $sale['price'],
             $currency['iso_code'],
             'paypal',
-            api_get_path(WEB_PLUGIN_PATH) . 'buycourses/src/success.php',
-            api_get_path(WEB_PLUGIN_PATH) . 'buycourses/src/error.php',
+            api_get_path(WEB_PLUGIN_PATH).'buycourses/src/success.php',
+            api_get_path(WEB_PLUGIN_PATH).'buycourses/src/error.php',
             $extra
         );
 
@@ -60,6 +62,28 @@ switch ($sale['payment_type']) {
             );
             header('Location: ../index.php');
             exit;
+        }
+
+        if (!empty($globalParameters['sale_email'])) {
+            $messageConfirmTemplate = new Template();
+            $messageConfirmTemplate->assign('user', $userInfo);
+            $messageConfirmTemplate->assign(
+                'sale',
+                [
+                    'date' => $sale['date'],
+                    'product' => $sale['product_name'],
+                    'currency' => $currency['iso_code'],
+                    'price' => $sale['price'],
+                    'reference' => $sale['reference'],
+                ]
+            );
+
+            api_mail_html(
+                '',
+                $globalParameters['sale_email'],
+                $plugin->get_lang('bc_subject'),
+                $messageConfirmTemplate->fetch('buycourses/view/message_confirm.tpl')
+            );
         }
 
         RedirectToPayPal($expressCheckout["TOKEN"]);
@@ -80,9 +104,15 @@ switch ($sale['payment_type']) {
         }
 
         $transferAccounts = $plugin->getTransferAccounts();
-        $userInfo = api_get_user_info($sale['user_id']);
 
-        $form = new FormValidator('success', 'POST', api_get_self(), null, null, FormValidator::LAYOUT_INLINE);
+        $form = new FormValidator(
+            'success',
+            'POST',
+            api_get_self(),
+            null,
+            null,
+            FormValidator::LAYOUT_INLINE
+        );
 
         if ($form->validate()) {
             $formValues = $form->getSubmitValues();
@@ -92,7 +122,7 @@ switch ($sale['payment_type']) {
 
                 unset($_SESSION['bc_sale_id']);
 
-                header('Location: ' . api_get_path(WEB_PLUGIN_PATH) . 'buycourses/index.php');
+                header('Location: '.api_get_path(WEB_PLUGIN_PATH).'buycourses/index.php');
                 exit;
             }
 
@@ -101,11 +131,11 @@ switch ($sale['payment_type']) {
             $messageTemplate->assign(
                 'sale',
                 [
-                    'date' => api_format_date($sale['date'], DATE_FORMAT_LONG_NO_DAY),
+                    'date' => $sale['date'],
                     'product' => $sale['product_name'],
                     'currency' => $currency['iso_code'],
                     'price' => $sale['price'],
-                    'reference' => $sale['reference']
+                    'reference' => $sale['reference'],
                 ]
             );
             $messageTemplate->assign('transfer_accounts', $transferAccounts);
@@ -116,6 +146,28 @@ switch ($sale['payment_type']) {
                 $plugin->get_lang('bc_subject'),
                 $messageTemplate->fetch('buycourses/view/message_transfer.tpl')
             );
+
+            if (!empty($globalParameters['sale_email'])) {
+                $messageConfirmTemplate = new Template();
+                $messageConfirmTemplate->assign('user', $userInfo);
+                $messageConfirmTemplate->assign(
+                    'sale',
+                    [
+                        'date' => $sale['date'],
+                        'product' => $sale['product_name'],
+                        'currency' => $currency['iso_code'],
+                        'price' => $sale['price'],
+                        'reference' => $sale['reference'],
+                    ]
+                );
+
+                api_mail_html(
+                    '',
+                    $globalParameters['sale_email'],
+                    $plugin->get_lang('bc_subject'),
+                    $messageConfirmTemplate->fetch('buycourses/view/message_confirm.tpl')
+                );
+            }
 
             Display::addFlash(
                 Display::return_message(
@@ -129,11 +181,19 @@ switch ($sale['payment_type']) {
             );
 
             unset($_SESSION['bc_sale_id']);
-            header('Location: ' . api_get_path(WEB_PLUGIN_PATH) . 'buycourses/src/course_catalog.php');
+            header('Location: '.api_get_path(WEB_PLUGIN_PATH).'buycourses/src/course_catalog.php');
             exit;
         }
 
-        $form->addButton('confirm', $plugin->get_lang('ConfirmOrder'), 'check', 'success');
+        $form->addButton(
+            'confirm',
+            $plugin->get_lang('ConfirmOrder'),
+            'check',
+            'success',
+            'default',
+            null,
+            ['id' => 'confirm']
+        );
         $form->addButtonCancel($plugin->get_lang('CancelOrder'), 'cancel');
 
         $template = new Template();
@@ -146,17 +206,111 @@ switch ($sale['payment_type']) {
 
         $template->assign('buying_course', $buyingCourse);
         $template->assign('buying_session', $buyingSession);
-
+        $template->assign('terms', $globalParameters['terms_and_conditions']);
         $template->assign('title', $sale['product_name']);
         $template->assign('price', $sale['price']);
         $template->assign('currency', $sale['currency_id']);
         $template->assign('user', $userInfo);
         $template->assign('transfer_accounts', $transferAccounts);
         $template->assign('form', $form->returnForm());
+        $template->assign('is_bank_transfer', true);
 
         $content = $template->fetch('buycourses/view/process_confirm.tpl');
 
         $template->assign('content', $content);
         $template->display_one_col_template();
+        break;
+    case BuyCoursesPlugin::PAYMENT_TYPE_CULQI:
+        // We need to include the main online script, acording to the Culqi documentation the JS needs to be loeaded
+        // directly from the main url "https://integ-pago.culqi.com" because a local copy of this JS is not supported
+        $htmlHeadXtra[] = '<script src="//integ-pago.culqi.com/js/v1"></script>';
+
+        $buyingCourse = false;
+        $buyingSession = false;
+
+        switch ($sale['product_type']) {
+            case BuyCoursesPlugin::PRODUCT_TYPE_COURSE:
+                $buyingCourse = true;
+                $course = $plugin->getCourseInfo($sale['product_id']);
+                break;
+            case BuyCoursesPlugin::PRODUCT_TYPE_SESSION:
+                $buyingSession = true;
+                $session = $plugin->getSessionInfo($sale['product_id']);
+                break;
+        }
+
+        $form = new FormValidator(
+            'success',
+            'POST',
+            api_get_self(),
+            null,
+            null,
+            FormValidator::LAYOUT_INLINE
+        );
+
+        if ($form->validate()) {
+            $formValues = $form->getSubmitValues();
+
+            if (isset($formValues['cancel'])) {
+                $plugin->cancelSale($sale['id']);
+
+                unset($_SESSION['bc_sale_id']);
+
+                Display::addFlash(
+                    Display::return_message(
+                        $plugin->get_lang('OrderCanceled'),
+                        'warning',
+                        false
+                    )
+                );
+
+                header('Location: '.api_get_path(WEB_PLUGIN_PATH).'buycourses/index.php');
+                exit;
+            }
+        }
+        $form->addButton(
+            'confirm',
+            $plugin->get_lang('ConfirmOrder'),
+            'check',
+            'success',
+            'default',
+            null,
+            ['id' => 'confirm']
+        );
+        $form->addButton(
+            'cancel',
+            $plugin->get_lang('CancelOrder'),
+            'times',
+            'danger',
+            'default',
+            null,
+            ['id' => 'cancel']
+        );
+
+        $template = new Template();
+
+        if ($buyingCourse) {
+            $template->assign('course', $course);
+        } elseif ($buyingSession) {
+            $template->assign('session', $session);
+        }
+
+        $template->assign('buying_course', $buyingCourse);
+        $template->assign('buying_session', $buyingSession);
+        $template->assign('terms', $globalParameters['terms_and_conditions']);
+        $template->assign('title', $sale['product_name']);
+        $template->assign('price', floatval($sale['price']));
+        $template->assign('currency', $plugin->getSelectedCurrency());
+        $template->assign('user', $userInfo);
+        $template->assign('sale', $sale);
+        $template->assign('form', $form->returnForm());
+        $template->assign('is_culqi_payment', true);
+        $template->assign('culqi_params', $culqiParams = $plugin->getCulqiParams());
+
+        $content = $template->fetch('buycourses/view/process_confirm.tpl');
+
+        $template->assign('content', $content);
+        $template->display_one_col_template();
+
         break;
 }
